@@ -44,20 +44,20 @@ export function RangeLineChart({ points, tone }: RangeLineChartProps) {
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#94a3b8',
+        textColor: '#64748B',
         fontFamily: 'var(--font-geist-mono)',
         fontSize: 11,
       },
       grid: {
-        vertLines: { color: 'rgba(148, 163, 184, 0.08)' },
-        horzLines: { color: 'rgba(148, 163, 184, 0.08)' },
+        vertLines: { color: 'rgba(100, 116, 139, 0.06)' },
+        horzLines: { color: 'rgba(100, 116, 139, 0.06)' },
       },
       leftPriceScale: { visible: false },
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.2, bottom: 0.2 } },
       timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
       crosshair: {
-        vertLine: { color: 'rgba(148, 163, 184, 0.35)' },
-        horzLine: { color: 'rgba(148, 163, 184, 0.35)' },
+        vertLine: { color: 'rgba(100, 116, 139, 0.25)' },
+        horzLine: { color: 'rgba(100, 116, 139, 0.25)' },
       },
     });
 
@@ -68,7 +68,7 @@ export function RangeLineChart({ points, tone }: RangeLineChartProps) {
       lastValueVisible: false,
       crosshairMarkerRadius: 3,
       crosshairMarkerBorderColor: tone,
-      crosshairMarkerBackgroundColor: '#0b1220',
+      crosshairMarkerBackgroundColor: '#060B16',
     });
 
     chartRef.current = chart;
@@ -91,15 +91,15 @@ export function RangeLineChart({ points, tone }: RangeLineChartProps) {
   const max = chartData.length > 0 ? Math.max(...chartData.map((point) => point.value)) : null;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card-elevated)] p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="inline-flex overflow-hidden rounded-full border border-white/15 bg-black/35 p-1">
+        <div className="inline-flex overflow-hidden rounded-full border border-[var(--border)] bg-[var(--card)] p-1">
           {RANGE_OPTIONS.map((days) => (
             <button
               key={days}
               type="button"
-              className={`rounded-full px-3 py-1 text-xs transition ${
-                days === rangeDays ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/10'
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                days === rangeDays ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
               }`}
               onClick={() => setRangeDays(days)}
             >
@@ -107,12 +107,12 @@ export function RangeLineChart({ points, tone }: RangeLineChartProps) {
             </button>
           ))}
         </div>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500">
           {min !== null && max !== null ? `min ${min.toLocaleString()} · max ${max.toLocaleString()}` : '데이터 없음'}
         </p>
       </div>
       {chartData.length < 2 ? (
-        <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-white/15 text-sm text-slate-300">
+        <div className="flex h-72 items-center justify-center rounded-xl border border-dashed border-[var(--border-light)] text-sm text-slate-500">
           차트 데이터가 충분하지 않습니다.
         </div>
       ) : (

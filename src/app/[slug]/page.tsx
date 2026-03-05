@@ -9,10 +9,10 @@ import { getSiteUrl } from '@/lib/site-url';
 export const revalidate = 3600;
 
 const FRESHNESS_STYLE = {
-  fresh: 'bg-emerald-500/15 text-emerald-300 ring-emerald-400/35',
-  delayed: 'bg-amber-500/15 text-amber-300 ring-amber-400/35',
-  stale: 'bg-rose-500/15 text-rose-300 ring-rose-400/35',
-  unknown: 'bg-slate-500/20 text-slate-200 ring-slate-300/30',
+  fresh: 'bg-emerald-500/20 text-emerald-400 ring-emerald-500/40',
+  delayed: 'bg-amber-500/20 text-amber-400 ring-amber-500/40',
+  stale: 'bg-rose-500/20 text-rose-400 ring-rose-500/40',
+  unknown: 'bg-slate-600/30 text-slate-300 ring-slate-500/30',
 } as const;
 
 const FRESHNESS_LABEL = {
@@ -125,48 +125,48 @@ export default async function IndicatorDetailPage({
     <main className="relative mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <header className="rounded-2xl border border-white/10 bg-black/30 p-6 backdrop-blur">
+      <header className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Indicator Detail</p>
-            <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">{config.title}</h1>
-            <p className="mt-2 text-sm text-slate-300">{config.subtitle}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-400/80">Indicator Detail</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">{config.title}</h1>
+            <p className="mt-2 text-sm text-slate-400">{config.subtitle}</p>
           </div>
-          <span className={`inline-flex rounded-full px-3 py-1.5 text-sm ring-1 ${FRESHNESS_STYLE[data.freshness]}`}>
+          <span className={`inline-flex rounded-full px-3 py-1.5 text-sm font-medium ring-1 ${FRESHNESS_STYLE[data.freshness]}`}>
             데이터 {FRESHNESS_LABEL[data.freshness]}
           </span>
         </div>
-        <p className="mt-5 text-3xl font-semibold text-white">{formatLatest(data.latestValue, config.unit)}</p>
-        <p className="mt-1 text-xs text-slate-400">마지막 업데이트: {formatKst(data.latestAt)}</p>
+        <p className="mt-5 text-3xl font-bold tracking-tight text-white">{formatLatest(data.latestValue, config.unit)}</p>
+        <p className="mt-1 text-xs text-slate-500">마지막 업데이트: {formatKst(data.latestAt)}</p>
       </header>
 
-      <section className="rounded-2xl border border-white/10 bg-black/30 p-5 backdrop-blur">
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
         <h2 className="mb-4 text-lg font-semibold text-white">실시간 차트 (30일/90일/1년)</h2>
         <RangeLineChart points={data.points} tone={config.tone} />
       </section>
 
       {data.errors.length > 0 ? (
-        <section className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+        <section className="rounded-2xl border border-amber-500/30 bg-amber-950/50 p-4 text-sm text-amber-200">
           데이터 소스 연결 상태에 따라 일부 값이 비어 있을 수 있습니다.
         </section>
       ) : null}
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <article className="rounded-2xl border border-white/10 bg-black/30 p-5 backdrop-blur lg:col-span-2">
+        <article className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 lg:col-span-2">
           <h2 className="text-lg font-semibold text-white">지표 설명</h2>
-          <p className="mt-3 text-sm leading-6 text-slate-200">{config.description}</p>
-          <p className="mt-2 text-sm leading-6 text-slate-300">현재 해석: {data.interpretation}</p>
-          <p className="mt-3 text-xs text-slate-400">데이터 출처: {config.source}</p>
+          <p className="mt-3 text-sm leading-6 text-slate-300">{config.description}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-400">현재 해석: {data.interpretation}</p>
+          <p className="mt-3 text-xs text-slate-500">데이터 출처: {config.source}</p>
         </article>
 
-        <aside className="rounded-2xl border border-white/10 bg-black/30 p-5 backdrop-blur">
+        <aside className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
           <h2 className="text-lg font-semibold text-white">관련 지표</h2>
           <ul className="mt-3 space-y-2">
             {data.related.map((item) => (
               <li key={item.slug}>
                 <Link
                   href={`/${item.slug}`}
-                  className="block rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 transition hover:border-white/25 hover:bg-white/10"
+                  className="block rounded-lg border border-[var(--border)] bg-[var(--card-elevated)] px-3 py-2 text-sm text-slate-300 transition hover:border-[var(--border-light)] hover:text-white"
                 >
                   {item.title}
                 </Link>
@@ -175,9 +175,9 @@ export default async function IndicatorDetailPage({
           </ul>
           <Link
             href="/"
-            className="mt-4 inline-flex rounded-lg border border-white/15 px-3 py-1.5 text-sm text-slate-200 transition hover:bg-white/10"
+            className="mt-4 inline-flex rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-slate-300 transition hover:border-[var(--border-light)] hover:text-white"
           >
-            대시보드로 돌아가기
+            ← 대시보드로 돌아가기
           </Link>
         </aside>
       </section>

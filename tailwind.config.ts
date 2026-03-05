@@ -11,6 +11,14 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        card: {
+          DEFAULT: "var(--card)",
+          elevated: "var(--card-elevated)",
+        },
+        border: {
+          DEFAULT: "var(--border)",
+          light: "var(--border-light)",
+        },
       },
     },
   },

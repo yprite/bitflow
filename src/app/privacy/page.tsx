@@ -9,13 +9,13 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <main className="relative mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-      <header className="rounded-2xl border border-white/10 bg-black/30 p-6 backdrop-blur">
-        <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Legal</p>
-        <h1 className="mt-2 text-3xl font-bold text-white">개인정보처리방침</h1>
-        <p className="mt-2 text-xs text-slate-400">최종 수정일: 2026-03-03</p>
+      <header className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-400/80">Legal</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">개인정보처리방침</h1>
+        <p className="mt-2 text-xs text-slate-500">최종 수정일: 2026-03-03</p>
       </header>
 
-      <section className="space-y-6 rounded-2xl border border-white/10 bg-black/30 p-6 text-sm leading-7 text-slate-200 backdrop-blur">
+      <section className="space-y-6 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 text-sm leading-7 text-slate-300">
         <div>
           <h2 className="text-lg font-semibold text-white">1. 수집하는 개인정보</h2>
           <p className="mt-2">
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
               href="https://adssettings.google.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-emerald-300 underline underline-offset-4"
+              className="text-blue-400 underline underline-offset-4 hover:text-blue-300"
             >
               Google 광고 설정
             </a>
@@ -75,9 +75,9 @@ export default function PrivacyPage() {
 
       <Link
         href="/"
-        className="inline-flex rounded-lg border border-white/15 px-3 py-1.5 text-sm text-slate-200 transition hover:bg-white/10"
+        className="inline-flex rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm text-slate-300 transition hover:border-[var(--border-light)] hover:text-white"
       >
-        대시보드로 돌아가기
+        ← 대시보드로 돌아가기
       </Link>
     </main>
   );

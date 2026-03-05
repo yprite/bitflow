@@ -33,13 +33,13 @@ export function MiniLineChart({ points, tone }: MiniLineChartProps) {
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#94a3b8',
+        textColor: '#64748B',
         fontFamily: 'var(--font-geist-mono)',
         fontSize: 10,
       },
       grid: {
-        vertLines: { color: 'rgba(148, 163, 184, 0.08)' },
-        horzLines: { color: 'rgba(148, 163, 184, 0.08)' },
+        vertLines: { color: 'rgba(100, 116, 139, 0.06)' },
+        horzLines: { color: 'rgba(100, 116, 139, 0.06)' },
       },
       leftPriceScale: { visible: false },
       rightPriceScale: { visible: false },
@@ -81,11 +81,11 @@ export function MiniLineChart({ points, tone }: MiniLineChartProps) {
 
   if (chartData.length < 2) {
     return (
-      <div className="flex h-24 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xs text-slate-300/80">
+      <div className="flex h-24 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--card-elevated)] text-xs text-slate-500">
         차트 데이터 없음
       </div>
     );
   }
 
-  return <div ref={containerRef} className="h-24 w-full overflow-hidden rounded-xl border border-white/10 bg-white/5" />;
+  return <div ref={containerRef} className="h-24 w-full overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card-elevated)]" />;
 }
