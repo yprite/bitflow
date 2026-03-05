@@ -213,31 +213,18 @@ async function fetchMempoolFees() {
 
 async function fetchExchangeNetflow() {
   try {
-    // Blockchain.com - exchange balance changes
-    // Using total exchange balance and computing netflow from delta
-    const res = await fetch(
-      'https://api.blockchain.info/charts/estimated-transaction-volume-usd?timespan=2days&format=json'
-    );
-    if (!res.ok) throw new Error(`Blockchain.com ${res.status}`);
+    // BGeometrics / bitcoin-data.com - real exchange netflow in BTC
+    const res = await fetch('https://bitcoin-data.com/v1/exchange-netflow-btc/1');
+    if (!res.ok) throw new Error(`bitcoin-data.com netflow ${res.status}`);
     const data = await res.json();
 
-    // For MVP, use a simplified approach
-    // TODO: Replace with proper exchange netflow when API source confirmed
-    if (data.values && data.values.length >= 2) {
-      const latest = data.values[data.values.length - 1];
-      const previous = data.values[data.values.length - 2];
-      const delta = latest.y - previous.y;
-
-      // Normalize to BTC-equivalent by dividing by current price
-      // For now store raw USD delta as placeholder
-      await upsertMetric('exchange_netflow', delta, {
-        source: 'blockchain.com',
-        source_timestamp: latest.x,
-        raw_latest: latest.y,
-        raw_previous: previous.y,
-        note: 'placeholder_tx_volume_delta_usd',
-      });
-    }
+    // Response: {"d":"2026-03-04","unixTs":1772582400,"exchangeNetflowBtc":-20461.08}
+    const entry = Array.isArray(data) ? data[0] : data;
+    await upsertMetric('exchange_netflow', entry.exchangeNetflowBtc, {
+      source: 'bitcoin-data.com',
+      source_timestamp: Number(entry.unixTs),
+      source_date: entry.d,
+    });
   } catch (err) {
     console.error('[collect] Exchange netflow failed:', err.message);
   }
@@ -245,23 +232,38 @@ async function fetchExchangeNetflow() {
 
 async function fetchUtxoAge() {
   try {
-    // UTXO age distribution from Blockchain.com
-    const res = await fetch(
-      'https://api.blockchain.info/charts/utxo-count?timespan=30days&format=json'
-    );
-    if (!res.ok) throw new Error(`Blockchain.com UTXO ${res.status}`);
+    // BGeometrics / bitcoin-data.com - HODL waves (UTXO age bands in BTC)
+    const res = await fetch('https://bitcoin-data.com/v1/hodl-waves-supply/1');
+    if (!res.ok) throw new Error(`bitcoin-data.com hodl ${res.status}`);
     const data = await res.json();
 
-    // For MVP: store total UTXO count as proxy
-    // TODO: Replace with proper 1yr+ UTXO percentage when data source confirmed
-    if (data.values && data.values.length > 0) {
-      const latest = data.values[data.values.length - 1];
-      await upsertMetric('utxo_age_1y', latest.y, {
-        source: 'blockchain.com',
-        source_timestamp: latest.x,
-        note: 'placeholder_total_utxo_count',
-      });
-    }
+    const entry = Array.isArray(data) ? data[0] : data;
+    // Sum BTC supply that hasn't moved in 1+ year
+    const oneyearPlus =
+      Number(entry.age_1y_2y) +
+      Number(entry.age_2y_3y) +
+      Number(entry.age_3y_4y) +
+      Number(entry.age_4y_5y) +
+      Number(entry.age_5y_7y) +
+      Number(entry.age_7y_10y) +
+      Number(entry.age_10y);
+    const totalSupply =
+      Number(entry.age_0d_1d) +
+      Number(entry.age_1d_1w) +
+      Number(entry.age_1w_1m) +
+      Number(entry.age_1m_3m) +
+      Number(entry.age_3m_6m) +
+      Number(entry.age_6m_1y) +
+      oneyearPlus;
+    const pct = (oneyearPlus / totalSupply) * 100;
+
+    await upsertMetric('utxo_age_1y', parseFloat(pct.toFixed(2)), {
+      source: 'bitcoin-data.com',
+      source_timestamp: Number(entry.unixTs),
+      source_date: entry.d,
+      supply_1y_plus_btc: parseFloat(oneyearPlus.toFixed(2)),
+      total_supply_btc: parseFloat(totalSupply.toFixed(2)),
+    });
   } catch (err) {
     console.error('[collect] UTXO age failed:', err.message);
   }
