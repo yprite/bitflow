@@ -17,6 +17,9 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: 'Bitflow',
   description: '한국 비트코인 투자자를 위한 온체인 데이터 대시보드',
+  verification: {
+    google: 'ga_lYXtcIceKKBYQ5XW4keFIrEg-MNnNg99PkRWRcr0',
+  },
 };
 
 export default function RootLayout({
