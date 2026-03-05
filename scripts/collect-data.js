@@ -274,13 +274,21 @@ async function fetchUtxoAge() {
 async function main() {
   console.log(`[collect] Starting data collection at ${new Date().toISOString()}`);
 
-  const results = await Promise.allSettled([
-    fetchBtcPrice(),
-    fetchFearGreed(),
-    fetchMempoolFees(),
-    fetchExchangeNetflow(),
-    fetchUtxoAge(),
-  ]);
+  // Always fetch: free APIs with generous rate limits
+  const fetchers = [fetchBtcPrice(), fetchFearGreed(), fetchMempoolFees()];
+
+  // bitcoin-data.com: 8 req/hour, 15 req/day → only fetch at specific hours
+  // KST hours 08, 20 (= UTC 23, 11)
+  const utcHour = new Date().getUTCHours();
+  const dailyHours = [23, 11]; // 08:00 KST, 20:00 KST
+  if (dailyHours.includes(utcHour) || process.argv.includes('--all')) {
+    console.log('[collect] Including bitcoin-data.com metrics (daily window)');
+    fetchers.push(fetchExchangeNetflow(), fetchUtxoAge());
+  } else {
+    console.log('[collect] Skipping bitcoin-data.com metrics (rate limit, use --all to force)');
+  }
+
+  const results = await Promise.allSettled(fetchers);
 
   const failed = results.filter((r) => r.status === 'rejected');
   if (failed.length > 0) {
