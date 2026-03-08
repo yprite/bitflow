@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getGlossarySlugs, getIndicatorSlugs } from '@/lib/indicator-content';
+import { getTrackedStockSlugs } from '@/lib/market-home-data';
 import { getSiteUrl } from '@/lib/site-url';
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -35,5 +36,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
-  return [...staticUrls, ...indicatorUrls, ...glossaryUrls];
+  const stockUrls: MetadataRoute.Sitemap = getTrackedStockSlugs().map((slug) => ({
+    url: `${baseUrl}/stocks/${slug}`,
+    lastModified: now,
+    changeFrequency: 'hourly',
+    priority: 0.7,
+  }));
+
+  return [...staticUrls, ...indicatorUrls, ...glossaryUrls, ...stockUrls];
 }

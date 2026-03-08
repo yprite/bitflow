@@ -13,6 +13,10 @@
   --accent-cyan: #22D3EE;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
