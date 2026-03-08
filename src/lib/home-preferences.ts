@@ -1,5 +1,14 @@
 export const FOLLOW_TAG_STORAGE_KEY = 'bitflow_follow_tags';
+export const ALERT_MODE_STORAGE_KEY = 'bitflow_alert_mode';
 export const RECOMMENDED_TAG_COUNT = 3;
+
+export type AlertMode = 'instant' | 'close' | 'off';
+
+export const ALERT_MODE_LABEL: Record<AlertMode, string> = {
+  instant: '즉시 알림',
+  close: '장마감 요약',
+  off: '끄기',
+};
 
 export function getTagsForTheme(theme: string): string[] {
   if (theme.includes('HBM') || theme.includes('반도체')) {

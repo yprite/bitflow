@@ -80,6 +80,7 @@ export interface ScheduleItem {
   category: string;
   title: string;
   summary: string;
+  tags?: string[];
 }
 
 export interface AnalysisCard {
@@ -318,24 +319,28 @@ export const marketHomeContent: MarketHomeContent = {
       category: '공시',
       title: '삼성물산 주주환원 계획 업데이트',
       summary: '자사주 소각 규모와 향후 배당 정책 언급 여부가 핵심입니다.',
+      tags: getTagsForTheme('자사주 소각'),
     },
     {
       time: '10:00',
       category: '주총',
       title: 'KB금융 정기 주주총회',
       summary: '배당, 자사주 매입, 밸류업 코멘트가 가장 큰 체크포인트입니다.',
+      tags: getTagsForTheme('배당 · 금융'),
     },
     {
       time: '13:40',
       category: '실적',
       title: '한미반도체 장비 수주 코멘트',
       summary: 'HBM 후공정 장비 수주 가이던스가 뜨면 섹터 전체로 확산됩니다.',
+      tags: getTagsForTheme('HBM'),
     },
     {
       time: '20:00',
       category: '체크리스트',
       title: '내일 일정 브리핑 발행',
       summary: '보호예수 해제, 배당락, 공시 예정 종목을 한 장으로 요약합니다.',
+      tags: [],
     },
   ],
   analysis: [

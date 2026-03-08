@@ -4,9 +4,12 @@ import { MiniLineChart } from '@/components/charts/mini-line-chart';
 import { FollowPanel } from '@/components/home/follow-panel';
 import { LiveRankingBoard } from '@/components/home/live-ranking-board';
 import {
+  ALERT_MODE_LABEL,
+  ALERT_MODE_STORAGE_KEY,
   FOLLOW_TAG_STORAGE_KEY,
   hasMatchingTag,
   prioritizeBySelectedTags,
+  type AlertMode,
 } from '@/lib/home-preferences';
 import {
   type AnalysisCard,
@@ -14,6 +17,7 @@ import {
   type MarketIndexCard,
   type PulseStat,
   type RankingTab,
+  type ScheduleItem,
   type SpotlightTheme,
   type ThemeCard,
 } from '@/lib/market-home-content';
@@ -231,11 +235,75 @@ function PulseStatCard({ stat }: { stat: PulseStat }) {
   );
 }
 
+interface AlertPreviewItem {
+  title: string;
+  summary: string;
+}
+
+function buildAlertPreviews(params: {
+  alertMode: AlertMode;
+  rankingTabs: RankingTab[];
+  themes: ThemeCard[];
+  schedule: ScheduleItem[];
+  selectedTags: string[];
+}): AlertPreviewItem[] {
+  const modeLabel = ALERT_MODE_LABEL[params.alertMode];
+
+  if (!params.selectedTags.length) {
+    return [
+      {
+        title: '관심 테마를 먼저 골라주세요',
+        summary: '반도체, 조선, 배당처럼 내가 자주 보는 테마를 골라야 알림 미리보기가 개인화됩니다.',
+      },
+      {
+        title: `${modeLabel} 예시`,
+        summary: '예: 반도체가 Top 3에 다시 진입하면 바로 알려주고, 장마감에는 놓친 흐름을 한 번에 요약합니다.',
+      },
+    ];
+  }
+
+  const topReason = params.rankingTabs.find((tab) => tab.label === '왜 오름')?.items[0];
+  const topMoney = params.rankingTabs.find((tab) => tab.label === '돈 붙는 곳')?.items[0];
+  const nextSchedule = params.schedule.find((item) => hasMatchingTag(item.tags, params.selectedTags)) ?? params.schedule[0];
+  const topTheme = params.themes[0];
+
+  const previews: AlertPreviewItem[] = [];
+
+  if (topTheme) {
+    previews.push({
+      title: `${modeLabel}: ${topTheme.name} 다시 붙을 때`,
+      summary: `${topTheme.name} 테마가 다시 강해지면 평균 ${topTheme.averageReturn}, 다음 촉매 ${topTheme.nextCatalyst} 기준으로 먼저 확인하게 만듭니다.`,
+    });
+  }
+
+  if (topMoney) {
+    previews.push({
+      title: `${modeLabel}: ${topMoney.name} 자금 유입`,
+      summary: `${topMoney.name}에 ${topMoney.signal}이 붙고 있을 때 ${topMoney.reason} 이유까지 같이 확인하는 알림입니다.`,
+    });
+  } else if (topReason) {
+    previews.push({
+      title: `${modeLabel}: ${topReason.name} 급등 포착`,
+      summary: `${topReason.name} ${topReason.change} 움직임이 다시 나오면 ${topReason.reason} 맥락으로 바로 열어볼 수 있게 준비합니다.`,
+    });
+  }
+
+  if (nextSchedule) {
+    previews.push({
+      title: `${modeLabel}: ${nextSchedule.title}`,
+      summary: `${nextSchedule.time} ${nextSchedule.category} 일정입니다. ${nextSchedule.summary}`,
+    });
+  }
+
+  return previews;
+}
+
 export function MarketHome({ initialSnapshot }: { initialSnapshot: MarketHomeSnapshot }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [isPending, startTransition] = useTransition();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [marketView, setMarketView] = useState<'all' | 'followed'>('all');
+  const [alertMode, setAlertMode] = useState<AlertMode>('instant');
   const { content, meta } = snapshot;
   const hasSelectedTags = selectedTags.length > 0;
 
@@ -282,6 +350,21 @@ export function MarketHome({ initialSnapshot }: { initialSnapshot: MarketHomeSna
   useEffect(() => {
     localStorage.setItem(FOLLOW_TAG_STORAGE_KEY, JSON.stringify(selectedTags));
   }, [selectedTags]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(ALERT_MODE_STORAGE_KEY);
+      if (saved === 'instant' || saved === 'close' || saved === 'off') {
+        setAlertMode(saved);
+      }
+    } catch {
+      localStorage.removeItem(ALERT_MODE_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(ALERT_MODE_STORAGE_KEY, alertMode);
+  }, [alertMode]);
 
   useEffect(() => {
     if (!hasSelectedTags && marketView === 'followed') {
@@ -331,6 +414,17 @@ export function MarketHome({ initialSnapshot }: { initialSnapshot: MarketHomeSna
     ...tab,
     items: tab.items.length > 0 ? tab.items : orderedRankingTabs[index]?.items ?? [],
   }));
+  const alertPreviews = useMemo(
+    () =>
+      buildAlertPreviews({
+        alertMode,
+        rankingTabs: visibleRankingTabs,
+        themes: visibleThemeCards,
+        schedule: content.schedule,
+        selectedTags,
+      }),
+    [alertMode, content.schedule, selectedTags, visibleRankingTabs, visibleThemeCards]
+  );
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#09111F] text-slate-100">
@@ -537,7 +631,14 @@ export function MarketHome({ initialSnapshot }: { initialSnapshot: MarketHomeSna
         >
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-600">Retention</p>
           <h2 className="mt-3 text-2xl font-semibold tracking-tight">관심 테마 3개만 골라도 다음에 다시 볼 이유가 생깁니다</h2>
-          <FollowPanel tags={content.followTags} selected={selectedTags} onChange={setSelectedTags} />
+          <FollowPanel
+            tags={content.followTags}
+            selected={selectedTags}
+            onChange={setSelectedTags}
+            alertMode={alertMode}
+            onAlertModeChange={setAlertMode}
+            previews={alertPreviews}
+          />
         </section>
 
         <footer className="px-1 pb-6 text-xs text-slate-500">
