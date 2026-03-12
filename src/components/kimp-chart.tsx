@@ -9,6 +9,24 @@ interface KimpChartProps {
 
 type Period = '7d' | '30d';
 
+const axisLabelFormatter = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+function formatAxisLabel(timestamp: string): string {
+  const parts = axisLabelFormatter.formatToParts(new Date(timestamp));
+  const month = parts.find((part) => part.type === 'month')?.value;
+  const day = parts.find((part) => part.type === 'day')?.value;
+
+  if (month && day) {
+    return `${month}.${day}`;
+  }
+
+  return axisLabelFormatter.format(new Date(timestamp)).replace(/\s/g, '');
+}
+
 export default function KimpChart({ data }: KimpChartProps) {
   const [period, setPeriod] = useState<Period>('7d');
 
@@ -37,6 +55,11 @@ export default function KimpChart({ data }: KimpChartProps) {
     const y = chartHeight - ((point.value - min) / range) * chartHeight;
     return `${x},${y}`;
   }).join(' ');
+  const axisLabels = [
+    filtered[0],
+    filtered[Math.floor((filtered.length - 1) / 2)],
+    filtered[filtered.length - 1],
+  ].map((point) => formatAxisLabel(point.collectedAt));
 
   return (
     <div className="rounded-2xl bg-gray-900 border border-gray-800 p-6">
@@ -74,6 +97,11 @@ export default function KimpChart({ data }: KimpChartProps) {
       <div className="flex justify-between text-xs text-gray-600 mt-1">
         <span>{min.toFixed(2)}%</span>
         <span>{max.toFixed(2)}%</span>
+      </div>
+      <div className="flex justify-between text-[11px] text-gray-500 mt-2 font-mono">
+        <span>{axisLabels[0]}</span>
+        <span>{axisLabels[1]}</span>
+        <span>{axisLabels[2]}</span>
       </div>
     </div>
   );
