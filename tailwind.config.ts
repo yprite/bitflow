@@ -2,25 +2,11 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx}",
+    "./src/app/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {
-      colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-        card: {
-          DEFAULT: "var(--card)",
-          elevated: "var(--card-elevated)",
-        },
-        border: {
-          DEFAULT: "var(--border)",
-          light: "var(--border-light)",
-        },
-      },
-    },
+    extend: {},
   },
   plugins: [],
 };

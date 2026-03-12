@@ -1,88 +1,99 @@
-# BitFlow Radar
+# 김치프리미엄 트래커 + 텔레그램 알림 봇
 
-한국 주식 투자자를 위한 장중 이슈 레이더입니다.
+실시간 김치프리미엄, 바이낸스 펀딩비, 공포탐욕지수를 한눈에 보고, 텔레그램으로 알림을 받을 수 있는 대시보드입니다.
 
-BitFlow는 모든 종목 데이터를 다 쌓아두는 포털이 아니라, 지금 시장에서 놓치면 아쉬운 테마, 종목, 이벤트를 30초 안에 파악하게 만드는 모바일 우선 제품을 목표로 합니다.
+## 주요 기능
 
-현재 홈은 아래 질문에 빠르게 답하도록 설계되어 있습니다.
-
-- 지금 어디에 수급과 관심이 붙는가
-- 왜 이 종목과 테마가 움직이는가
-- 내일까지 이어질 체크포인트가 있는가
-
-현재 구현 범위는 다음과 같습니다.
-
-- 홈: 실시간 지수, 랭킹, 테마, 일정 중심 시장 레이더
-- 종목 상세: `왜 움직이는지`, `다음 체크포인트`, `뉴스/공시 타임라인`
-- 팔로우: 관심 테마 저장까지 구현, 알림 연결은 다음 단계
-
-레포에는 이전 비트코인 온체인/자동화 자산도 함께 남아 있습니다. 제품 포지셔닝은 한국 주식 레이더를 우선 기준으로 정리 중입니다.
+- **실시간 김프**: 업비트 BTC/KRW vs 바이낸스 BTC/USDT + 환율 기반 계산
+- **펀딩비**: 바이낸스 BTCUSDT 무기한 펀딩비
+- **공포탐욕지수**: alternative.me API
+- **복합 시그널**: 김프 + 펀딩비 + 공포탐욕 조합 → 과열 / 중립 / 침체
+- **텔레그램 봇**: 김프 조회, 임계값 알림 설정
 
 ## Quick Start
 
 ```bash
 npm install
 cp .env.local.example .env.local
+# .env.local 파일을 편집하여 환경변수 설정
 npm run dev
 ```
 
 앱: `http://localhost:3000`
 
-## 주요 스크립트
-
-```bash
-# 데이터 수집
-npm run collect
-
-# 고래 감지 (레거시 온체인 자산)
-npm run whale
-
-# 시장 요약 JSON 생성
-npm run summary
-
-# OG 카드 이미지 생성 (/api/og 호출)
-npm run og
-
-# 트윗 원고 + 이미지 생성만
-npm run tweet:generate
-
-# 트윗 게시 시도 (OPENCHROME_POST_CMD 필요)
-npm run tweet
-```
-
 ## 환경변수
 
-`.env.local.example` 기준으로 설정합니다.
+| 변수명 | 설명 | 필수 |
+|--------|------|------|
+| `TELEGRAM_BOT_TOKEN` | 텔레그램 봇 토큰 | 봇 사용 시 |
+| `TELEGRAM_WEBHOOK_SECRET` | 웹훅 인증 시크릿 | 선택 |
+| `KV_REST_API_URL` | Vercel KV URL | 알림 기능 사용 시 |
+| `KV_REST_API_TOKEN` | Vercel KV 토큰 | 알림 기능 사용 시 |
+| `CRON_SECRET` | Cron Job 인증 시크릿 | Vercel 배포 시 |
 
-- `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`
-- `WHALE_ALERT_API_KEY`, `COINGECKO_API_KEY`, `DART_API_KEY`
-- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
-- `BITFLOW_OG_ENDPOINT` (기본: `http://127.0.0.1:3000/api/og`)
-- `OPENCHROME_POST_CMD`:
-  - 트윗 게시를 실제로 수행하는 외부 명령
-  - 스크립트는 아래 env를 함께 전달합니다:
-    - `BITFLOW_TWEET_TEXT`
-    - `BITFLOW_TWEET_TEXT_FILE`
-    - `BITFLOW_TWEET_IMAGE`
+## 텔레그램 봇 설정
 
-예시:
+### 1. 봇 생성
 
-```bash
-OPENCHROME_POST_CMD='node /absolute/path/to/post-with-openchrome.js'
+1. 텔레그램에서 [@BotFather](https://t.me/BotFather)를 검색합니다.
+2. `/newbot` 명령으로 새 봇을 생성합니다.
+3. 봇 이름과 username을 설정합니다.
+4. 발급된 토큰을 `TELEGRAM_BOT_TOKEN`에 설정합니다.
+
+### 2. 웹훅 설정
+
+배포 후 아래 URL을 브라우저에서 호출하여 웹훅을 등록합니다:
+
+```
+https://api.telegram.org/bot{YOUR_BOT_TOKEN}/setWebhook?url=https://{YOUR_DOMAIN}/api/telegram/webhook&secret_token={YOUR_WEBHOOK_SECRET}
 ```
 
-`DART_API_KEY`는 선택사항입니다. 설정하면 종목 상세 페이지의 공시 타임라인이 OpenDART 공식 공시로 대체되고, 없으면 뉴스 RSS와 편집 fallback으로 안전하게 동작합니다.
+- `{YOUR_BOT_TOKEN}`: BotFather에서 발급받은 토큰
+- `{YOUR_DOMAIN}`: Vercel 배포 도메인
+- `{YOUR_WEBHOOK_SECRET}`: 직접 생성한 시크릿 문자열
 
-## 현재 우선순위
+### 3. 웹훅 확인
 
-- 홈 첫 화면에서 제품 가치가 바로 보이게 만들기
-- `팔로우 -> 알림 -> 재방문` 루프 붙이기
-- 설명 없는 랭킹보다 `왜 움직이는지`와 `내일 일정`을 먼저 보여주기
+```
+https://api.telegram.org/bot{YOUR_BOT_TOKEN}/getWebhookInfo
+```
 
-## SEO 라우트
+### 4. 봇 명령어
 
-- 종목 상세: `/stocks/[slug]`
-- 지표 상세: `/exchange-netflow`, `/whale-tracker`, `/mempool-fees`, `/fear-greed`, `/utxo-age`
-- 용어집 인덱스: `/glossary`
-- 용어집 상세: `/glossary/[slug]`
-- `sitemap.xml`, `robots.txt` 자동 제공
+| 명령어 | 설명 |
+|--------|------|
+| `/start` | 봇 소개 및 사용법 |
+| `/kimp` | 현재 김프 즉시 조회 |
+| `/alert 3.0` | 김프 3.0% 이상 알림 설정 |
+| `/alert off` | 알림 해제 |
+| `/status` | 내 알림 설정 현황 |
+
+## Vercel KV 설정
+
+1. [Vercel 대시보드](https://vercel.com/dashboard)에서 프로젝트를 선택합니다.
+2. Storage 탭에서 KV 스토어를 생성합니다.
+3. 환경변수(`KV_REST_API_URL`, `KV_REST_API_TOKEN`)가 자동으로 연결됩니다.
+
+## 김프 계산식
+
+```
+김프(%) = ((업비트_KRW / (바이낸스_USDT × USD_KRW환율)) - 1) × 100
+```
+
+## 데이터 소스
+
+| 데이터 | API |
+|--------|-----|
+| 업비트 BTC/KRW | `api.upbit.com/v1/ticker` |
+| 바이낸스 BTC/USDT | `api.binance.com/api/v3/ticker/price` |
+| USD/KRW 환율 | `open.er-api.com/v6/latest/USD` |
+| 공포탐욕지수 | `api.alternative.me/fng/` |
+| 펀딩비 | `fapi.binance.com/fapi/v1/premiumIndex` |
+
+## 기술 스택
+
+- Next.js 14 (App Router)
+- Tailwind CSS
+- Vercel KV (Redis)
+- Vercel Cron Jobs
+- Telegram Bot API
