@@ -24,7 +24,7 @@ export async function sendTelegramMessage(chatId: number, text: string): Promise
 export function formatKimpMessage(
   kimchiPremium: number,
   upbitPrice: number,
-  binancePrice: number,
+  globalPrice: number,
   usdKrw: number
 ): string {
   const sign = kimchiPremium >= 0 ? '+' : '';
@@ -33,7 +33,7 @@ export function formatKimpMessage(
     ``,
     `김프: *${sign}${kimchiPremium.toFixed(2)}%*`,
     `업비트 BTC: ${upbitPrice.toLocaleString()}원`,
-    `바이낸스 BTC: $${binancePrice.toLocaleString()}`,
+    `해외 BTC: $${globalPrice.toLocaleString()}`,
     `환율(USD/KRW): ${usdKrw.toFixed(0)}원`,
     ``,
     `_${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}_`,

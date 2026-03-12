@@ -1,5 +1,21 @@
 import { KimpData, FundingRateData, FearGreedData, CompositeSignal, CoinPremium, MultiCoinKimpData, ArbitrageResult } from './types';
 
+interface BybitTickerResponse<T> {
+  retCode: number;
+  retMsg: string;
+  result?: {
+    list?: T[];
+  };
+}
+
+function assertBybitOk<T>(payload: BybitTickerResponse<T>, label: string): T[] {
+  if (payload.retCode !== 0) {
+    throw new Error(`${label} error: ${payload.retCode} ${payload.retMsg}`);
+  }
+
+  return payload.result?.list ?? [];
+}
+
 export async function fetchUpbitPrice(): Promise<number> {
   const res = await fetch('https://api.upbit.com/v1/ticker?markets=KRW-BTC', {
     next: { revalidate: 0 },
@@ -9,13 +25,20 @@ export async function fetchUpbitPrice(): Promise<number> {
   return data[0].trade_price;
 }
 
-export async function fetchBinancePrice(): Promise<number> {
-  const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT', {
+export async function fetchGlobalPrice(): Promise<number> {
+  const res = await fetch('https://api.bybit.com/v5/market/tickers?category=spot&symbol=BTCUSDT', {
     next: { revalidate: 0 },
   });
-  if (!res.ok) throw new Error(`Binance API error: ${res.status}`);
-  const data = await res.json();
-  return parseFloat(data.price);
+  if (!res.ok) throw new Error(`Bybit spot API error: ${res.status}`);
+
+  const data = await res.json() as BybitTickerResponse<{ lastPrice: string }>;
+  const [ticker] = assertBybitOk(data, 'Bybit spot API');
+
+  if (!ticker?.lastPrice) {
+    throw new Error('Bybit spot API returned no price');
+  }
+
+  return parseFloat(ticker.lastPrice);
 }
 
 export async function fetchUsdKrw(): Promise<number> {
@@ -28,15 +51,26 @@ export async function fetchUsdKrw(): Promise<number> {
 }
 
 export async function fetchFundingRate(): Promise<FundingRateData> {
-  const res = await fetch('https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT', {
+  const res = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT', {
     next: { revalidate: 0 },
   });
-  if (!res.ok) throw new Error(`Binance Funding Rate API error: ${res.status}`);
-  const data = await res.json();
+  if (!res.ok) throw new Error(`Bybit funding API error: ${res.status}`);
+
+  const data = await res.json() as BybitTickerResponse<{
+    symbol: string;
+    fundingRate: string;
+    nextFundingTime: string;
+  }>;
+  const [ticker] = assertBybitOk(data, 'Bybit funding API');
+
+  if (!ticker?.fundingRate || !ticker.nextFundingTime) {
+    throw new Error('Bybit funding API returned incomplete data');
+  }
+
   return {
-    symbol: data.symbol,
-    fundingRate: parseFloat(data.lastFundingRate),
-    nextFundingTime: data.nextFundingTime,
+    symbol: ticker.symbol,
+    fundingRate: parseFloat(ticker.fundingRate),
+    nextFundingTime: Number(ticker.nextFundingTime),
   };
 }
 
@@ -63,17 +97,17 @@ export function calculateKimchiPremium(
 }
 
 export async function getKimpData(): Promise<KimpData> {
-  const [upbitPrice, binancePrice, usdKrw] = await Promise.all([
+  const [upbitPrice, globalPrice, usdKrw] = await Promise.all([
     fetchUpbitPrice(),
-    fetchBinancePrice(),
+    fetchGlobalPrice(),
     fetchUsdKrw(),
   ]);
 
-  const kimchiPremium = calculateKimchiPremium(upbitPrice, binancePrice, usdKrw);
+  const kimchiPremium = calculateKimchiPremium(upbitPrice, globalPrice, usdKrw);
 
   return {
     upbitPrice,
-    binancePrice,
+    globalPrice,
     usdKrw,
     kimchiPremium,
     timestamp: new Date().toISOString(),
@@ -82,16 +116,16 @@ export async function getKimpData(): Promise<KimpData> {
 
 // 멀티코인 김프 데이터
 const TRACKED_COINS = [
-  { symbol: 'BTC', upbit: 'KRW-BTC', binance: 'BTCUSDT', name: '비트코인' },
-  { symbol: 'ETH', upbit: 'KRW-ETH', binance: 'ETHUSDT', name: '이더리움' },
-  { symbol: 'XRP', upbit: 'KRW-XRP', binance: 'XRPUSDT', name: '리플' },
-  { symbol: 'SOL', upbit: 'KRW-SOL', binance: 'SOLUSDT', name: '솔라나' },
-  { symbol: 'DOGE', upbit: 'KRW-DOGE', binance: 'DOGEUSDT', name: '도지코인' },
-  { symbol: 'ADA', upbit: 'KRW-ADA', binance: 'ADAUSDT', name: '에이다' },
-  { symbol: 'AVAX', upbit: 'KRW-AVAX', binance: 'AVAXUSDT', name: '아발란체' },
-  { symbol: 'DOT', upbit: 'KRW-DOT', binance: 'DOTUSDT', name: '폴카닷' },
-  { symbol: 'LINK', upbit: 'KRW-LINK', binance: 'LINKUSDT', name: '체인링크' },
-  { symbol: 'MATIC', upbit: 'KRW-MATIC', binance: 'MATICUSDT', name: '폴리곤' },
+  { symbol: 'BTC', upbit: 'KRW-BTC', global: 'BTCUSDT', name: '비트코인' },
+  { symbol: 'ETH', upbit: 'KRW-ETH', global: 'ETHUSDT', name: '이더리움' },
+  { symbol: 'XRP', upbit: 'KRW-XRP', global: 'XRPUSDT', name: '리플' },
+  { symbol: 'SOL', upbit: 'KRW-SOL', global: 'SOLUSDT', name: '솔라나' },
+  { symbol: 'DOGE', upbit: 'KRW-DOGE', global: 'DOGEUSDT', name: '도지코인' },
+  { symbol: 'ADA', upbit: 'KRW-ADA', global: 'ADAUSDT', name: '에이다' },
+  { symbol: 'AVAX', upbit: 'KRW-AVAX', global: 'AVAXUSDT', name: '아발란체' },
+  { symbol: 'DOT', upbit: 'KRW-DOT', global: 'DOTUSDT', name: '폴카닷' },
+  { symbol: 'LINK', upbit: 'KRW-LINK', global: 'LINKUSDT', name: '체인링크' },
+  { symbol: 'POL', upbit: 'KRW-POL', global: 'POLUSDT', name: '폴리곤' },
 ];
 
 export { TRACKED_COINS };
@@ -99,37 +133,41 @@ export { TRACKED_COINS };
 export async function fetchMultiCoinKimp(): Promise<MultiCoinKimpData> {
   const upbitMarkets = TRACKED_COINS.map(c => c.upbit).join(',');
 
-  const [upbitRes, binanceRes, usdKrw] = await Promise.all([
+  const [upbitRes, globalRes, usdKrw] = await Promise.all([
     fetch(`https://api.upbit.com/v1/ticker?markets=${upbitMarkets}`, {
       next: { revalidate: 0 },
     }),
-    fetch('https://api.binance.com/api/v3/ticker/price', {
+    fetch('https://api.bybit.com/v5/market/tickers?category=spot', {
       next: { revalidate: 0 },
     }),
     fetchUsdKrw(),
   ]);
 
   if (!upbitRes.ok) throw new Error(`Upbit multi API error: ${upbitRes.status}`);
-  if (!binanceRes.ok) throw new Error(`Binance multi API error: ${binanceRes.status}`);
+  if (!globalRes.ok) throw new Error(`Bybit multi API error: ${globalRes.status}`);
 
   const upbitData: Array<{ market: string; trade_price: number }> = await upbitRes.json();
-  const binanceData: Array<{ symbol: string; price: string }> = await binanceRes.json();
+  const bybitPayload = await globalRes.json() as BybitTickerResponse<{
+    symbol: string;
+    lastPrice: string;
+  }>;
+  const globalData = assertBybitOk(bybitPayload, 'Bybit multi API');
 
   const upbitMap = new Map(upbitData.map(d => [d.market, d.trade_price]));
-  const binanceMap = new Map(binanceData.map(d => [d.symbol, parseFloat(d.price)]));
+  const globalMap = new Map(globalData.map(d => [d.symbol, parseFloat(d.lastPrice)]));
 
   const coins: CoinPremium[] = TRACKED_COINS
     .map(coin => {
       const upbitPrice = upbitMap.get(coin.upbit);
-      const binancePrice = binanceMap.get(coin.binance);
-      if (!upbitPrice || !binancePrice) return null;
+      const globalPrice = globalMap.get(coin.global);
+      if (!upbitPrice || !globalPrice) return null;
 
-      const premium = calculateKimchiPremium(upbitPrice, binancePrice, usdKrw);
+      const premium = calculateKimchiPremium(upbitPrice, globalPrice, usdKrw);
       return {
         symbol: coin.symbol,
         name: coin.name,
         upbitPrice,
-        binancePrice,
+        globalPrice,
         premium,
       };
     })
@@ -153,7 +191,7 @@ const COIN_NETWORK_INFO: Record<string, { network: string; fee: number; feeUnit:
   AVAX: { network: 'Avalanche', fee: 0.01, feeUnit: 'AVAX', timeMin: 1 },
   DOT: { network: 'Polkadot', fee: 0.1, feeUnit: 'DOT', timeMin: 5 },
   LINK: { network: 'Ethereum', fee: 0.3, feeUnit: 'LINK', timeMin: 5 },
-  MATIC: { network: 'Polygon', fee: 0.1, feeUnit: 'MATIC', timeMin: 1 },
+  POL: { network: 'Polygon', fee: 0.1, feeUnit: 'POL', timeMin: 1 },
 };
 
 export function calculateArbitrage(
@@ -163,7 +201,7 @@ export function calculateArbitrage(
   direction: 'buy-kr-sell-global' | 'buy-global-sell-kr'
 ): ArbitrageResult {
   const krFeeRate = 0.0005;    // 업비트 수수료 0.05%
-  const globalFeeRate = 0.001; // 바이낸스 수수료 0.1%
+  const globalFeeRate = 0.001; // 해외 거래소 수수료 0.1%
   const slippageRate = 0.001;  // 예상 슬리피지 0.1%
 
   const networkInfo = COIN_NETWORK_INFO[coin.symbol] || { network: 'Unknown', fee: 0, feeUnit: coin.symbol, timeMin: 10 };
@@ -176,7 +214,7 @@ export function calculateArbitrage(
   if (direction === 'buy-global-sell-kr' && coin.premium > 0) {
     // 해외에서 싸게 사서 한국에서 비싸게 팔기 (양김프)
     const buyAmountUsd = investmentKrw / usdKrw;
-    const coinAmount = buyAmountUsd / coin.binancePrice;
+    const coinAmount = buyAmountUsd / coin.globalPrice;
     const sellKrw = coinAmount * coin.upbitPrice;
     grossProfit = sellKrw - investmentKrw;
     exchangeFeeKr = sellKrw * krFeeRate;
@@ -184,7 +222,7 @@ export function calculateArbitrage(
   } else if (direction === 'buy-kr-sell-global' && coin.premium < 0) {
     // 한국에서 싸게 사서 해외에서 비싸게 팔기 (역김프)
     const coinAmount = investmentKrw / coin.upbitPrice;
-    const sellUsd = coinAmount * coin.binancePrice;
+    const sellUsd = coinAmount * coin.globalPrice;
     const sellKrw = sellUsd * usdKrw;
     grossProfit = sellKrw - investmentKrw;
     exchangeFeeKr = investmentKrw * krFeeRate;

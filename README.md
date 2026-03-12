@@ -1,11 +1,11 @@
 # 김치프리미엄 트래커 + 텔레그램 알림 봇
 
-실시간 김치프리미엄, 바이낸스 펀딩비, 공포탐욕지수를 한눈에 보고, 텔레그램으로 알림을 받을 수 있는 대시보드입니다.
+실시간 김치프리미엄, Bybit 펀딩비, 공포탐욕지수를 한눈에 보고, 텔레그램으로 알림을 받을 수 있는 대시보드입니다.
 
 ## 주요 기능
 
-- **실시간 김프**: 업비트 BTC/KRW vs 바이낸스 BTC/USDT + 환율 기반 계산
-- **펀딩비**: 바이낸스 BTCUSDT 무기한 펀딩비
+- **실시간 김프**: 업비트 BTC/KRW vs 해외 BTC/USDT + 환율 기반 계산
+- **펀딩비**: Bybit BTCUSDT 무기한 펀딩비
 - **공포탐욕지수**: alternative.me API
 - **복합 시그널**: 김프 + 펀딩비 + 공포탐욕 조합 → 과열 / 중립 / 침체
 - **텔레그램 봇**: 김프 조회, 임계값 알림 설정
@@ -81,7 +81,7 @@ https://api.telegram.org/bot{YOUR_BOT_TOKEN}/getWebhookInfo
 ## 김프 계산식
 
 ```
-김프(%) = ((업비트_KRW / (바이낸스_USDT × USD_KRW환율)) - 1) × 100
+김프(%) = ((업비트_KRW / (해외_USDT × USD_KRW환율)) - 1) × 100
 ```
 
 ## 데이터 소스
@@ -89,10 +89,10 @@ https://api.telegram.org/bot{YOUR_BOT_TOKEN}/getWebhookInfo
 | 데이터 | API |
 |--------|-----|
 | 업비트 BTC/KRW | `api.upbit.com/v1/ticker` |
-| 바이낸스 BTC/USDT | `api.binance.com/api/v3/ticker/price` |
+| Bybit BTC/USDT | `api.bybit.com/v5/market/tickers?category=spot&symbol=BTCUSDT` |
 | USD/KRW 환율 | `open.er-api.com/v6/latest/USD` |
 | 공포탐욕지수 | `api.alternative.me/fng/` |
-| 펀딩비 | `fapi.binance.com/fapi/v1/premiumIndex` |
+| 펀딩비 | `api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT` |
 
 ## 기술 스택
 

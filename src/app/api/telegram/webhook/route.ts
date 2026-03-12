@@ -42,7 +42,7 @@ async function handleCommand(chatId: number, text: string): Promise<void> {
       const msg = formatKimpMessage(
         data.kimchiPremium,
         data.upbitPrice,
-        data.binancePrice,
+        data.globalPrice,
         data.usdKrw
       );
       await sendTelegramMessage(chatId, msg);

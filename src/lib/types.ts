@@ -1,6 +1,6 @@
 export interface KimpData {
   upbitPrice: number;
-  binancePrice: number;
+  globalPrice: number;
   usdKrw: number;
   kimchiPremium: number;
   timestamp: string;
@@ -43,7 +43,7 @@ export interface CoinPremium {
   symbol: string;
   name: string;
   upbitPrice: number;
-  binancePrice: number;
+  globalPrice: number;
   premium: number;
 }
 

@@ -37,8 +37,8 @@ export default function KimpCard({ kimp, avg30d }: KimpCardProps) {
           <p className="text-gray-200 font-mono">{kimp.upbitPrice.toLocaleString()}원</p>
         </div>
         <div>
-          <p className="text-gray-500">바이낸스 BTC</p>
-          <p className="text-gray-200 font-mono">${kimp.binancePrice.toLocaleString()}</p>
+          <p className="text-gray-500">해외 BTC</p>
+          <p className="text-gray-200 font-mono">${kimp.globalPrice.toLocaleString()}</p>
         </div>
         <div>
           <p className="text-gray-500">환율</p>

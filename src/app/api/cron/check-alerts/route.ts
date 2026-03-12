@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     const msg = formatKimpMessage(
       kimp.kimchiPremium,
       kimp.upbitPrice,
-      kimp.binancePrice,
+      kimp.globalPrice,
       kimp.usdKrw
     );
 

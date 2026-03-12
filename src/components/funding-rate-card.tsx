@@ -18,7 +18,7 @@ export default function FundingRateCard({ data }: FundingRateCardProps) {
 
   return (
     <div className="rounded-2xl bg-gray-900 border border-gray-800 p-6">
-      <h2 className="text-sm font-medium text-gray-400 mb-2">펀딩비 (BTCUSDT)</h2>
+      <h2 className="text-sm font-medium text-gray-400 mb-2">펀딩비 (Bybit BTCUSDT)</h2>
       <p className={`text-3xl font-bold ${color}`}>
         {isPositive ? '+' : ''}{ratePercent}%
       </p>
