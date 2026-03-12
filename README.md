@@ -29,6 +29,8 @@ npm run dev
 | `TELEGRAM_WEBHOOK_SECRET` | 웹훅 인증 시크릿 | 선택 |
 | `KV_REST_API_URL` | Vercel KV URL | 알림 기능 사용 시 |
 | `KV_REST_API_TOKEN` | Vercel KV 토큰 | 알림 기능 사용 시 |
+| `SUPABASE_URL` | Supabase 프로젝트 URL | 김프 히스토리 사용 시 |
+| `SUPABASE_SERVICE_KEY` | Supabase service role key | 김프 히스토리 사용 시 |
 | `CRON_SECRET` | 스케줄 호출 인증 시크릿 | 외부 스케줄러 사용 시 |
 
 ## 텔레그램 봇 설정
@@ -74,9 +76,20 @@ https://api.telegram.org/bot{YOUR_BOT_TOKEN}/getWebhookInfo
 2. Storage 탭에서 KV 스토어를 생성합니다.
 3. 환경변수(`KV_REST_API_URL`, `KV_REST_API_TOKEN`)가 자동으로 연결됩니다.
 
+## Supabase 설정
+
+김프 히스토리를 새로고침 후에도 유지하려면 Supabase가 필요합니다.
+
+1. Supabase 프로젝트를 생성합니다.
+2. `supabase/migrations/001_kimp_history.sql`을 실행해 `kimp_history` 테이블을 만듭니다.
+3. `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`를 앱 환경변수에 설정합니다.
+4. 필요하면 외부 스케줄러에서 10분마다 `/api/cron/collect-kimp`를 호출합니다.
+
 ## 알림 스케줄링
 
 자동 알림 체크는 현재 Vercel Cron을 사용하지 않습니다. 필요하면 외부 스케줄러에서 `/api/cron/check-alerts`를 호출하고 `Authorization: Bearer {CRON_SECRET}` 헤더를 함께 보내면 됩니다.
+
+김프 히스토리를 방문 여부와 무관하게 채우려면 같은 방식으로 `/api/cron/collect-kimp`를 10분 간격으로 호출하면 됩니다.
 
 ## 김프 계산식
 
@@ -99,4 +112,5 @@ https://api.telegram.org/bot{YOUR_BOT_TOKEN}/getWebhookInfo
 - Next.js 14 (App Router)
 - Tailwind CSS
 - Vercel KV (Redis)
+- Supabase
 - Telegram Bot API

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getKimpData } from '@/lib/kimp';
+import { isAuthorizedCronRequest } from '@/lib/cron-auth';
 import { sendTelegramMessage, formatKimpMessage } from '@/lib/telegram';
 import { getAllAlertUsers } from '@/lib/kv';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  // Scheduled request authentication
-  const authHeader = req.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

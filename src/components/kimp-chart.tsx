@@ -1,14 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-
-interface DataPoint {
-  time: string;
-  value: number;
-}
+import type { KimpHistoryPoint } from '@/lib/types';
 
 interface KimpChartProps {
-  data: DataPoint[];
+  data: KimpHistoryPoint[];
 }
 
 type Period = '7d' | '30d';
@@ -18,27 +14,27 @@ export default function KimpChart({ data }: KimpChartProps) {
 
   const now = Date.now();
   const cutoff = period === '7d' ? now - 7 * 86400_000 : now - 30 * 86400_000;
-  const filtered = data.filter(d => new Date(d.time).getTime() >= cutoff);
+  const filtered = data.filter((point) => new Date(point.collectedAt).getTime() >= cutoff);
 
   if (filtered.length < 2) {
     return (
       <div className="rounded-2xl bg-gray-900 border border-gray-800 p-6">
         <h2 className="text-sm font-medium text-gray-400 mb-4">김프 히스토리</h2>
-        <p className="text-gray-500 text-sm">데이터 수집 중... 차트가 곧 표시됩니다.</p>
+        <p className="text-gray-500 text-sm">데이터 수집 중... 저장된 히스토리가 쌓이면 표시됩니다.</p>
       </div>
     );
   }
 
-  const values = filtered.map(d => d.value);
+  const values = filtered.map((point) => point.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
 
   const chartHeight = 120;
   const chartWidth = 100; // percent
-  const points = filtered.map((d, i) => {
+  const points = filtered.map((point, i) => {
     const x = (i / (filtered.length - 1)) * chartWidth;
-    const y = chartHeight - ((d.value - min) / range) * chartHeight;
+    const y = chartHeight - ((point.value - min) / range) * chartHeight;
     return `${x},${y}`;
   }).join(' ');
 

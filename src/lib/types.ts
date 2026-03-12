@@ -6,6 +6,11 @@ export interface KimpData {
   timestamp: string;
 }
 
+export interface KimpHistoryPoint {
+  collectedAt: string;
+  value: number;
+}
+
 export interface FundingRateData {
   symbol: string;
   fundingRate: number;
@@ -36,6 +41,7 @@ export interface DashboardData {
   fearGreed: FearGreedData;
   signal: CompositeSignal;
   avg30d: number | null;
+  history: KimpHistoryPoint[];
 }
 
 // 멀티코인 김프 히트맵

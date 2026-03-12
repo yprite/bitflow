@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getKimpData, fetchFundingRate, fetchFearGreed, getCompositeSignal } from '@/lib/kimp';
+import { loadKimpHistorySnapshot } from '@/lib/kimp-history';
 import type { DashboardData } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +18,7 @@ export async function GET() {
     }
 
     const kimp = kimpResult.value;
+    const { history, avg30d } = await loadKimpHistorySnapshot(kimp);
     const fundingRate = fundingRateResult.status === 'fulfilled'
       ? fundingRateResult.value
       : {
@@ -43,7 +45,8 @@ export async function GET() {
       fundingRate,
       fearGreed,
       signal,
-      avg30d: null, // TODO: 30일 평균은 히스토리 데이터 축적 후 구현
+      avg30d,
+      history,
     };
 
     return NextResponse.json(data);

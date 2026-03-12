@@ -8,18 +8,13 @@ import SignalBadge from './signal-badge';
 import KimpChart from './kimp-chart';
 import PremiumHeatmap from './premium-heatmap';
 import ArbitrageCalculator from './arbitrage-calculator';
-import type { DashboardData, MultiCoinKimpData, CoinPremium } from '@/lib/types';
-
-interface HistoryPoint {
-  time: string;
-  value: number;
-}
+import type { DashboardData, MultiCoinKimpData, CoinPremium, KimpHistoryPoint } from '@/lib/types';
 
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [multiCoinData, setMultiCoinData] = useState<MultiCoinKimpData | null>(null);
   const [selectedCoin, setSelectedCoin] = useState<CoinPremium | null>(null);
-  const [history, setHistory] = useState<HistoryPoint[]>([]);
+  const [sessionHistory, setSessionHistory] = useState<KimpHistoryPoint[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string>('');
@@ -42,12 +37,16 @@ export default function Dashboard() {
 
       setError(null);
       setLastUpdated(new Date().toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul' }));
+      setSessionHistory((prev) => {
+        if (json.history.length > 0) {
+          return prev;
+        }
 
-      // 히스토리에 추가
-      setHistory(prev => [
-        ...prev,
-        { time: new Date().toISOString(), value: json.kimp.kimchiPremium },
-      ].slice(-4320)); // 최대 30일 (1분 간격 기준)
+        return [
+          ...prev,
+          { collectedAt: new Date().toISOString(), value: json.kimp.kimchiPremium },
+        ].slice(-4320);
+      });
     } catch (err) {
       setError('데이터를 불러올 수 없습니다.');
       console.error(err);
@@ -86,6 +85,8 @@ export default function Dashboard() {
     );
   }
 
+  const chartData = data.history.length > 0 ? data.history : sessionHistory;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -106,7 +107,7 @@ export default function Dashboard() {
         <SignalBadge signal={data.signal} />
       </div>
 
-      <KimpChart data={history} />
+      <KimpChart data={chartData} />
 
       {multiCoinData && (
         <>
