@@ -9,22 +9,39 @@ interface FundingRateCardProps {
 export default function FundingRateCard({ data }: FundingRateCardProps) {
   const ratePercent = (data.fundingRate * 100).toFixed(4);
   const isPositive = data.fundingRate >= 0;
-  const color = isPositive ? 'text-green-400' : 'text-red-400';
+  const color = isPositive ? 'text-dot-green' : 'text-dot-red';
   const nextTime = new Date(data.nextFundingTime).toLocaleString('ko-KR', {
     timeZone: 'Asia/Seoul',
     hour: '2-digit',
     minute: '2-digit',
   });
 
+  const dotCount = Math.min(Math.round(Math.abs(data.fundingRate) * 100 * 50), 8);
+
   return (
-    <div className="rounded-2xl bg-gray-900 border border-gray-800 p-6">
-      <h2 className="text-sm font-medium text-gray-400 mb-2">펀딩비 (BTCUSDT)</h2>
-      <p className={`text-3xl font-bold ${color}`}>
-        {isPositive ? '+' : ''}{ratePercent}%
-      </p>
-      <p className="text-xs text-gray-500 mt-2">
-        다음 정산: {nextTime}
-      </p>
+    <div className="dot-card p-5">
+      <div className="dot-card-inner">
+        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3">펀딩비 (BTCUSDT)</h2>
+        <p className={`text-2xl font-bold font-mono ${color}`}>
+          {isPositive ? '+' : ''}{ratePercent}%
+        </p>
+        <div className="flex gap-1 mt-2 mb-3">
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="w-2 h-2 rounded-full"
+              style={{
+                backgroundColor: i < dotCount
+                  ? isPositive ? '#00c853' : '#e53935'
+                  : '#e5e7eb',
+              }}
+            />
+          ))}
+        </div>
+        <p className="text-xs text-dot-muted font-mono">
+          다음 정산: {nextTime}
+        </p>
+      </div>
     </div>
   );
 }

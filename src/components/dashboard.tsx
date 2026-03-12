@@ -57,14 +57,28 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 60_000); // 1분마다 갱신
+    const interval = setInterval(fetchData, 60_000);
     return () => clearInterval(interval);
   }, []);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-gray-500 text-lg">데이터 로딩 중...</div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex gap-2">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="w-3 h-3 rounded-full bg-dot-accent"
+                style={{
+                  opacity: 0.2 + (i * 0.2),
+                  animation: `pulse 1.5s ease-in-out ${i * 0.15}s infinite`,
+                }}
+              />
+            ))}
+          </div>
+          <p className="text-dot-sub text-sm">데이터 로딩 중...</p>
+        </div>
       </div>
     );
   }
@@ -73,10 +87,10 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <p className="text-red-400 text-lg mb-2">{error}</p>
+          <p className="text-dot-red text-lg mb-2">{error}</p>
           <button
             onClick={fetchData}
-            className="text-sm text-gray-400 hover:text-white transition px-4 py-2 rounded-lg border border-gray-700"
+            className="text-sm text-dot-sub hover:text-dot-accent transition px-4 py-2 border-2 border-dot-border hover:border-dot-accent"
           >
             다시 시도
           </button>
@@ -88,14 +102,14 @@ export default function Dashboard() {
   const chartData = data.history.length > 0 ? data.history : sessionHistory;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-gray-600">마지막 업데이트: {lastUpdated}</p>
+        <p className="text-xs text-dot-muted font-mono">마지막 업데이트: {lastUpdated}</p>
         <button
           onClick={fetchData}
-          className="text-xs text-gray-500 hover:text-gray-300 transition"
+          className="text-xs text-dot-muted hover:text-dot-accent transition font-mono"
         >
-          새로고침
+          [ 새로고침 ]
         </button>
       </div>
 

@@ -6,20 +6,12 @@ interface FearGreedCardProps {
   data: FearGreedData;
 }
 
-function getGaugeColor(value: number): string {
-  if (value <= 25) return 'text-red-400';
-  if (value <= 45) return 'text-orange-400';
-  if (value <= 55) return 'text-yellow-400';
-  if (value <= 75) return 'text-lime-400';
-  return 'text-green-400';
-}
-
-function getBarColor(value: number): string {
-  if (value <= 25) return 'bg-red-500';
-  if (value <= 45) return 'bg-orange-500';
-  if (value <= 55) return 'bg-yellow-500';
-  if (value <= 75) return 'bg-lime-500';
-  return 'bg-green-500';
+function getColor(value: number): string {
+  if (value <= 25) return '#e53935';
+  if (value <= 45) return '#f9a825';
+  if (value <= 55) return '#9ca3af';
+  if (value <= 75) return '#66bb6a';
+  return '#00c853';
 }
 
 const CLASSIFICATION_KR: Record<string, string> = {
@@ -31,22 +23,36 @@ const CLASSIFICATION_KR: Record<string, string> = {
 };
 
 export default function FearGreedCard({ data }: FearGreedCardProps) {
-  const color = getGaugeColor(data.value);
-  const barColor = getBarColor(data.value);
+  const color = getColor(data.value);
   const label = CLASSIFICATION_KR[data.classification] || data.classification;
+  const totalDots = 10;
+  const activeDots = Math.round((data.value / 100) * totalDots);
 
   return (
-    <div className="rounded-2xl bg-gray-900 border border-gray-800 p-6">
-      <h2 className="text-sm font-medium text-gray-400 mb-2">공포탐욕지수</h2>
-      <div className="flex items-baseline gap-3">
-        <p className={`text-3xl font-bold ${color}`}>{data.value}</p>
-        <p className={`text-sm ${color}`}>{label}</p>
-      </div>
-      <div className="mt-3 w-full h-2 bg-gray-800 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${barColor}`}
-          style={{ width: `${data.value}%` }}
-        />
+    <div className="dot-card p-5">
+      <div className="dot-card-inner">
+        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3">공포탐욕지수</h2>
+        <div className="flex items-baseline gap-3">
+          <p className="text-2xl font-bold font-mono" style={{ color }}>{data.value}</p>
+          <p className="text-xs font-medium" style={{ color }}>{label}</p>
+        </div>
+        <div className="flex gap-[4px] mt-3">
+          {[...Array(totalDots)].map((_, i) => {
+            const dotActive = i < activeDots;
+            const dotSize = dotActive ? 10 + Math.round((i / totalDots) * 6) : 6;
+            return (
+              <div
+                key={i}
+                className="rounded-full transition-all duration-300"
+                style={{
+                  width: `${dotSize}px`,
+                  height: `${dotSize}px`,
+                  backgroundColor: dotActive ? color : '#e5e7eb',
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
     </div>
   );
