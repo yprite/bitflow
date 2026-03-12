@@ -6,7 +6,9 @@ import FundingRateCard from './funding-rate-card';
 import FearGreedCard from './fear-greed-card';
 import SignalBadge from './signal-badge';
 import KimpChart from './kimp-chart';
-import type { DashboardData } from '@/lib/types';
+import PremiumHeatmap from './premium-heatmap';
+import ArbitrageCalculator from './arbitrage-calculator';
+import type { DashboardData, MultiCoinKimpData, CoinPremium } from '@/lib/types';
 
 interface HistoryPoint {
   time: string;
@@ -15,6 +17,8 @@ interface HistoryPoint {
 
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [multiCoinData, setMultiCoinData] = useState<MultiCoinKimpData | null>(null);
+  const [selectedCoin, setSelectedCoin] = useState<CoinPremium | null>(null);
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,10 +26,20 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch('/api/kimp');
-      if (!res.ok) throw new Error('API 오류');
-      const json: DashboardData = await res.json();
+      const [kimpRes, multiRes] = await Promise.all([
+        fetch('/api/kimp'),
+        fetch('/api/multi-kimp'),
+      ]);
+
+      if (!kimpRes.ok) throw new Error('API 오류');
+      const json: DashboardData = await kimpRes.json();
       setData(json);
+
+      if (multiRes.ok) {
+        const multiJson: MultiCoinKimpData = await multiRes.json();
+        setMultiCoinData(multiJson);
+      }
+
       setError(null);
       setLastUpdated(new Date().toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul' }));
 
@@ -93,6 +107,13 @@ export default function Dashboard() {
       </div>
 
       <KimpChart data={history} />
+
+      {multiCoinData && (
+        <>
+          <PremiumHeatmap data={multiCoinData} onSelectCoin={setSelectedCoin} />
+          <ArbitrageCalculator data={multiCoinData} selectedCoin={selectedCoin} />
+        </>
+      )}
     </div>
   );
 }
