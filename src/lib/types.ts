@@ -45,6 +45,8 @@ export interface CoinPremium {
   upbitPrice: number;
   globalPrice: number;
   premium: number;
+  marketCap: number | null;
+  marketCapRank: number;
 }
 
 export interface MultiCoinKimpData {

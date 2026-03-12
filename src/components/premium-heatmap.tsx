@@ -8,7 +8,7 @@ interface PremiumHeatmapProps {
   onSelectCoin?: (coin: CoinPremium) => void;
 }
 
-type SortKey = 'premium' | 'symbol' | 'volume';
+type SortKey = 'premium' | 'marketCap' | 'symbol';
 
 function getPremiumColor(premium: number): string {
   const abs = Math.abs(premium);
@@ -34,6 +34,7 @@ export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapPro
 
   const sorted = [...data.coins].sort((a, b) => {
     if (sortKey === 'premium') return b.premium - a.premium;
+    if (sortKey === 'marketCap') return a.marketCapRank - b.marketCapRank;
     if (sortKey === 'symbol') return a.symbol.localeCompare(b.symbol);
     return b.premium - a.premium; // default
   });
@@ -54,8 +55,8 @@ export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapPro
             평균 {avgPremium >= 0 ? '+' : ''}{avgPremium.toFixed(2)}% · 최고 {maxPremium >= 0 ? '+' : ''}{maxPremium.toFixed(2)}% · 최저 {minPremium >= 0 ? '+' : ''}{minPremium.toFixed(2)}%
           </p>
         </div>
-        <div className="flex gap-1">
-          {(['premium', 'symbol'] as SortKey[]).map(key => (
+        <div className="flex flex-wrap justify-end gap-1">
+          {(['premium', 'marketCap', 'symbol'] as SortKey[]).map(key => (
             <button
               key={key}
               onClick={() => setSortKey(key)}
@@ -65,7 +66,7 @@ export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapPro
                   : 'text-gray-500 hover:text-gray-300'
               }`}
             >
-              {key === 'premium' ? '김프순' : '이름순'}
+              {key === 'premium' ? '김프순' : key === 'marketCap' ? '시총순' : '이름순'}
             </button>
           ))}
         </div>
@@ -84,6 +85,7 @@ export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapPro
               {coin.premium >= 0 ? '+' : ''}{coin.premium.toFixed(2)}%
             </p>
             <p className="text-[10px] opacity-60">{coin.name}</p>
+            <p className="text-[10px] opacity-50">시총 #{coin.marketCapRank}</p>
           </button>
         ))}
       </div>

@@ -7,6 +7,12 @@ interface OkxResponse<T> {
 }
 
 type CoinGeckoSimplePriceResponse = Record<string, { usd?: number }>;
+type CoinGeckoMarketsResponse = Array<{
+  id: string;
+  current_price: number;
+  market_cap: number | null;
+  market_cap_rank: number | null;
+}>;
 
 function assertOkxOk<T>(payload: OkxResponse<T>, label: string): T[] {
   if (payload.code !== '0') {
@@ -41,6 +47,36 @@ async function fetchCoinGeckoUsdPrices(ids: string[]): Promise<Record<string, nu
   }
 
   return prices;
+}
+
+async function fetchCoinGeckoMarkets(ids: string[]) {
+  const res = await fetch(
+    `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids.join(',')}&order=market_cap_desc&per_page=${ids.length}&page=1&sparkline=false`,
+    {
+      next: { revalidate: 30 },
+      headers: { 'User-Agent': 'bitflow/1.0' },
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(`CoinGecko markets API error: ${res.status}`);
+  }
+
+  const data = await res.json() as CoinGeckoMarketsResponse;
+  if (data.length === 0) {
+    throw new Error('CoinGecko markets API returned no data');
+  }
+
+  return new Map(
+    data.map((entry) => [
+      entry.id,
+      {
+        price: entry.current_price,
+        marketCap: entry.market_cap,
+        marketCapRank: entry.market_cap_rank,
+      },
+    ])
+  );
 }
 
 async function fetchCoinbaseBtcPrice(): Promise<number> {
@@ -208,16 +244,16 @@ export async function getKimpData(): Promise<KimpData> {
 
 // 멀티코인 김프 데이터
 const TRACKED_COINS = [
-  { symbol: 'BTC', upbit: 'KRW-BTC', global: 'BTC-USDT', gecko: 'bitcoin', name: '비트코인' },
-  { symbol: 'ETH', upbit: 'KRW-ETH', global: 'ETH-USDT', gecko: 'ethereum', name: '이더리움' },
-  { symbol: 'XRP', upbit: 'KRW-XRP', global: 'XRP-USDT', gecko: 'ripple', name: '리플' },
-  { symbol: 'SOL', upbit: 'KRW-SOL', global: 'SOL-USDT', gecko: 'solana', name: '솔라나' },
-  { symbol: 'DOGE', upbit: 'KRW-DOGE', global: 'DOGE-USDT', gecko: 'dogecoin', name: '도지코인' },
-  { symbol: 'ADA', upbit: 'KRW-ADA', global: 'ADA-USDT', gecko: 'cardano', name: '에이다' },
-  { symbol: 'AVAX', upbit: 'KRW-AVAX', global: 'AVAX-USDT', gecko: 'avalanche-2', name: '아발란체' },
-  { symbol: 'DOT', upbit: 'KRW-DOT', global: 'DOT-USDT', gecko: 'polkadot', name: '폴카닷' },
-  { symbol: 'LINK', upbit: 'KRW-LINK', global: 'LINK-USDT', gecko: 'chainlink', name: '체인링크' },
-  { symbol: 'POL', upbit: 'KRW-POL', global: 'POL-USDT', gecko: 'polygon-ecosystem-token', name: '폴리곤' },
+  { symbol: 'BTC', upbit: 'KRW-BTC', global: 'BTC-USDT', gecko: 'bitcoin', name: '비트코인', marketCapRank: 1 },
+  { symbol: 'ETH', upbit: 'KRW-ETH', global: 'ETH-USDT', gecko: 'ethereum', name: '이더리움', marketCapRank: 2 },
+  { symbol: 'XRP', upbit: 'KRW-XRP', global: 'XRP-USDT', gecko: 'ripple', name: '리플', marketCapRank: 5 },
+  { symbol: 'SOL', upbit: 'KRW-SOL', global: 'SOL-USDT', gecko: 'solana', name: '솔라나', marketCapRank: 7 },
+  { symbol: 'DOGE', upbit: 'KRW-DOGE', global: 'DOGE-USDT', gecko: 'dogecoin', name: '도지코인', marketCapRank: 10 },
+  { symbol: 'ADA', upbit: 'KRW-ADA', global: 'ADA-USDT', gecko: 'cardano', name: '에이다', marketCapRank: 13 },
+  { symbol: 'AVAX', upbit: 'KRW-AVAX', global: 'AVAX-USDT', gecko: 'avalanche-2', name: '아발란체', marketCapRank: 26 },
+  { symbol: 'DOT', upbit: 'KRW-DOT', global: 'DOT-USDT', gecko: 'polkadot', name: '폴카닷', marketCapRank: 38 },
+  { symbol: 'LINK', upbit: 'KRW-LINK', global: 'LINK-USDT', gecko: 'chainlink', name: '체인링크', marketCapRank: 18 },
+  { symbol: 'POL', upbit: 'KRW-POL', global: 'POL-USDT', gecko: 'polygon-ecosystem-token', name: '폴리곤', marketCapRank: 66 },
 ];
 
 export { TRACKED_COINS };
@@ -240,21 +276,37 @@ export async function fetchMultiCoinKimp(): Promise<MultiCoinKimpData> {
   const upbitMap = new Map(upbitData.map(d => [d.market, d.trade_price]));
 
   let globalMap = new Map<string, number>();
+  let marketDataMap = new Map<string, { price: number; marketCap: number | null; marketCapRank: number | null }>();
   try {
-    const prices = await fetchCoinGeckoUsdPrices(coinIds);
-    globalMap = new Map(TRACKED_COINS.map((coin) => [coin.global, prices[coin.gecko]]).filter((entry): entry is [string, number] => typeof entry[1] === 'number'));
+    marketDataMap = await fetchCoinGeckoMarkets(coinIds);
+    globalMap = new Map(
+      TRACKED_COINS
+        .map((coin) => [coin.global, marketDataMap.get(coin.gecko)?.price])
+        .filter((entry): entry is [string, number] => typeof entry[1] === 'number')
+    );
   } catch (error) {
-    console.error('CoinGecko multi price failed:', error);
+    console.error('CoinGecko markets failed:', error);
 
-    const okxRes = await fetch('https://www.okx.com/api/v5/market/tickers?instType=SPOT', {
-      next: { revalidate: 30 },
-      headers: { 'User-Agent': 'bitflow/1.0' },
-    });
-    if (!okxRes.ok) throw new Error(`OKX multi API error: ${okxRes.status}`);
+    try {
+      const prices = await fetchCoinGeckoUsdPrices(coinIds);
+      globalMap = new Map(
+        TRACKED_COINS
+          .map((coin) => [coin.global, prices[coin.gecko]])
+          .filter((entry): entry is [string, number] => typeof entry[1] === 'number')
+      );
+    } catch (priceError) {
+      console.error('CoinGecko multi price failed:', priceError);
 
-    const okxPayload = await okxRes.json() as OkxResponse<{ instId: string; last: string }>;
-    const okxData = assertOkxOk(okxPayload, 'OKX multi API');
-    globalMap = new Map(okxData.map((d) => [d.instId, parseFloat(d.last)]));
+      const okxRes = await fetch('https://www.okx.com/api/v5/market/tickers?instType=SPOT', {
+        next: { revalidate: 30 },
+        headers: { 'User-Agent': 'bitflow/1.0' },
+      });
+      if (!okxRes.ok) throw new Error(`OKX multi API error: ${okxRes.status}`);
+
+      const okxPayload = await okxRes.json() as OkxResponse<{ instId: string; last: string }>;
+      const okxData = assertOkxOk(okxPayload, 'OKX multi API');
+      globalMap = new Map(okxData.map((d) => [d.instId, parseFloat(d.last)]));
+    }
   }
 
   const coins: CoinPremium[] = TRACKED_COINS
@@ -264,12 +316,15 @@ export async function fetchMultiCoinKimp(): Promise<MultiCoinKimpData> {
       if (!upbitPrice || !globalPrice) return null;
 
       const premium = calculateKimchiPremium(upbitPrice, globalPrice, usdKrw);
+      const marketData = marketDataMap.get(coin.gecko);
       return {
         symbol: coin.symbol,
         name: coin.name,
         upbitPrice,
         globalPrice,
         premium,
+        marketCap: marketData?.marketCap ?? null,
+        marketCapRank: marketData?.marketCapRank ?? coin.marketCapRank,
       };
     })
     .filter((c): c is CoinPremium => c !== null);
