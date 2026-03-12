@@ -27,6 +27,10 @@ function formatAxisLabel(timestamp: string): string {
   return axisLabelFormatter.format(new Date(timestamp)).replace(/\s/g, '');
 }
 
+function formatPercentLabel(value: number): string {
+  return `${value.toFixed(2)}%`;
+}
+
 export default function KimpChart({ data }: KimpChartProps) {
   const [period, setPeriod] = useState<Period>('7d');
 
@@ -50,11 +54,13 @@ export default function KimpChart({ data }: KimpChartProps) {
 
   const chartHeight = 120;
   const chartWidth = 100; // percent
+  const guideLines = [0, chartHeight / 2, chartHeight];
   const points = filtered.map((point, i) => {
     const x = (i / (filtered.length - 1)) * chartWidth;
     const y = chartHeight - ((point.value - min) / range) * chartHeight;
     return `${x},${y}`;
   }).join(' ');
+  const yAxisLabels = [max, min + range / 2, min].map((value) => formatPercentLabel(value));
   const axisLabels = [
     filtered[0],
     filtered[Math.floor((filtered.length - 1) / 2)],
@@ -81,27 +87,45 @@ export default function KimpChart({ data }: KimpChartProps) {
           ))}
         </div>
       </div>
-      <svg
-        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-        className="w-full h-32"
-        preserveAspectRatio="none"
-      >
-        <polyline
-          points={points}
-          fill="none"
-          stroke="#4ade80"
-          strokeWidth="1.5"
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
-      <div className="flex justify-between text-xs text-gray-600 mt-1">
-        <span>{min.toFixed(2)}%</span>
-        <span>{max.toFixed(2)}%</span>
-      </div>
-      <div className="flex justify-between text-[11px] text-gray-500 mt-2 font-mono">
-        <span>{axisLabels[0]}</span>
-        <span>{axisLabels[1]}</span>
-        <span>{axisLabels[2]}</span>
+      <div className="flex gap-3">
+        <div className="shrink-0 h-32 flex flex-col justify-between text-[11px] text-gray-500 font-mono text-right">
+          {yAxisLabels.map((label) => (
+            <span key={label}>{label}</span>
+          ))}
+        </div>
+        <div className="flex-1 min-w-0">
+          <svg
+            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+            className="w-full h-32"
+            preserveAspectRatio="none"
+          >
+            {guideLines.map((y) => (
+              <line
+                key={y}
+                x1="0"
+                y1={y}
+                x2={chartWidth}
+                y2={y}
+                stroke="#374151"
+                strokeWidth="0.6"
+                strokeDasharray="2 2"
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+            <polyline
+              points={points}
+              fill="none"
+              stroke="#4ade80"
+              strokeWidth="1.5"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+          <div className="flex justify-between text-[11px] text-gray-500 mt-2 font-mono">
+            <span>{axisLabels[0]}</span>
+            <span>{axisLabels[1]}</span>
+            <span>{axisLabels[2]}</span>
+          </div>
+        </div>
       </div>
     </div>
   );
