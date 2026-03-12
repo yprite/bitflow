@@ -29,7 +29,7 @@ npm run dev
 | `TELEGRAM_WEBHOOK_SECRET` | 웹훅 인증 시크릿 | 선택 |
 | `KV_REST_API_URL` | Vercel KV URL | 알림 기능 사용 시 |
 | `KV_REST_API_TOKEN` | Vercel KV 토큰 | 알림 기능 사용 시 |
-| `CRON_SECRET` | Cron Job 인증 시크릿 | Vercel 배포 시 |
+| `CRON_SECRET` | 스케줄 호출 인증 시크릿 | 외부 스케줄러 사용 시 |
 
 ## 텔레그램 봇 설정
 
@@ -74,6 +74,10 @@ https://api.telegram.org/bot{YOUR_BOT_TOKEN}/getWebhookInfo
 2. Storage 탭에서 KV 스토어를 생성합니다.
 3. 환경변수(`KV_REST_API_URL`, `KV_REST_API_TOKEN`)가 자동으로 연결됩니다.
 
+## 알림 스케줄링
+
+자동 알림 체크는 현재 Vercel Cron을 사용하지 않습니다. 필요하면 외부 스케줄러에서 `/api/cron/check-alerts`를 호출하고 `Authorization: Bearer {CRON_SECRET}` 헤더를 함께 보내면 됩니다.
+
 ## 김프 계산식
 
 ```
@@ -95,5 +99,4 @@ https://api.telegram.org/bot{YOUR_BOT_TOKEN}/getWebhookInfo
 - Next.js 14 (App Router)
 - Tailwind CSS
 - Vercel KV (Redis)
-- Vercel Cron Jobs
 - Telegram Bot API
