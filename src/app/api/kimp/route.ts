@@ -6,11 +6,31 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const [kimp, fundingRate, fearGreed] = await Promise.all([
+    const [kimpResult, fundingRateResult, fearGreedResult] = await Promise.allSettled([
       getKimpData(),
       fetchFundingRate(),
       fetchFearGreed(),
     ]);
+
+    if (kimpResult.status !== 'fulfilled') {
+      throw kimpResult.reason;
+    }
+
+    const kimp = kimpResult.value;
+    const fundingRate = fundingRateResult.status === 'fulfilled'
+      ? fundingRateResult.value
+      : {
+          symbol: 'BTCUSDT',
+          fundingRate: 0,
+          nextFundingTime: Date.now() + 8 * 60 * 60 * 1000,
+        };
+    const fearGreed = fearGreedResult.status === 'fulfilled'
+      ? fearGreedResult.value
+      : {
+          value: 50,
+          classification: 'Neutral',
+          timestamp: new Date().toISOString(),
+        };
 
     const signal = getCompositeSignal(
       kimp.kimchiPremium,

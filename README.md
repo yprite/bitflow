@@ -1,11 +1,11 @@
 # 김치프리미엄 트래커 + 텔레그램 알림 봇
 
-실시간 김치프리미엄, Bybit 펀딩비, 공포탐욕지수를 한눈에 보고, 텔레그램으로 알림을 받을 수 있는 대시보드입니다.
+실시간 김치프리미엄, 해외 선물 펀딩비, 공포탐욕지수를 한눈에 보고, 텔레그램으로 알림을 받을 수 있는 대시보드입니다.
 
 ## 주요 기능
 
 - **실시간 김프**: 업비트 BTC/KRW vs 해외 BTC/USDT + 환율 기반 계산
-- **펀딩비**: Bybit BTCUSDT 무기한 펀딩비
+- **펀딩비**: BTCUSDT 무기한 펀딩비
 - **공포탐욕지수**: alternative.me API
 - **복합 시그널**: 김프 + 펀딩비 + 공포탐욕 조합 → 과열 / 중립 / 침체
 - **텔레그램 봇**: 김프 조회, 임계값 알림 설정
@@ -89,10 +89,10 @@ https://api.telegram.org/bot{YOUR_BOT_TOKEN}/getWebhookInfo
 | 데이터 | API |
 |--------|-----|
 | 업비트 BTC/KRW | `api.upbit.com/v1/ticker` |
-| Bybit BTC/USDT | `api.bybit.com/v5/market/tickers?category=spot&symbol=BTCUSDT` |
+| 해외 BTC/USDT | `api.coingecko.com/api/v3/simple/price` |
 | USD/KRW 환율 | `open.er-api.com/v6/latest/USD` |
 | 공포탐욕지수 | `api.alternative.me/fng/` |
-| 펀딩비 | `api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT` |
+| 펀딩비 | `www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP` |
 
 ## 기술 스택
 

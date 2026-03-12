@@ -1,24 +1,122 @@
 import { KimpData, FundingRateData, FearGreedData, CompositeSignal, CoinPremium, MultiCoinKimpData, ArbitrageResult } from './types';
 
-interface BybitTickerResponse<T> {
-  retCode: number;
-  retMsg: string;
-  result?: {
-    list?: T[];
-  };
+interface OkxResponse<T> {
+  code: string;
+  msg: string;
+  data?: T[];
 }
 
-function assertBybitOk<T>(payload: BybitTickerResponse<T>, label: string): T[] {
-  if (payload.retCode !== 0) {
-    throw new Error(`${label} error: ${payload.retCode} ${payload.retMsg}`);
+type CoinGeckoSimplePriceResponse = Record<string, { usd?: number }>;
+
+function assertOkxOk<T>(payload: OkxResponse<T>, label: string): T[] {
+  if (payload.code !== '0') {
+    throw new Error(`${label} error: ${payload.code} ${payload.msg}`);
   }
 
-  return payload.result?.list ?? [];
+  return payload.data ?? [];
+}
+
+async function fetchCoinGeckoUsdPrices(ids: string[]): Promise<Record<string, number>> {
+  const res = await fetch(
+    `https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`,
+    {
+      next: { revalidate: 30 },
+      headers: { 'User-Agent': 'bitflow/1.0' },
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(`CoinGecko API error: ${res.status}`);
+  }
+
+  const data = await res.json() as CoinGeckoSimplePriceResponse;
+  const prices = Object.fromEntries(
+    ids
+      .map((id) => [id, data[id]?.usd])
+      .filter((entry): entry is [string, number] => typeof entry[1] === 'number')
+  );
+
+  if (Object.keys(prices).length === 0) {
+    throw new Error('CoinGecko API returned no prices');
+  }
+
+  return prices;
+}
+
+async function fetchCoinbaseBtcPrice(): Promise<number> {
+  const res = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot', {
+    next: { revalidate: 30 },
+    headers: { 'User-Agent': 'bitflow/1.0' },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Coinbase API error: ${res.status}`);
+  }
+
+  const data = await res.json() as { data?: { amount?: string } };
+  const amount = Number(data.data?.amount);
+  if (!Number.isFinite(amount)) {
+    throw new Error('Coinbase API returned invalid BTC price');
+  }
+
+  return amount;
+}
+
+async function fetchOkxSpotPrice(instId: string): Promise<number> {
+  const res = await fetch(`https://www.okx.com/api/v5/market/ticker?instId=${instId}`, {
+    next: { revalidate: 30 },
+    headers: { 'User-Agent': 'bitflow/1.0' },
+  });
+
+  if (!res.ok) {
+    throw new Error(`OKX spot API error: ${res.status}`);
+  }
+
+  const data = await res.json() as OkxResponse<{ last: string }>;
+  const [ticker] = assertOkxOk(data, 'OKX spot API');
+  const price = Number(ticker?.last);
+
+  if (!Number.isFinite(price)) {
+    throw new Error('OKX spot API returned invalid price');
+  }
+
+  return price;
+}
+
+async function fetchOkxFundingRate(): Promise<FundingRateData> {
+  const res = await fetch('https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP', {
+    next: { revalidate: 30 },
+    headers: { 'User-Agent': 'bitflow/1.0' },
+  });
+
+  if (!res.ok) {
+    throw new Error(`OKX funding API error: ${res.status}`);
+  }
+
+  const data = await res.json() as OkxResponse<{
+    fundingRate: string;
+    fundingTime: string;
+    instId: string;
+  }>;
+  const [ticker] = assertOkxOk(data, 'OKX funding API');
+
+  const fundingRate = Number(ticker?.fundingRate);
+  const fundingTime = Number(ticker?.fundingTime);
+  if (!Number.isFinite(fundingRate) || !Number.isFinite(fundingTime)) {
+    throw new Error('OKX funding API returned invalid data');
+  }
+
+  return {
+    symbol: ticker.instId.replace(/-/g, ''),
+    fundingRate,
+    nextFundingTime: fundingTime,
+  };
 }
 
 export async function fetchUpbitPrice(): Promise<number> {
   const res = await fetch('https://api.upbit.com/v1/ticker?markets=KRW-BTC', {
-    next: { revalidate: 0 },
+    next: { revalidate: 15 },
+    headers: { 'User-Agent': 'bitflow/1.0' },
   });
   if (!res.ok) throw new Error(`Upbit API error: ${res.status}`);
   const data = await res.json();
@@ -26,24 +124,28 @@ export async function fetchUpbitPrice(): Promise<number> {
 }
 
 export async function fetchGlobalPrice(): Promise<number> {
-  const res = await fetch('https://api.bybit.com/v5/market/tickers?category=spot&symbol=BTCUSDT', {
-    next: { revalidate: 0 },
-  });
-  if (!res.ok) throw new Error(`Bybit spot API error: ${res.status}`);
-
-  const data = await res.json() as BybitTickerResponse<{ lastPrice: string }>;
-  const [ticker] = assertBybitOk(data, 'Bybit spot API');
-
-  if (!ticker?.lastPrice) {
-    throw new Error('Bybit spot API returned no price');
+  try {
+    const prices = await fetchCoinGeckoUsdPrices(['bitcoin']);
+    if (prices.bitcoin) {
+      return prices.bitcoin;
+    }
+  } catch (error) {
+    console.error('CoinGecko BTC price failed:', error);
   }
 
-  return parseFloat(ticker.lastPrice);
+  try {
+    return await fetchOkxSpotPrice('BTC-USDT');
+  } catch (error) {
+    console.error('OKX BTC price failed:', error);
+  }
+
+  return fetchCoinbaseBtcPrice();
 }
 
 export async function fetchUsdKrw(): Promise<number> {
   const res = await fetch('https://open.er-api.com/v6/latest/USD', {
     next: { revalidate: 300 },
+    headers: { 'User-Agent': 'bitflow/1.0' },
   });
   if (!res.ok) throw new Error(`Exchange rate API error: ${res.status}`);
   const data = await res.json();
@@ -51,32 +153,22 @@ export async function fetchUsdKrw(): Promise<number> {
 }
 
 export async function fetchFundingRate(): Promise<FundingRateData> {
-  const res = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT', {
-    next: { revalidate: 0 },
-  });
-  if (!res.ok) throw new Error(`Bybit funding API error: ${res.status}`);
-
-  const data = await res.json() as BybitTickerResponse<{
-    symbol: string;
-    fundingRate: string;
-    nextFundingTime: string;
-  }>;
-  const [ticker] = assertBybitOk(data, 'Bybit funding API');
-
-  if (!ticker?.fundingRate || !ticker.nextFundingTime) {
-    throw new Error('Bybit funding API returned incomplete data');
+  try {
+    return await fetchOkxFundingRate();
+  } catch (error) {
+    console.error('Funding rate source failed:', error);
+    return {
+      symbol: 'BTCUSDT',
+      fundingRate: 0,
+      nextFundingTime: Date.now() + 8 * 60 * 60 * 1000,
+    };
   }
-
-  return {
-    symbol: ticker.symbol,
-    fundingRate: parseFloat(ticker.fundingRate),
-    nextFundingTime: Number(ticker.nextFundingTime),
-  };
 }
 
 export async function fetchFearGreed(): Promise<FearGreedData> {
   const res = await fetch('https://api.alternative.me/fng/', {
     next: { revalidate: 300 },
+    headers: { 'User-Agent': 'bitflow/1.0' },
   });
   if (!res.ok) throw new Error(`Fear & Greed API error: ${res.status}`);
   const data = await res.json();
@@ -90,10 +182,10 @@ export async function fetchFearGreed(): Promise<FearGreedData> {
 
 export function calculateKimchiPremium(
   upbitKrw: number,
-  binanceUsdt: number,
+  globalUsdt: number,
   usdKrw: number
 ): number {
-  return ((upbitKrw / (binanceUsdt * usdKrw)) - 1) * 100;
+  return ((upbitKrw / (globalUsdt * usdKrw)) - 1) * 100;
 }
 
 export async function getKimpData(): Promise<KimpData> {
@@ -116,45 +208,54 @@ export async function getKimpData(): Promise<KimpData> {
 
 // 멀티코인 김프 데이터
 const TRACKED_COINS = [
-  { symbol: 'BTC', upbit: 'KRW-BTC', global: 'BTCUSDT', name: '비트코인' },
-  { symbol: 'ETH', upbit: 'KRW-ETH', global: 'ETHUSDT', name: '이더리움' },
-  { symbol: 'XRP', upbit: 'KRW-XRP', global: 'XRPUSDT', name: '리플' },
-  { symbol: 'SOL', upbit: 'KRW-SOL', global: 'SOLUSDT', name: '솔라나' },
-  { symbol: 'DOGE', upbit: 'KRW-DOGE', global: 'DOGEUSDT', name: '도지코인' },
-  { symbol: 'ADA', upbit: 'KRW-ADA', global: 'ADAUSDT', name: '에이다' },
-  { symbol: 'AVAX', upbit: 'KRW-AVAX', global: 'AVAXUSDT', name: '아발란체' },
-  { symbol: 'DOT', upbit: 'KRW-DOT', global: 'DOTUSDT', name: '폴카닷' },
-  { symbol: 'LINK', upbit: 'KRW-LINK', global: 'LINKUSDT', name: '체인링크' },
-  { symbol: 'POL', upbit: 'KRW-POL', global: 'POLUSDT', name: '폴리곤' },
+  { symbol: 'BTC', upbit: 'KRW-BTC', global: 'BTC-USDT', gecko: 'bitcoin', name: '비트코인' },
+  { symbol: 'ETH', upbit: 'KRW-ETH', global: 'ETH-USDT', gecko: 'ethereum', name: '이더리움' },
+  { symbol: 'XRP', upbit: 'KRW-XRP', global: 'XRP-USDT', gecko: 'ripple', name: '리플' },
+  { symbol: 'SOL', upbit: 'KRW-SOL', global: 'SOL-USDT', gecko: 'solana', name: '솔라나' },
+  { symbol: 'DOGE', upbit: 'KRW-DOGE', global: 'DOGE-USDT', gecko: 'dogecoin', name: '도지코인' },
+  { symbol: 'ADA', upbit: 'KRW-ADA', global: 'ADA-USDT', gecko: 'cardano', name: '에이다' },
+  { symbol: 'AVAX', upbit: 'KRW-AVAX', global: 'AVAX-USDT', gecko: 'avalanche-2', name: '아발란체' },
+  { symbol: 'DOT', upbit: 'KRW-DOT', global: 'DOT-USDT', gecko: 'polkadot', name: '폴카닷' },
+  { symbol: 'LINK', upbit: 'KRW-LINK', global: 'LINK-USDT', gecko: 'chainlink', name: '체인링크' },
+  { symbol: 'POL', upbit: 'KRW-POL', global: 'POL-USDT', gecko: 'polygon-ecosystem-token', name: '폴리곤' },
 ];
 
 export { TRACKED_COINS };
 
 export async function fetchMultiCoinKimp(): Promise<MultiCoinKimpData> {
   const upbitMarkets = TRACKED_COINS.map(c => c.upbit).join(',');
+  const coinIds = TRACKED_COINS.map(c => c.gecko);
 
-  const [upbitRes, globalRes, usdKrw] = await Promise.all([
+  const [upbitRes, usdKrw] = await Promise.all([
     fetch(`https://api.upbit.com/v1/ticker?markets=${upbitMarkets}`, {
-      next: { revalidate: 0 },
-    }),
-    fetch('https://api.bybit.com/v5/market/tickers?category=spot', {
-      next: { revalidate: 0 },
+      next: { revalidate: 15 },
+      headers: { 'User-Agent': 'bitflow/1.0' },
     }),
     fetchUsdKrw(),
   ]);
 
   if (!upbitRes.ok) throw new Error(`Upbit multi API error: ${upbitRes.status}`);
-  if (!globalRes.ok) throw new Error(`Bybit multi API error: ${globalRes.status}`);
 
   const upbitData: Array<{ market: string; trade_price: number }> = await upbitRes.json();
-  const bybitPayload = await globalRes.json() as BybitTickerResponse<{
-    symbol: string;
-    lastPrice: string;
-  }>;
-  const globalData = assertBybitOk(bybitPayload, 'Bybit multi API');
-
   const upbitMap = new Map(upbitData.map(d => [d.market, d.trade_price]));
-  const globalMap = new Map(globalData.map(d => [d.symbol, parseFloat(d.lastPrice)]));
+
+  let globalMap = new Map<string, number>();
+  try {
+    const prices = await fetchCoinGeckoUsdPrices(coinIds);
+    globalMap = new Map(TRACKED_COINS.map((coin) => [coin.global, prices[coin.gecko]]).filter((entry): entry is [string, number] => typeof entry[1] === 'number'));
+  } catch (error) {
+    console.error('CoinGecko multi price failed:', error);
+
+    const okxRes = await fetch('https://www.okx.com/api/v5/market/tickers?instType=SPOT', {
+      next: { revalidate: 30 },
+      headers: { 'User-Agent': 'bitflow/1.0' },
+    });
+    if (!okxRes.ok) throw new Error(`OKX multi API error: ${okxRes.status}`);
+
+    const okxPayload = await okxRes.json() as OkxResponse<{ instId: string; last: string }>;
+    const okxData = assertOkxOk(okxPayload, 'OKX multi API');
+    globalMap = new Map(okxData.map((d) => [d.instId, parseFloat(d.last)]));
+  }
 
   const coins: CoinPremium[] = TRACKED_COINS
     .map(coin => {
