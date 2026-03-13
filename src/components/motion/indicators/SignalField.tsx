@@ -29,28 +29,28 @@ function getFieldConfig(level: string) {
     case '과열':
       return {
         color: DOT_RED,
-        dotCount: 28,
+        dotCount: 60,
         pulseSpeed: 1.8,       // fast pulse = urgency
-        radiusRange: [1.2, 2.8] as [number, number],
-        spreadRadius: 75,
+        radiusRange: [1.2, 3.2] as [number, number],
+        spreadRadius: 200,
         opacityBase: 0.35,
       };
     case '침체':
       return {
         color: DOT_BLUE,
-        dotCount: 22,
+        dotCount: 45,
         pulseSpeed: 0.6,       // slow pulse = depression
-        radiusRange: [1.0, 2.2] as [number, number],
-        spreadRadius: 65,
+        radiusRange: [1.0, 2.6] as [number, number],
+        spreadRadius: 170,
         opacityBase: 0.3,
       };
     default:
       return {
         color: DOT_COLOR,
-        dotCount: 10,
+        dotCount: 20,
         pulseSpeed: 0.3,       // barely moving = calm
-        radiusRange: [0.6, 1.2] as [number, number],
-        spreadRadius: 45,
+        radiusRange: [0.6, 1.4] as [number, number],
+        spreadRadius: 120,
         opacityBase: 0.12,
       };
   }
@@ -87,8 +87,8 @@ export default function SignalField({
     const originY = 0;
 
     for (let i = 0; i < config.dotCount; i++) {
-      // Distribute in a quarter-circle from the corner
-      const angle = (Math.PI / 2) + (Math.random() * Math.PI / 2); // 90°–180° (down-left)
+      // Distribute in a wide arc from the corner (down-left, covering more area)
+      const angle = (Math.PI / 3) + (Math.random() * Math.PI * 2 / 3); // 60°–180°
       const dist = 8 + Math.random() * config.spreadRadius;
       const x = originX + Math.cos(angle) * dist;
       const y = originY + Math.sin(angle) * dist;

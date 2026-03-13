@@ -23,7 +23,7 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
   return (
     <div className="dot-card p-5 relative overflow-hidden">
       {/* Animated signal intensity field */}
-      <SignalField level={signal.level} width={80} height={80} />
+      <SignalField level={signal.level} width={240} height={120} />
 
       <div className="dot-card-inner">
         <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3">복합 시그널</h2>
