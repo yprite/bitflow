@@ -4,6 +4,8 @@ import { useState } from 'react';
 import type { CoinPremium, MultiCoinKimpData } from '@/lib/types';
 import ConvictionLens, { convictionDotStyle } from './motion/heatmap/ConvictionLens';
 import PressureBar from './motion/heatmap/PressureBar';
+import DotTabBar from './motion/transitions/DotTabBar';
+import { useFieldTransition } from './motion/transitions/useFieldTransition';
 import { useReducedMotion } from './motion/core/useReducedMotion';
 
 interface PremiumHeatmapProps {
@@ -39,9 +41,20 @@ function getPremiumBarWidth(premium: number): number {
   return Math.min(Math.abs(premium) * 10, 100);
 }
 
+const SORT_TABS = [
+  { key: 'premium', label: '김프순' },
+  { key: 'marketCap', label: '시총순' },
+  { key: 'symbol', label: '이름순' },
+];
+
 export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapProps) {
   const [sortKey, setSortKey] = useState<SortKey>('premium');
   const reducedMotion = useReducedMotion();
+  const fieldTransition = useFieldTransition(sortKey, {
+    duration: 300,
+    fadeStrength: 0.1,
+    blurStrength: 0.8,
+  });
 
   const sorted = [...data.coins].sort((a, b) => {
     if (sortKey === 'premium') return b.premium - a.premium;
@@ -67,24 +80,19 @@ export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapPro
               평균 {avgPremium >= 0 ? '+' : ''}{avgPremium.toFixed(2)}% · 최고 {maxPremium >= 0 ? '+' : ''}{maxPremium.toFixed(2)}% · 최저 {minPremium >= 0 ? '+' : ''}{minPremium.toFixed(2)}%
             </p>
           </div>
-          <div className="flex gap-1">
-            {(['premium', 'marketCap', 'symbol'] as SortKey[]).map(key => (
-              <button
-                key={key}
-                onClick={() => setSortKey(key)}
-                className={`px-2 sm:px-3 py-1 text-xs font-mono transition border ${
-                  sortKey === key
-                    ? 'bg-dot-accent text-white border-dot-accent'
-                    : 'text-dot-muted border-dot-border hover:text-dot-accent hover:border-dot-accent'
-                }`}
-              >
-                {key === 'premium' ? '김프순' : key === 'marketCap' ? '시총순' : '이름순'}
-              </button>
-            ))}
-          </div>
+          <DotTabBar
+            tabs={SORT_TABS}
+            activeKey={sortKey}
+            onChange={(key) => setSortKey(key as SortKey)}
+            indicatorDots={5}
+            indicatorRadius={1.5}
+            indicatorSpacing={3}
+            transitionDuration={300}
+          />
         </div>
 
         {/* Dot heatmap grid with Conviction Lens */}
+        <div style={fieldTransition.style}>
         <ConvictionLens itemCount={sorted.length}>
           {({ hoveredIndex, getScale, onHover }) => (
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-5">
@@ -139,6 +147,8 @@ export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapPro
               />
             </div>
           ))}
+        </div>
+
         </div>
 
         {/* Legend */}

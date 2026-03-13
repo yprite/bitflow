@@ -2,12 +2,19 @@
 
 import { useState } from 'react';
 import type { KimpHistoryPoint } from '@/lib/types';
+import DotTabBar from './motion/transitions/DotTabBar';
+import { useFieldTransition } from './motion/transitions/useFieldTransition';
 
 interface KimpChartProps {
   data: KimpHistoryPoint[];
 }
 
 type Period = '7d' | '30d';
+
+const PERIOD_TABS = [
+  { key: '7d', label: '7일' },
+  { key: '30d', label: '30일' },
+];
 
 const axisLabelFormatter = new Intl.DateTimeFormat('ko-KR', {
   timeZone: 'Asia/Seoul',
@@ -33,6 +40,11 @@ function formatPercentLabel(value: number): string {
 
 export default function KimpChart({ data }: KimpChartProps) {
   const [period, setPeriod] = useState<Period>('7d');
+  const fieldTransition = useFieldTransition(period, {
+    duration: 350,
+    fadeStrength: 0.12,
+    blurStrength: 1,
+  });
 
   const now = Date.now();
   const cutoff = period === '7d' ? now - 7 * 86400_000 : now - 30 * 86400_000;
@@ -79,23 +91,17 @@ export default function KimpChart({ data }: KimpChartProps) {
       <div className="dot-card-inner">
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider">김프 히스토리</h2>
-          <div className="flex gap-1">
-            {(['7d', '30d'] as Period[]).map(p => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-3 py-1 text-xs font-mono transition border ${
-                  period === p
-                    ? 'bg-dot-accent text-white border-dot-accent'
-                    : 'text-dot-muted border-dot-border hover:text-dot-accent hover:border-dot-accent'
-                }`}
-              >
-                {p === '7d' ? '7일' : '30일'}
-              </button>
-            ))}
-          </div>
+          <DotTabBar
+            tabs={PERIOD_TABS}
+            activeKey={period}
+            onChange={(key) => setPeriod(key as Period)}
+            indicatorDots={5}
+            indicatorRadius={1.5}
+            indicatorSpacing={3}
+            transitionDuration={350}
+          />
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3" style={fieldTransition.style}>
           <div className="shrink-0 h-32 flex flex-col justify-between text-[11px] text-dot-muted font-mono text-right">
             {yAxisLabels.map((label) => (
               <span key={label}>{label}</span>
