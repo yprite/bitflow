@@ -1,4 +1,4 @@
-import { KimpData, FundingRateData, FearGreedData, CompositeSignal, CoinPremium, MultiCoinKimpData, ArbitrageResult } from './types';
+import { KimpData, FundingRateData, FearGreedData, CompositeSignal, SignalFactor, CoinPremium, MultiCoinKimpData, ArbitrageResult } from './types';
 
 interface OkxResponse<T> {
   code: string;
@@ -416,35 +416,68 @@ export function calculateArbitrage(
   };
 }
 
+function getFactorDirection(factorScore: number): '과열' | '중립' | '침체' {
+  if (factorScore > 0) return '과열';
+  if (factorScore < 0) return '침체';
+  return '중립';
+}
+
 export function getCompositeSignal(
   kimchiPremium: number,
   fundingRate: number,
   fearGreedValue: number
 ): CompositeSignal {
-  let score = 0;
-
   // 김프 점수: 높으면 과열
-  if (kimchiPremium > 5) score += 2;
-  else if (kimchiPremium > 3) score += 1;
-  else if (kimchiPremium < -1) score -= 2;
-  else if (kimchiPremium < 1) score -= 1;
+  let kimpScore = 0;
+  if (kimchiPremium > 5) kimpScore = 2;
+  else if (kimchiPremium > 3) kimpScore = 1;
+  else if (kimchiPremium < -1) kimpScore = -2;
+  else if (kimchiPremium < 1) kimpScore = -1;
 
   // 펀딩비 점수: 높으면 과열
-  if (fundingRate > 0.05) score += 2;
-  else if (fundingRate > 0.01) score += 1;
-  else if (fundingRate < -0.01) score -= 2;
-  else if (fundingRate < 0) score -= 1;
+  let fundingScore = 0;
+  if (fundingRate > 0.05) fundingScore = 2;
+  else if (fundingRate > 0.01) fundingScore = 1;
+  else if (fundingRate < -0.01) fundingScore = -2;
+  else if (fundingRate < 0) fundingScore = -1;
 
   // 공포탐욕 점수: 높으면 과열
-  if (fearGreedValue > 75) score += 2;
-  else if (fearGreedValue > 55) score += 1;
-  else if (fearGreedValue < 25) score -= 2;
-  else if (fearGreedValue < 45) score -= 1;
+  let fgScore = 0;
+  if (fearGreedValue > 75) fgScore = 2;
+  else if (fearGreedValue > 55) fgScore = 1;
+  else if (fearGreedValue < 25) fgScore = -2;
+  else if (fearGreedValue < 45) fgScore = -1;
+
+  const score = kimpScore + fundingScore + fgScore;
+
+  const factors: SignalFactor[] = [
+    { label: '김프', value: `${kimchiPremium >= 0 ? '+' : ''}${kimchiPremium.toFixed(1)}%`, direction: getFactorDirection(kimpScore) },
+    { label: '펀딩비', value: `${(fundingRate * 100).toFixed(3)}%`, direction: getFactorDirection(fundingScore) },
+    { label: '공포탐욕', value: `${fearGreedValue}`, direction: getFactorDirection(fgScore) },
+  ];
 
   if (score >= 3) {
-    return { level: '과열', color: 'text-red-400', description: '시장 과열 구간. 신규 진입 주의.' };
+    return {
+      level: '과열',
+      color: 'text-red-400',
+      description: '3개 지표가 동시에 과열을 가리키고 있어요. 지금 진입하면 고점 물림 위험이 있습니다.',
+      score,
+      factors,
+    };
   } else if (score <= -3) {
-    return { level: '침체', color: 'text-blue-400', description: '시장 침체 구간. 매수 기회 탐색.' };
+    return {
+      level: '침체',
+      color: 'text-blue-400',
+      description: '3개 지표 모두 침체 신호입니다. 분할 매수를 고려해볼 타이밍이에요.',
+      score,
+      factors,
+    };
   }
-  return { level: '중립', color: 'text-gray-400', description: '시장 중립 구간.' };
+  return {
+    level: '중립',
+    color: 'text-gray-400',
+    description: '지표들의 방향이 엇갈려 뚜렷한 추세가 없습니다. 관망하며 변화를 지켜보세요.',
+    score,
+    factors,
+  };
 }
