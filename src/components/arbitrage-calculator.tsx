@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import type { CoinPremium, MultiCoinKimpData, ArbitrageResult } from '@/lib/types';
 import { calculateArbitrage } from '@/lib/kimp';
+import DotKPIValue from './motion/typography/DotKPIValue';
 
 interface ArbitrageCalculatorProps {
   data: MultiCoinKimpData;
@@ -116,9 +117,15 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
                 </span>
                 <span className="text-xs text-dot-muted font-mono">{result.estimatedTime}</span>
               </div>
-              <p className={`text-2xl font-bold font-mono ${result.netProfit >= 0 ? 'text-dot-green' : 'text-dot-red'}`}>
-                {result.netProfit >= 0 ? '+' : ''}{result.netProfit.toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원
-              </p>
+              <DotKPIValue
+                value={result.netProfit}
+                decimals={0}
+                suffix=""
+                showSign
+                fontScale={5}
+                morphMode="reconfigure"
+                morphDuration={500}
+              />
             </div>
 
             <div className="text-xs text-dot-muted font-mono mb-2">{result.direction}</div>

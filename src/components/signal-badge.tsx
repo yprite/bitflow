@@ -1,6 +1,8 @@
 'use client';
 
 import type { CompositeSignal } from '@/lib/types';
+import InsightBloom from './motion/indicators/InsightBloom';
+import DotMorphTransition from './motion/transitions/DotMorphTransition';
 
 interface SignalBadgeProps {
   signal: CompositeSignal;
@@ -29,9 +31,16 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
       />
       <div className="dot-card-inner">
         <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3">복합 시그널</h2>
-        <p className="text-2xl font-bold" style={{ color }}>
-          {signal.level}
-        </p>
+        <div className="relative">
+          <DotMorphTransition
+            text={signal.level}
+            fontScale={5}
+            mode="dissolve"
+            morphDuration={600}
+            color={color}
+          />
+          <InsightBloom trigger={signal.level} dotCount={5} travelDistance={18} dotSize={2} color={color} />
+        </div>
         <p className="text-xs text-dot-muted mt-2">{signal.description}</p>
       </div>
     </div>

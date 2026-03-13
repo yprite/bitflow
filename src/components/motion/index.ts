@@ -25,3 +25,20 @@ export { default as PressureBar } from './heatmap/PressureBar';
 
 // Storytelling
 export { default as OrbitalSilence } from './storytelling/OrbitalSilence';
+
+// Typography
+export { default as DotText } from './typography/DotText';
+export { default as DotHeadline } from './typography/DotHeadline';
+export { default as DotLabel } from './typography/DotLabel';
+export { default as DotMorphNumber } from './typography/DotMorphNumber';
+export { default as DotKPIValue } from './typography/DotKPIValue';
+export { parseText, parseGlyph, GLYPH_MAP, GLYPH_COLS, GLYPH_ROWS } from './typography/dot-font';
+export type { TextDot, GlyphDot } from './typography/dot-font';
+
+// Transitions
+export { useDotMorph } from './transitions/useDotMorph';
+export { useUpdateResidue } from './transitions/useUpdateResidue';
+export { default as DotMorphTransition } from './transitions/DotMorphTransition';
+export { default as DotValueRefresh, refreshStyle, residueStyle } from './transitions/DotValueRefresh';
+export type { MorphMode, MorphDot, UseDotMorphConfig, UseDotMorphResult } from './transitions/useDotMorph';
+export type { ResidueState, UseUpdateResidueConfig } from './transitions/useUpdateResidue';

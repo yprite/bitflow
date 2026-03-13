@@ -1,9 +1,11 @@
 'use client';
 
-import { useRef } from 'react';
 import type { KimpData } from '@/lib/types';
 import DotCluster from './motion/indicators/DotCluster';
 import InsightBloom from './motion/indicators/InsightBloom';
+import DotKPIValue from './motion/typography/DotKPIValue';
+import DotValueRefresh, { refreshStyle, residueStyle } from './motion/transitions/DotValueRefresh';
+import { useReducedMotion } from './motion/core/useReducedMotion';
 
 interface KimpCardProps {
   kimp: KimpData;
@@ -11,9 +13,8 @@ interface KimpCardProps {
 }
 
 export default function KimpCard({ kimp, avg30d }: KimpCardProps) {
+  const reducedMotion = useReducedMotion();
   const isPositive = kimp.kimchiPremium >= 0;
-  const color = isPositive ? 'text-dot-green' : 'text-dot-red';
-  const sign = isPositive ? '+' : '';
 
   const badgeState = avg30d !== null
     ? kimp.kimchiPremium > avg30d ? 'above' : 'below'
@@ -37,24 +38,76 @@ export default function KimpCard({ kimp, avg30d }: KimpCardProps) {
             </span>
           )}
         </div>
-        <p className={`text-5xl font-bold ${color} font-mono tracking-tight`}>
-          {sign}{kimp.kimchiPremium.toFixed(2)}%
-        </p>
+
+        {/* Primary KPI: dot-morphing premium value */}
+        <div className="mb-1">
+          <DotKPIValue
+            value={kimp.kimchiPremium}
+            decimals={2}
+            suffix="%"
+            showSign
+            fontScale={8}
+            morphMode="reconfigure"
+            morphDuration={600}
+          />
+        </div>
+
         <div className="mt-2 mb-4">
           <DotCluster value={kimp.kimchiPremium} pulse />
         </div>
+
         <div className="mt-4 grid grid-cols-3 gap-4 text-sm dot-border-t pt-4">
+          {/* Sub-values with refresh transition */}
           <div>
             <p className="text-dot-muted text-xs mb-1">업비트 BTC</p>
-            <p className="text-dot-text font-mono font-medium">{kimp.upbitPrice.toLocaleString()}원</p>
+            <DotValueRefresh value={kimp.upbitPrice}>
+              {({ current, previous, showResidue, residueOpacity, pulseScale }) => (
+                <div className="relative">
+                  {showResidue && previous !== null && (
+                    <p className="text-dot-text font-mono font-medium" style={residueStyle(residueOpacity, reducedMotion)}>
+                      {Number(previous).toLocaleString()}원
+                    </p>
+                  )}
+                  <p className="text-dot-text font-mono font-medium" style={refreshStyle(pulseScale, reducedMotion)}>
+                    {Number(current).toLocaleString()}원
+                  </p>
+                </div>
+              )}
+            </DotValueRefresh>
           </div>
           <div>
             <p className="text-dot-muted text-xs mb-1">해외 BTC</p>
-            <p className="text-dot-text font-mono font-medium">${kimp.globalPrice.toLocaleString()}</p>
+            <DotValueRefresh value={kimp.globalPrice}>
+              {({ current, previous, showResidue, residueOpacity, pulseScale }) => (
+                <div className="relative">
+                  {showResidue && previous !== null && (
+                    <p className="text-dot-text font-mono font-medium" style={residueStyle(residueOpacity, reducedMotion)}>
+                      ${Number(previous).toLocaleString()}
+                    </p>
+                  )}
+                  <p className="text-dot-text font-mono font-medium" style={refreshStyle(pulseScale, reducedMotion)}>
+                    ${Number(current).toLocaleString()}
+                  </p>
+                </div>
+              )}
+            </DotValueRefresh>
           </div>
           <div>
             <p className="text-dot-muted text-xs mb-1">환율</p>
-            <p className="text-dot-text font-mono font-medium">{kimp.usdKrw.toFixed(0)}원</p>
+            <DotValueRefresh value={Math.round(kimp.usdKrw)}>
+              {({ current, previous, showResidue, residueOpacity, pulseScale }) => (
+                <div className="relative">
+                  {showResidue && previous !== null && (
+                    <p className="text-dot-text font-mono font-medium" style={residueStyle(residueOpacity, reducedMotion)}>
+                      {Number(previous).toLocaleString()}원
+                    </p>
+                  )}
+                  <p className="text-dot-text font-mono font-medium" style={refreshStyle(pulseScale, reducedMotion)}>
+                    {Number(current).toLocaleString()}원
+                  </p>
+                </div>
+              )}
+            </DotValueRefresh>
           </div>
         </div>
       </div>

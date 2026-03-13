@@ -2,15 +2,14 @@
 
 import type { FundingRateData } from '@/lib/types';
 import DotGauge from './motion/indicators/DotGauge';
+import DotKPIValue from './motion/typography/DotKPIValue';
 
 interface FundingRateCardProps {
   data: FundingRateData;
 }
 
 export default function FundingRateCard({ data }: FundingRateCardProps) {
-  const ratePercent = (data.fundingRate * 100).toFixed(4);
   const isPositive = data.fundingRate >= 0;
-  const color = isPositive ? 'text-dot-green' : 'text-dot-red';
   const nextTime = new Date(data.nextFundingTime).toLocaleString('ko-KR', {
     timeZone: 'Asia/Seoul',
     hour: '2-digit',
@@ -23,9 +22,15 @@ export default function FundingRateCard({ data }: FundingRateCardProps) {
     <div className="dot-card p-5">
       <div className="dot-card-inner">
         <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3">펀딩비 (BTCUSDT)</h2>
-        <p className={`text-2xl font-bold font-mono ${color}`}>
-          {isPositive ? '+' : ''}{ratePercent}%
-        </p>
+        <DotKPIValue
+          value={data.fundingRate * 100}
+          decimals={4}
+          suffix="%"
+          showSign
+          fontScale={5}
+          morphMode="crossfade"
+          morphDuration={400}
+        />
         <div className="mt-2 mb-3">
           <DotGauge
             activeDots={dotCount}
