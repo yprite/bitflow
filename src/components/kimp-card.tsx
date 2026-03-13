@@ -28,7 +28,7 @@ export default function KimpCard({ kimp, avg30d }: KimpCardProps) {
     : '';
 
   return (
-    <div className="dot-card p-4 sm:p-6 dot-vignette">
+    <div className="dot-card p-4 sm:p-6">
       <div className="dot-card-inner">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-dot-sub uppercase tracking-wider flex items-center gap-2">

@@ -17,7 +17,7 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
-      <body className="min-h-screen bg-dot-bg env-safe">
+      <body className="min-h-screen bg-dot-bg env-safe dot-vignette">
         <AmbientBackground />
         <header className="dot-border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
           <nav className="max-w-3xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
