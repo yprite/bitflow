@@ -12,6 +12,7 @@ interface PremiumHeatmapProps {
 }
 
 type SortKey = 'premium' | 'marketCap' | 'symbol';
+type SortDir = 'asc' | 'desc';
 
 function getDotColor(premium: number): string {
   if (premium > 0) return '#e53935';
@@ -156,14 +157,32 @@ function PressureRow({
 
 export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapProps) {
   const [sortKey, setSortKey] = useState<SortKey>('premium');
-  const fieldTransition = useFieldTransition(sortKey, {
+  const [premiumDir, setPremiumDir] = useState<SortDir>('desc');
+  const fieldTransition = useFieldTransition(`${sortKey}-${premiumDir}`, {
     duration: 300,
     fadeStrength: 0.1,
     blurStrength: 0.8,
   });
 
+  const handleSortChange = (key: string) => {
+    if (key === 'premium' && sortKey === 'premium') {
+      setPremiumDir(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortKey(key as SortKey);
+      if (key === 'premium') setPremiumDir('desc');
+    }
+  };
+
+  const sortTabs = SORT_TABS.map(tab =>
+    tab.key === 'premium' && sortKey === 'premium'
+      ? { ...tab, label: premiumDir === 'desc' ? '김프순 ↓' : '김프순 ↑' }
+      : tab
+  );
+
   const sorted = [...data.coins].sort((a, b) => {
-    if (sortKey === 'premium') return b.premium - a.premium;
+    if (sortKey === 'premium') {
+      return premiumDir === 'desc' ? b.premium - a.premium : a.premium - b.premium;
+    }
     if (sortKey === 'marketCap') return a.marketCapRank - b.marketCapRank;
     if (sortKey === 'symbol') return a.symbol.localeCompare(b.symbol);
     return b.premium - a.premium;
@@ -190,9 +209,9 @@ export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapPro
             </p>
           </div>
           <DotTabBar
-            tabs={SORT_TABS}
+            tabs={sortTabs}
             activeKey={sortKey}
-            onChange={(key) => setSortKey(key as SortKey)}
+            onChange={handleSortChange}
             indicatorDots={5}
             indicatorRadius={1.5}
             indicatorSpacing={3}
