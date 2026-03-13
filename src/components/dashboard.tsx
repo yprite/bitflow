@@ -7,34 +7,6 @@ import SignalBadge from './signal-badge';
 import OrbitalSilence from './motion/storytelling/OrbitalSilence';
 import { useData } from './data-provider';
 
-function NavCard({ href, title, description, items }: {
-  href: string;
-  title: string;
-  description: string;
-  items: string[];
-}) {
-  return (
-    <a href={href} className="dot-card p-4 sm:p-5 group cursor-pointer block hover:border-dot-accent transition-colors">
-      <div className="dot-card-inner">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-semibold text-dot-sub uppercase tracking-wider group-hover:text-dot-accent transition-colors">
-            {title}
-          </h3>
-          <span className="text-dot-muted group-hover:text-dot-accent transition-colors text-sm font-mono">→</span>
-        </div>
-        <p className="text-[11px] text-dot-muted mb-3">{description}</p>
-        <div className="flex flex-wrap gap-1.5">
-          {items.map((item) => (
-            <span key={item} className="text-[10px] text-dot-sub bg-dot-border/20 px-2 py-0.5 font-mono">
-              {item}
-            </span>
-          ))}
-        </div>
-      </div>
-    </a>
-  );
-}
-
 export default function Dashboard() {
   const { data, error, loading, lastUpdated, fetchData } = useData();
 
@@ -80,21 +52,6 @@ export default function Dashboard() {
         <FundingRateCard data={data.fundingRate} />
         <FearGreedCard data={data.fearGreed} />
         <SignalBadge signal={data.signal} />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-        <NavCard
-          href="/indicators"
-          title="지표"
-          description="김프 추이 차트를 확인합니다"
-          items={['김프 차트']}
-        />
-        <NavCard
-          href="/tools"
-          title="도구"
-          description="멀티코인 비교와 재정거래 시뮬레이션"
-          items={['히트맵', '재정거래 계산기']}
-        />
       </div>
     </div>
   );
