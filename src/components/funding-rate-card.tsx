@@ -1,15 +1,18 @@
 'use client';
 
 import type { FundingRateData } from '@/lib/types';
+import type { DayRange } from './data-provider';
 import DotGauge from './motion/indicators/DotGauge';
 import DotKPIValue from './motion/typography/DotKPIValue';
 import LivePulse from './motion/indicators/LivePulse';
+import DayRangeSlider from './day-range-slider';
 
 interface FundingRateCardProps {
   data: FundingRateData;
+  dayRange?: DayRange | null;
 }
 
-export default function FundingRateCard({ data }: FundingRateCardProps) {
+export default function FundingRateCard({ data, dayRange }: FundingRateCardProps) {
   const isPositive = data.fundingRate >= 0;
   const nextTime = new Date(data.nextFundingTime).toLocaleString('ko-KR', {
     timeZone: 'Asia/Seoul',
@@ -45,6 +48,9 @@ export default function FundingRateCard({ data }: FundingRateCardProps) {
         <p className="text-xs text-dot-muted font-mono">
           다음 정산: {nextTime}
         </p>
+        {dayRange && dayRange.min !== dayRange.max && (
+          <DayRangeSlider range={dayRange} decimals={4} suffix="%" />
+        )}
       </div>
     </div>
   );
