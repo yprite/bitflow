@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import AmbientBackground from '@/components/motion/ambient/AmbientBackground';
+import AnimatedLogo from '@/components/motion/brand/AnimatedLogo';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -23,14 +24,7 @@ export default function RootLayout({
           <nav className="max-w-3xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
             <a href="/" className="text-lg font-bold text-dot-accent tracking-tight">
               <span className="inline-flex items-center gap-2">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="opacity-80">
-                  <circle cx="6" cy="6" r="2.5" fill="#1a1a1a"/>
-                  <circle cx="14" cy="6" r="3.5" fill="#1a1a1a"/>
-                  <circle cx="22" cy="6" r="2" fill="#1a1a1a"/>
-                  <circle cx="6" cy="14" r="3" fill="#1a1a1a"/>
-                  <circle cx="14" cy="14" r="4" fill="#1a1a1a"/>
-                  <circle cx="6" cy="22" r="1.5" fill="#1a1a1a"/>
-                </svg>
+                <AnimatedLogo size={24} className="opacity-80" />
                 김프 트래커
               </span>
             </a>

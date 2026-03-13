@@ -24,6 +24,10 @@ export { default as MemoryResidue } from './chart/MemoryResidue';
 export { default as ConvictionLens, convictionDotStyle } from './heatmap/ConvictionLens';
 export { default as PressureBar } from './heatmap/PressureBar';
 
+// Brand
+export { default as AnimatedLogo } from './brand/AnimatedLogo';
+export type { AnimatedLogoProps } from './brand/AnimatedLogo';
+
 // Storytelling
 export { default as OrbitalSilence } from './storytelling/OrbitalSilence';
 
