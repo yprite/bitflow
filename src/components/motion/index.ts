@@ -19,6 +19,19 @@ export { default as LivePulse } from './indicators/LivePulse';
 // Chart
 export { default as PriceDiscoveryDot } from './chart/PriceDiscoveryDot';
 export { default as MemoryResidue } from './chart/MemoryResidue';
+export {
+  SignalDensity,
+  ThresholdField,
+  PressureField,
+  DataAfterglow,
+  UncertaintyHaze,
+} from './chart/chart-overlays';
+export type {
+  ChartPoint,
+  SignalDensityConfig,
+  ThresholdFieldConfig,
+  DataAfterglowConfig,
+} from './chart/chart-overlays';
 
 // Heatmap
 export { default as ConvictionLens, convictionDotStyle } from './heatmap/ConvictionLens';

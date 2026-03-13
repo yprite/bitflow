@@ -1,7 +1,15 @@
 'use client';
 
 import type { ExtendedKimpHistoryPoint } from '@/lib/types';
+import { useReducedMotion } from '@/components/motion/core/useReducedMotion';
 import ChartBase, { mapToChart } from './chart-base';
+import {
+  SignalDensity,
+  PressureField,
+  DataAfterglow,
+  UncertaintyHaze,
+  type ChartPoint,
+} from '@/components/motion/chart/chart-overlays';
 
 interface Props {
   data: ExtendedKimpHistoryPoint[];
@@ -17,6 +25,8 @@ const krwFormatter = new Intl.NumberFormat('ko-KR', {
 });
 
 export default function ExchangeRateChart({ data }: Props) {
+  const reducedMotion = useReducedMotion();
+
   if (data.length < 2) {
     return (
       <div className="dot-card p-6">
@@ -34,31 +44,60 @@ export default function ExchangeRateChart({ data }: Props) {
   const CW = 100;
   const CH = 120;
 
-  const dots = data.map((d, i) => {
+  const chartPoints: ChartPoint[] = data.map((d, i) => {
     const pos = mapToChart(i, data.length, d.usdKrw, min, range, CW, CH);
     return { ...pos, value: d.usdKrw };
   });
 
-  const points = dots.map((d) => `${d.x},${d.y}`).join(' ');
+  const polyline = chartPoints.map((d) => `${d.x},${d.y}`).join(' ');
 
   const yLabels = [max, (max + min) / 2, min].map((v) => `${krwFormatter.format(v)}원`);
   const xLabels = [data[0], data[Math.floor(data.length / 2)], data[data.length - 1]].map((d) =>
     formatDate(d.collectedAt)
   );
 
+  const underlays = (
+    <PressureField points={chartPoints} threshold={2} />
+  );
+
+  const overlays = (
+    <>
+      <UncertaintyHaze points={chartPoints} extent={0.15} maxScatter={1.5} />
+      <DataAfterglow
+        points={chartPoints}
+        config={{ trailLength: 3, haloRadius: 3 }}
+        reducedMotion={reducedMotion}
+      />
+    </>
+  );
+
   return (
-    <ChartBase title="환율 추이 (USD/KRW)" yAxisLabels={yLabels} xAxisLabels={xLabels} patternId="dotGridFX">
+    <ChartBase
+      title="환율 추이 (USD/KRW)"
+      yAxisLabels={yLabels}
+      xAxisLabels={xLabels}
+      patternId="dotGridFX"
+      underlays={underlays}
+      overlays={overlays}
+    >
       <polyline
-        points={points}
+        points={polyline}
         fill="none"
         stroke="#1a1a1a"
         strokeWidth="1"
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
       />
-      {dots.map((d, i) => (
-        <circle key={i} cx={d.x} cy={d.y} r={1} fill="#1a1a1a" />
-      ))}
+      <SignalDensity
+        points={chartPoints}
+        config={{
+          thresholds: [],
+          minRadius: 0.5,
+          maxRadius: 1.8,
+          minOpacity: 0.3,
+          maxOpacity: 0.85,
+        }}
+      />
     </ChartBase>
   );
 }

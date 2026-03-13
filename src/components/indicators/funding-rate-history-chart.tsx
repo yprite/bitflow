@@ -1,7 +1,16 @@
 'use client';
 
 import type { FundingRateHistoryPoint } from '@/lib/types';
-import ChartBase, { mapToChart } from './chart-base';
+import { useReducedMotion } from '@/components/motion/core/useReducedMotion';
+import ChartBase, { mapToChart, valueToY } from './chart-base';
+import {
+  SignalDensity,
+  ThresholdField,
+  PressureField,
+  DataAfterglow,
+  type ChartPoint,
+  type ThresholdFieldConfig,
+} from '@/components/motion/chart/chart-overlays';
 
 interface Props {
   data: FundingRateHistoryPoint[];
@@ -13,6 +22,8 @@ function formatDate(ts: string): string {
 }
 
 export default function FundingRateHistoryChart({ data }: Props) {
+  const reducedMotion = useReducedMotion();
+
   if (data.length < 2) {
     return (
       <div className="dot-card p-6">
@@ -30,55 +41,91 @@ export default function FundingRateHistoryChart({ data }: Props) {
   const CW = 100;
   const CH = 120;
 
-  const dots = data.map((d, i) => {
+  const chartPoints: ChartPoint[] = data.map((d, i) => {
     const pos = mapToChart(i, data.length, d.rate * 100, min, range, CW, CH);
-    return { ...pos, rate: d.rate * 100 };
+    return { ...pos, value: d.rate * 100 };
   });
 
-  const points = dots.map((d) => `${d.x},${d.y}`).join(' ');
+  const polyline = chartPoints.map((d) => `${d.x},${d.y}`).join(' ');
 
   // Zero line position
   const zeroY = min <= 0 && max >= 0
-    ? 4 + (CH - 8) - ((0 - min) / range) * (CH - 8)
+    ? valueToY(0, min, range, CH)
     : null;
+
+  // Threshold: zero line is the key threshold for funding rate
+  const thresholds: ThresholdFieldConfig[] = [];
+  if (zeroY !== null) {
+    const nearZero = rates.filter((r) => Math.abs(r) < 0.01).length;
+    thresholds.push({
+      value: 0,
+      y: zeroY,
+      xRange: [4, 96],
+      activation: Math.min(nearZero / rates.length * 6, 1),
+      bandHeight: 3,
+    });
+  }
 
   const yLabels = [max, (max + min) / 2, min].map((v) => `${v.toFixed(3)}%`);
   const xLabels = [data[0], data[Math.floor(data.length / 2)], data[data.length - 1]].map((d) =>
     formatDate(d.timestamp)
   );
 
-  return (
-    <ChartBase title="펀딩비 히스토리" yAxisLabels={yLabels} xAxisLabels={xLabels} patternId="dotGridFR">
+  const underlays = (
+    <>
       {zeroY !== null && (
         <line
           x1={4}
           y1={zeroY}
           x2={96}
           y2={zeroY}
-          stroke="#ef4444"
-          strokeWidth="0.5"
-          strokeDasharray="2 2"
+          stroke="#1a1a1a"
+          strokeWidth="0.4"
+          strokeDasharray="1.5 2.5"
           vectorEffect="non-scaling-stroke"
-          opacity={0.5}
+          opacity={0.2}
         />
       )}
+      <ThresholdField thresholds={thresholds} />
+      <PressureField points={chartPoints} threshold={0.005} />
+    </>
+  );
+
+  const overlays = (
+    <DataAfterglow
+      points={chartPoints}
+      config={{ trailLength: 3, haloRadius: 3 }}
+      reducedMotion={reducedMotion}
+    />
+  );
+
+  return (
+    <ChartBase
+      title="펀딩비 히스토리"
+      yAxisLabels={yLabels}
+      xAxisLabels={xLabels}
+      patternId="dotGridFR"
+      underlays={underlays}
+      overlays={overlays}
+    >
       <polyline
-        points={points}
+        points={polyline}
         fill="none"
         stroke="#1a1a1a"
         strokeWidth="1"
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
       />
-      {dots.map((d, i) => (
-        <circle
-          key={i}
-          cx={d.x}
-          cy={d.y}
-          r={1.2}
-          fill={d.rate >= 0 ? '#ef4444' : '#3b82f6'}
-        />
-      ))}
+      <SignalDensity
+        points={chartPoints}
+        config={{
+          thresholds: [0],
+          minRadius: 0.5,
+          maxRadius: 2.0,
+          minOpacity: 0.25,
+          maxOpacity: 0.88,
+        }}
+      />
     </ChartBase>
   );
 }

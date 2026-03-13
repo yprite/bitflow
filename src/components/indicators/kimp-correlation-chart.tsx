@@ -2,6 +2,8 @@
 
 import type { ExtendedKimpHistoryPoint, FundingRateHistoryPoint } from '@/lib/types';
 import LivePulse from '@/components/motion/indicators/LivePulse';
+import { DOT_COLOR } from '@/components/motion/core/constants';
+import { clamp, valueNoise } from '@/components/motion/core/dot-math';
 
 interface Props {
   kimpData: ExtendedKimpHistoryPoint[];
@@ -17,13 +19,11 @@ function correlate(
   kimpData: ExtendedKimpHistoryPoint[],
   fundingData: FundingRateHistoryPoint[]
 ): CorrelationPoint[] {
-  // Match KIMP data points to nearest funding rate data points by timestamp
   const points: CorrelationPoint[] = [];
   const fundingTimes = fundingData.map((d) => new Date(d.timestamp).getTime());
 
   for (const kp of kimpData) {
     const kt = new Date(kp.collectedAt).getTime();
-    // Find nearest funding rate
     let bestIdx = 0;
     let bestDist = Math.abs(fundingTimes[0] - kt);
     for (let i = 1; i < fundingTimes.length; i++) {
@@ -33,7 +33,6 @@ function correlate(
         bestIdx = i;
       }
     }
-    // Only match if within 12 hours
     if (bestDist < 12 * 60 * 60 * 1000) {
       points.push({
         kimp: kp.value,
@@ -90,17 +89,44 @@ export default function KimpCorrelationChart({ kimpData, fundingData }: Props) {
   const fMax = Math.max(...fundingValues);
   const kRange = kMax - kMin || 1;
   const fRange = fMax - fMin || 0.01;
+  const kMean = kimpValues.reduce((a, b) => a + b, 0) / kimpValues.length;
+  const fMean = fundingValues.reduce((a, b) => a + b, 0) / fundingValues.length;
 
   const CW = 100;
   const CH = 100;
   const P = 6;
 
-  const dots = points.map((p) => ({
-    x: P + ((p.kimp - kMin) / kRange) * (CW - P * 2),
-    y: P + (CH - P * 2) - ((p.funding - fMin) / fRange) * (CH - P * 2),
-    kimp: p.kimp,
-    funding: p.funding,
-  }));
+  const dots = points.map((p, i) => {
+    const x = P + ((p.kimp - kMin) / kRange) * (CW - P * 2);
+    const y = P + (CH - P * 2) - ((p.funding - fMin) / fRange) * (CH - P * 2);
+
+    // Outlier significance: distance from mean in normalized space
+    const kNorm = (p.kimp - kMean) / (kRange || 1);
+    const fNorm = (p.funding - fMean) / (fRange || 1);
+    const distFromMean = Math.sqrt(kNorm * kNorm + fNorm * fNorm);
+    const significance = clamp(distFromMean / 1.5, 0, 1);
+
+    // Outliers get bigger dots, center cluster stays small
+    const radius = 0.8 + significance * 1.5;
+    const opacity = 0.3 + significance * 0.55;
+
+    return { x, y, radius, opacity, kimp: p.kimp, funding: p.funding };
+  });
+
+  // Density haze: add ghost dots around the cluster center
+  const densityDots: Array<{ x: number; y: number; r: number; o: number }> = [];
+  const centerX = P + ((kMean - kMin) / kRange) * (CW - P * 2);
+  const centerY = P + (CH - P * 2) - ((fMean - fMin) / fRange) * (CH - P * 2);
+  for (let i = 0; i < 12; i++) {
+    const nx = valueNoise(i * 7.1, 0, 42);
+    const ny = valueNoise(0, i * 11.3, 73);
+    densityDots.push({
+      x: centerX + (nx - 0.5) * 16,
+      y: centerY + (ny - 0.5) * 16,
+      r: 0.4,
+      o: 0.04,
+    });
+  }
 
   const rLabel =
     Math.abs(r) >= 0.7
@@ -110,7 +136,7 @@ export default function KimpCorrelationChart({ kimpData, fundingData }: Props) {
         : Math.abs(r) >= 0.2
           ? '약한 상관'
           : '거의 없음';
-  const rColor = r >= 0.4 ? 'text-red-500' : r <= -0.4 ? 'text-blue-500' : 'text-dot-muted';
+  const rColor = Math.abs(r) >= 0.4 ? 'text-dot-text' : 'text-dot-muted';
 
   return (
     <div className="dot-card p-4 sm:p-6">
@@ -149,15 +175,46 @@ export default function KimpCorrelationChart({ kimpData, fundingData }: Props) {
               </defs>
               <rect width={CW} height={CH} fill="url(#dotGridCorr)" rx="1" />
 
-              {/* Scatter dots */}
+              {/* Cluster center density haze */}
+              <g aria-hidden="true">
+                {densityDots.map((d, i) => (
+                  <circle key={`h-${i}`} cx={d.x} cy={d.y} r={d.r} fill={DOT_COLOR} opacity={d.o} />
+                ))}
+              </g>
+
+              {/* Cross-hairs at mean */}
+              <line
+                x1={centerX}
+                y1={P}
+                x2={centerX}
+                y2={CH - P}
+                stroke={DOT_COLOR}
+                strokeWidth="0.3"
+                strokeDasharray="1 3"
+                vectorEffect="non-scaling-stroke"
+                opacity={0.08}
+              />
+              <line
+                x1={P}
+                y1={centerY}
+                x2={CW - P}
+                y2={centerY}
+                stroke={DOT_COLOR}
+                strokeWidth="0.3"
+                strokeDasharray="1 3"
+                vectorEffect="non-scaling-stroke"
+                opacity={0.08}
+              />
+
+              {/* Scatter dots with signal density */}
               {dots.map((d, i) => (
                 <circle
                   key={i}
                   cx={d.x}
                   cy={d.y}
-                  r={1.5}
-                  fill="#1a1a1a"
-                  opacity={0.6}
+                  r={d.radius}
+                  fill={DOT_COLOR}
+                  opacity={d.opacity}
                 />
               ))}
             </svg>

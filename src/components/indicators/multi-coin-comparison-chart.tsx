@@ -2,9 +2,49 @@
 
 import type { CoinPremium } from '@/lib/types';
 import LivePulse from '@/components/motion/indicators/LivePulse';
+import { clamp } from '@/components/motion/core/dot-math';
 
 interface Props {
   coins: CoinPremium[];
+}
+
+/**
+ * Dot-density pressure bar. Higher |premium| → larger, denser dots.
+ * Implements the halftone "Volume as Pressure" pattern.
+ */
+function DotPressureBar({ premium, maxAbs }: { premium: number; maxAbs: number }) {
+  const absPremium = Math.abs(premium);
+  const intensity = clamp(absPremium / maxAbs, 0, 1);
+
+  // Dynamic dot sizing: more premium = larger, denser dots
+  const dotRadius = 0.8 + intensity * 1.2;
+  const dotSpacing = Math.max(8 - intensity * 5, 3);
+  const widthPercent = intensity * 50;
+  const isPositive = premium >= 0;
+
+  // Opacity increases with intensity
+  const opacity = 0.15 + intensity * 0.55;
+
+  return (
+    <div className="flex-1 h-5 relative overflow-hidden bg-gray-50">
+      {/* Dot pressure fill */}
+      <div
+        className="h-full absolute top-0 transition-all duration-500"
+        style={{
+          width: `${widthPercent}%`,
+          ...(isPositive
+            ? { left: '50%' }
+            : { right: '50%' }),
+          backgroundImage: `radial-gradient(circle, #1a1a1a ${dotRadius}px, transparent ${dotRadius}px)`,
+          backgroundSize: `${dotSpacing}px ${dotSpacing}px`,
+          opacity,
+        }}
+      />
+
+      {/* Center line */}
+      <div className="absolute top-0 bottom-0 left-1/2 w-px bg-gray-200" />
+    </div>
+  );
 }
 
 export default function MultiCoinComparisonChart({ coins }: Props) {
@@ -27,43 +67,18 @@ export default function MultiCoinComparisonChart({ coins }: Props) {
           <LivePulse size={4} />
           멀티코인 김프 비교
         </h2>
-        <div className="space-y-2">
-          {sorted.map((coin) => {
-            const barWidth = (Math.abs(coin.premium) / maxAbs) * 50;
-            const isPositive = coin.premium >= 0;
-
-            return (
-              <div key={coin.symbol} className="flex items-center gap-2">
-                <span className="text-[11px] font-mono text-dot-sub w-10 text-right shrink-0">
-                  {coin.symbol}
-                </span>
-                <div className="flex-1 flex items-center h-5">
-                  {/* Center line at 50% */}
-                  <div className="relative w-full h-full">
-                    <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-300" />
-                    {isPositive ? (
-                      <div
-                        className="absolute top-0.5 bottom-0.5 bg-red-400 rounded-r-sm"
-                        style={{ left: '50%', width: `${barWidth}%` }}
-                      />
-                    ) : (
-                      <div
-                        className="absolute top-0.5 bottom-0.5 bg-blue-400 rounded-l-sm"
-                        style={{ right: '50%', width: `${barWidth}%` }}
-                      />
-                    )}
-                  </div>
-                </div>
-                <span
-                  className={`text-[11px] font-mono w-14 text-right shrink-0 ${
-                    isPositive ? 'text-red-500' : 'text-blue-500'
-                  }`}
-                >
-                  {coin.premium >= 0 ? '+' : ''}{coin.premium.toFixed(2)}%
-                </span>
-              </div>
-            );
-          })}
+        <div className="space-y-1.5">
+          {sorted.map((coin) => (
+            <div key={coin.symbol} className="flex items-center gap-2">
+              <span className="text-[11px] font-mono text-dot-sub w-10 text-right shrink-0">
+                {coin.symbol}
+              </span>
+              <DotPressureBar premium={coin.premium} maxAbs={maxAbs} />
+              <span className="text-[11px] font-mono w-14 text-right shrink-0 text-dot-text">
+                {coin.premium >= 0 ? '+' : ''}{coin.premium.toFixed(2)}%
+              </span>
+            </div>
+          ))}
         </div>
         <div className="flex justify-between text-[9px] text-dot-muted mt-2 font-mono px-12">
           <span>역프</span>

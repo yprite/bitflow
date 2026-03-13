@@ -7,6 +7,10 @@ interface ChartBaseProps {
   yAxisLabels: string[];
   xAxisLabels: string[];
   children: React.ReactNode;
+  /** SVG content rendered below data (threshold fields, etc.) */
+  underlays?: React.ReactNode;
+  /** SVG content rendered above data (afterglow, haze, etc.) */
+  overlays?: React.ReactNode;
   chartHeight?: number;
   chartWidth?: number;
   patternId?: string;
@@ -32,11 +36,23 @@ export function mapToChart(
   return { x, y };
 }
 
+/** Map a data-space value to chart y coordinate. */
+export function valueToY(
+  value: number,
+  min: number,
+  range: number,
+  chartHeight = 120,
+) {
+  return PADDING + (chartHeight - PADDING * 2) - ((value - min) / (range || 1)) * (chartHeight - PADDING * 2);
+}
+
 export default function ChartBase({
   title,
   yAxisLabels,
   xAxisLabels,
   children,
+  underlays,
+  overlays,
   chartHeight = 120,
   chartWidth = 100,
   patternId = 'dotGrid',
@@ -86,7 +102,9 @@ export default function ChartBase({
                   vectorEffect="non-scaling-stroke"
                 />
               ))}
+              {underlays}
               {children}
+              {overlays}
             </svg>
             <div className="flex justify-between text-[11px] text-dot-muted mt-2 font-mono">
               {xAxisLabels.map((label, i) => (
