@@ -1,66 +1,40 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import KimpCard from './kimp-card';
-import FundingRateCard from './funding-rate-card';
-import FearGreedCard from './fear-greed-card';
 import SignalBadge from './signal-badge';
-import KimpChart from './kimp-chart';
-import PremiumHeatmap from './premium-heatmap';
-import ArbitrageCalculator from './arbitrage-calculator';
 import OrbitalSilence from './motion/storytelling/OrbitalSilence';
-import type { DashboardData, MultiCoinKimpData, CoinPremium, KimpHistoryPoint } from '@/lib/types';
+import { useData } from './data-provider';
+
+function NavCard({ href, title, description, items }: {
+  href: string;
+  title: string;
+  description: string;
+  items: string[];
+}) {
+  return (
+    <a href={href} className="dot-card p-4 sm:p-5 group cursor-pointer block hover:border-dot-accent transition-colors">
+      <div className="dot-card-inner">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-dot-sub uppercase tracking-wider group-hover:text-dot-accent transition-colors">
+            {title}
+          </h3>
+          <span className="text-dot-muted group-hover:text-dot-accent transition-colors text-sm font-mono">→</span>
+        </div>
+        <p className="text-[11px] text-dot-muted mb-3">{description}</p>
+        <div className="flex flex-wrap gap-1.5">
+          {items.map((item) => (
+            <span key={item} className="text-[10px] text-dot-sub bg-dot-border/20 px-2 py-0.5 font-mono">
+              {item}
+            </span>
+          ))}
+        </div>
+      </div>
+    </a>
+  );
+}
 
 export default function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [multiCoinData, setMultiCoinData] = useState<MultiCoinKimpData | null>(null);
-  const [selectedCoin, setSelectedCoin] = useState<CoinPremium | null>(null);
-  const [sessionHistory, setSessionHistory] = useState<KimpHistoryPoint[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<string>('');
-
-  const fetchData = async () => {
-    try {
-      const [kimpRes, multiRes] = await Promise.all([
-        fetch('/api/kimp'),
-        fetch('/api/multi-kimp'),
-      ]);
-
-      if (!kimpRes.ok) throw new Error('API 오류');
-      const json: DashboardData = await kimpRes.json();
-      setData(json);
-
-      if (multiRes.ok) {
-        const multiJson: MultiCoinKimpData = await multiRes.json();
-        setMultiCoinData(multiJson);
-      }
-
-      setError(null);
-      setLastUpdated(new Date().toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul' }));
-      setSessionHistory((prev) => {
-        if (json.history.length > 0) {
-          return prev;
-        }
-
-        return [
-          ...prev,
-          { collectedAt: new Date().toISOString(), value: json.kimp.kimchiPremium },
-        ].slice(-4320);
-      });
-    } catch (err) {
-      setError('데이터를 불러올 수 없습니다.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 60_000);
-    return () => clearInterval(interval);
-  }, []);
+  const { data, error, loading, lastUpdated, fetchData } = useData();
 
   if (loading) {
     return (
@@ -86,8 +60,6 @@ export default function Dashboard() {
     );
   }
 
-  const chartData = data.history.length > 0 ? data.history : sessionHistory;
-
   return (
     <div className="space-y-3 sm:space-y-5">
       <div className="flex items-center justify-between">
@@ -102,20 +74,22 @@ export default function Dashboard() {
 
       <KimpCard kimp={data.kimp} avg30d={data.avg30d} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <FundingRateCard data={data.fundingRate} />
-        <FearGreedCard data={data.fearGreed} />
-        <SignalBadge signal={data.signal} />
+      <SignalBadge signal={data.signal} />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <NavCard
+          href="/indicators"
+          title="지표"
+          description="시장 상세 지표와 추이를 확인합니다"
+          items={['펀딩비율', '공포탐욕', '김프 차트']}
+        />
+        <NavCard
+          href="/tools"
+          title="도구"
+          description="멀티코인 비교와 재정거래 시뮬레이션"
+          items={['히트맵', '재정거래 계산기']}
+        />
       </div>
-
-      <KimpChart data={chartData} />
-
-      {multiCoinData && (
-        <>
-          <PremiumHeatmap data={multiCoinData} onSelectCoin={setSelectedCoin} />
-          <ArbitrageCalculator data={multiCoinData} selectedCoin={selectedCoin} />
-        </>
-      )}
     </div>
   );
 }

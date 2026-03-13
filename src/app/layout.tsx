@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import AmbientBackground from '@/components/motion/ambient/AmbientBackground';
 import AnimatedLogo from '@/components/motion/brand/AnimatedLogo';
+import DataProvider from '@/components/data-provider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -30,16 +31,24 @@ export default function RootLayout({
             </a>
             <div className="flex gap-4 sm:gap-6 text-sm">
               <a href="/" className="text-dot-sub hover:text-dot-accent transition font-medium">
-                대시보드
+                홈
+              </a>
+              <a href="/indicators" className="text-dot-sub hover:text-dot-accent transition font-medium">
+                지표
+              </a>
+              <a href="/tools" className="text-dot-sub hover:text-dot-accent transition font-medium">
+                도구
               </a>
               <a href="/alert" className="text-dot-sub hover:text-dot-accent transition font-medium">
-                알림 설정
+                알림
               </a>
             </div>
           </nav>
         </header>
         <main className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 relative z-10">
-          {children}
+          <DataProvider>
+            {children}
+          </DataProvider>
         </main>
         <footer className="dot-border-t mt-12 relative z-10">
           <div className="max-w-3xl mx-auto px-4 py-6 text-center text-xs text-dot-muted">
