@@ -4,6 +4,9 @@ import { useState, useMemo } from 'react';
 import type { CoinPremium, MultiCoinKimpData, ArbitrageResult } from '@/lib/types';
 import { calculateArbitrage } from '@/lib/kimp';
 import DotKPIValue from './motion/typography/DotKPIValue';
+import DotValueRefresh, { refreshStyle, residueStyle } from './motion/transitions/DotValueRefresh';
+import { useFieldTransition } from './motion/transitions/useFieldTransition';
+import { useReducedMotion } from './motion/core/useReducedMotion';
 
 interface ArbitrageCalculatorProps {
   data: MultiCoinKimpData;
@@ -12,10 +15,53 @@ interface ArbitrageCalculatorProps {
 
 const PRESET_AMOUNTS = [1_000_000, 5_000_000, 10_000_000, 50_000_000];
 
+/** Animated number row for the detail breakdown table. */
+function AnimatedRow({
+  label,
+  value,
+  prefix = '',
+  suffix = '원',
+  className = 'text-dot-text',
+  reducedMotion,
+  fractionDigits = 0,
+}: {
+  label: string;
+  value: number;
+  prefix?: string;
+  suffix?: string;
+  className?: string;
+  reducedMotion: boolean;
+  fractionDigits?: number;
+}) {
+  return (
+    <div className="flex justify-between">
+      <span className="text-dot-muted">{label}</span>
+      <DotValueRefresh value={value}>
+        {({ current, previous, showResidue, residueOpacity, pulseScale }) => (
+          <span className={`font-mono relative ${className}`}>
+            {showResidue && previous !== null && (
+              <span
+                className="absolute right-0 whitespace-nowrap"
+                style={residueStyle(residueOpacity, reducedMotion)}
+              >
+                {prefix}{Number(previous).toLocaleString('ko-KR', { maximumFractionDigits: fractionDigits })}{suffix}
+              </span>
+            )}
+            <span style={refreshStyle(pulseScale, reducedMotion)}>
+              {prefix}{Number(current).toLocaleString('ko-KR', { maximumFractionDigits: fractionDigits })}{suffix}
+            </span>
+          </span>
+        )}
+      </DotValueRefresh>
+    </div>
+  );
+}
+
 export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCalculatorProps) {
   const [coinSymbol, setCoinSymbol] = useState(selectedCoin?.symbol || 'BTC');
   const [amountInput, setAmountInput] = useState('10000000');
   const [direction, setDirection] = useState<'buy-kr-sell-global' | 'buy-global-sell-kr'>('buy-global-sell-kr');
+  const reducedMotion = useReducedMotion();
 
   const coin = data.coins.find(c => c.symbol === coinSymbol);
   const amount = parseInt(amountInput.replace(/,/g, ''), 10) || 0;
@@ -32,6 +78,14 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
   const recommendedDirection = coin
     ? coin.premium > 0 ? 'buy-global-sell-kr' : 'buy-kr-sell-global'
     : 'buy-global-sell-kr';
+
+  // Field transition on direction change for the result container
+  const fieldTransition = useFieldTransition(direction, {
+    duration: 350,
+    fadeStrength: 0.1,
+    blurStrength: 0.6,
+    scaleStrength: 0.01,
+  });
 
   return (
     <div className="dot-card p-4 sm:p-6">
@@ -81,7 +135,7 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
             <div className="flex flex-col gap-1">
               <button
                 onClick={() => setDirection('buy-global-sell-kr')}
-                className={`text-xs px-3 py-1.5 transition font-mono border-2 ${
+                className={`text-xs px-3 py-1.5 font-mono border-2 transition-all duration-300 ${
                   direction === 'buy-global-sell-kr'
                     ? 'border-dot-red text-dot-red bg-red-50'
                     : 'border-dot-border text-dot-muted hover:text-dot-accent'
@@ -92,7 +146,7 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
               </button>
               <button
                 onClick={() => setDirection('buy-kr-sell-global')}
-                className={`text-xs px-3 py-1.5 transition font-mono border-2 ${
+                className={`text-xs px-3 py-1.5 font-mono border-2 transition-all duration-300 ${
                   direction === 'buy-kr-sell-global'
                     ? 'border-dot-blue text-dot-blue bg-blue-50'
                     : 'border-dot-border text-dot-muted hover:text-dot-accent'
@@ -107,85 +161,124 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
 
         {/* Result */}
         {result && (
-          <div className={`p-3 sm:p-4 border-2 ${result.viable ? 'border-dot-green bg-emerald-50/50' : 'border-dot-red bg-red-50/50'}`}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className={`text-xs px-2 py-0.5 font-mono font-medium border ${
-                  result.viable ? 'border-dot-green text-dot-green' : 'border-dot-red text-dot-red'
-                }`}>
-                  {result.viable ? '수익 가능' : '손실 예상'}
-                </span>
-                <span className="text-xs text-dot-muted font-mono">{result.estimatedTime}</span>
-              </div>
-              <DotKPIValue
-                value={result.netProfit}
-                decimals={0}
-                suffix=""
-                showSign
-                fontScale={5}
-                morphMode="reconfigure"
-                morphDuration={500}
-              />
-            </div>
-
-            <div className="text-xs text-dot-muted font-mono mb-2">{result.direction}</div>
-
-            {/* Dot profit bar */}
-            <div className="flex gap-[3px] mb-3">
-              {[...Array(20)].map((_, i) => {
-                const filled = i < Math.min(Math.abs(result.netProfitRate) * 4, 20);
-                return (
-                  <div
-                    key={i}
-                    className="w-full h-2 rounded-sm transition-all"
-                    style={{
-                      backgroundColor: filled
-                        ? result.netProfit >= 0 ? '#00c853' : '#e53935'
-                        : '#e5e7eb',
-                    }}
-                  />
-                );
-              })}
-            </div>
-
-            {/* Detail breakdown */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
-              <div className="flex justify-between">
-                <span className="text-dot-muted">투자금액</span>
-                <span className="text-dot-text font-mono">{result.investmentKrw.toLocaleString()}원</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-dot-muted">현재 김프</span>
-                <span className="text-dot-text font-mono">{result.premium >= 0 ? '+' : ''}{result.premium.toFixed(2)}%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-dot-muted">총 수익 (수수료 전)</span>
-                <span className="text-dot-text font-mono">{result.grossProfit.toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-dot-muted">순수익률</span>
-                <span className={`font-mono font-medium ${result.netProfitRate >= 0 ? 'text-dot-green' : 'text-dot-red'}`}>
-                  {result.netProfitRate >= 0 ? '+' : ''}{result.netProfitRate.toFixed(3)}%
-                </span>
+          <div
+            className="p-3 sm:p-4 border-2 transition-colors duration-500"
+            style={{
+              borderColor: result.viable ? '#00c853' : '#e53935',
+              backgroundColor: result.viable ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)',
+            }}
+          >
+            <div style={fieldTransition.style}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <DotValueRefresh value={result.viable ? 1 : 0}>
+                    {({ pulseScale }) => (
+                      <span
+                        className={`text-xs px-2 py-0.5 font-mono font-medium border transition-colors duration-400 ${
+                          result.viable ? 'border-dot-green text-dot-green' : 'border-dot-red text-dot-red'
+                        }`}
+                        style={refreshStyle(pulseScale, reducedMotion)}
+                      >
+                        {result.viable ? '수익 가능' : '손실 예상'}
+                      </span>
+                    )}
+                  </DotValueRefresh>
+                  <span className="text-xs text-dot-muted font-mono">{result.estimatedTime}</span>
+                </div>
+                <DotKPIValue
+                  value={result.netProfit}
+                  decimals={0}
+                  suffix=""
+                  showSign
+                  fontScale={5}
+                  morphMode="reconfigure"
+                  morphDuration={500}
+                />
               </div>
 
-              <div className="col-span-1 sm:col-span-2 dot-border-t my-1" />
+              <div className="text-xs text-dot-muted font-mono mb-2">{result.direction}</div>
 
-              <div className="flex justify-between text-dot-muted">
-                <span>한국 거래소 수수료</span>
-                <span className="font-mono">-{result.exchangeFeeKr.toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원</span>
+              {/* Dot profit bar — staggered color transition */}
+              <div className="flex gap-[3px] mb-3">
+                {[...Array(20)].map((_, i) => {
+                  const filled = i < Math.min(Math.abs(result.netProfitRate) * 4, 20);
+                  return (
+                    <div
+                      key={i}
+                      className="w-full h-2 rounded-sm"
+                      style={{
+                        backgroundColor: filled
+                          ? result.netProfit >= 0 ? '#00c853' : '#e53935'
+                          : '#e5e7eb',
+                        transition: reducedMotion
+                          ? 'none'
+                          : `background-color 400ms cubic-bezier(0.16, 1, 0.3, 1) ${i * 25}ms`,
+                      }}
+                    />
+                  );
+                })}
               </div>
-              <div className="flex justify-between text-dot-muted">
-                <span>해외 거래소 수수료</span>
-                <span className="font-mono">-{result.exchangeFeeGlobal.toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원</span>
-              </div>
-              <div className="flex justify-between text-dot-muted">
-                <span>네트워크 수수료</span>
-                <span className="font-mono">-{result.networkFee.toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원</span>
-              </div>
-              <div className="flex justify-between text-dot-muted">
-                <span>예상 슬리피지</span>
-                <span className="font-mono">-{result.slippage.toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원</span>
+
+              {/* Detail breakdown — animated values */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                <AnimatedRow
+                  label="투자금액"
+                  value={result.investmentKrw}
+                  reducedMotion={reducedMotion}
+                />
+                <AnimatedRow
+                  label="현재 김프"
+                  value={result.premium}
+                  prefix={result.premium >= 0 ? '+' : ''}
+                  suffix="%"
+                  fractionDigits={2}
+                  reducedMotion={reducedMotion}
+                />
+                <AnimatedRow
+                  label="총 수익 (수수료 전)"
+                  value={result.grossProfit}
+                  reducedMotion={reducedMotion}
+                />
+                <AnimatedRow
+                  label="순수익률"
+                  value={result.netProfitRate}
+                  prefix={result.netProfitRate >= 0 ? '+' : ''}
+                  suffix="%"
+                  fractionDigits={3}
+                  className={`font-medium ${result.netProfitRate >= 0 ? 'text-dot-green' : 'text-dot-red'}`}
+                  reducedMotion={reducedMotion}
+                />
+
+                <div className="col-span-1 sm:col-span-2 dot-border-t my-1" />
+
+                <AnimatedRow
+                  label="한국 거래소 수수료"
+                  value={result.exchangeFeeKr}
+                  prefix="-"
+                  className="text-dot-muted"
+                  reducedMotion={reducedMotion}
+                />
+                <AnimatedRow
+                  label="해외 거래소 수수료"
+                  value={result.exchangeFeeGlobal}
+                  prefix="-"
+                  className="text-dot-muted"
+                  reducedMotion={reducedMotion}
+                />
+                <AnimatedRow
+                  label="네트워크 수수료"
+                  value={result.networkFee}
+                  prefix="-"
+                  className="text-dot-muted"
+                  reducedMotion={reducedMotion}
+                />
+                <AnimatedRow
+                  label="예상 슬리피지"
+                  value={result.slippage}
+                  prefix="-"
+                  className="text-dot-muted"
+                  reducedMotion={reducedMotion}
+                />
               </div>
             </div>
           </div>
