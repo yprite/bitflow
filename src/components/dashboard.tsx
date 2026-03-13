@@ -8,6 +8,7 @@ import SignalBadge from './signal-badge';
 import KimpChart from './kimp-chart';
 import PremiumHeatmap from './premium-heatmap';
 import ArbitrageCalculator from './arbitrage-calculator';
+import OrbitalSilence from './motion/storytelling/OrbitalSilence';
 import type { DashboardData, MultiCoinKimpData, CoinPremium, KimpHistoryPoint } from '@/lib/types';
 
 export default function Dashboard() {
@@ -57,14 +58,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 60_000); // 1분마다 갱신
+    const interval = setInterval(fetchData, 60_000);
     return () => clearInterval(interval);
   }, []);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-gray-500 text-lg">데이터 로딩 중...</div>
+        <OrbitalSilence />
       </div>
     );
   }
@@ -73,10 +74,10 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <p className="text-red-400 text-lg mb-2">{error}</p>
+          <p className="text-dot-red text-lg mb-2">{error}</p>
           <button
             onClick={fetchData}
-            className="text-sm text-gray-400 hover:text-white transition px-4 py-2 rounded-lg border border-gray-700"
+            className="text-sm text-dot-sub hover:text-dot-accent transition px-4 py-2 border-2 border-dot-border hover:border-dot-accent"
           >
             다시 시도
           </button>
@@ -88,20 +89,20 @@ export default function Dashboard() {
   const chartData = data.history.length > 0 ? data.history : sessionHistory;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-5">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-gray-600">마지막 업데이트: {lastUpdated}</p>
+        <p className="text-xs text-dot-muted font-mono">마지막 업데이트: {lastUpdated}</p>
         <button
           onClick={fetchData}
-          className="text-xs text-gray-500 hover:text-gray-300 transition"
+          className="text-xs text-dot-muted hover:text-dot-accent transition font-mono"
         >
-          새로고침
+          [ 새로고침 ]
         </button>
       </div>
 
       <KimpCard kimp={data.kimp} avg30d={data.avg30d} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <FundingRateCard data={data.fundingRate} />
         <FearGreedCard data={data.fearGreed} />
         <SignalBadge signal={data.signal} />

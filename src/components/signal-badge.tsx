@@ -1,27 +1,44 @@
 'use client';
 
 import type { CompositeSignal } from '@/lib/types';
+import InsightBloom from './motion/indicators/InsightBloom';
+import SignalField from './motion/indicators/SignalField';
+import DotMorphTransition from './motion/transitions/DotMorphTransition';
 
 interface SignalBadgeProps {
   signal: CompositeSignal;
 }
 
-function getBgColor(level: string): string {
+function getColor(level: string): string {
   switch (level) {
-    case '과열': return 'bg-red-900/40 border-red-700';
-    case '침체': return 'bg-blue-900/40 border-blue-700';
-    default: return 'bg-gray-800/40 border-gray-700';
+    case '과열': return '#e53935';
+    case '침체': return '#1e88e5';
+    default: return '#9ca3af';
   }
 }
 
 export default function SignalBadge({ signal }: SignalBadgeProps) {
+  const color = getColor(signal.level);
+
   return (
-    <div className={`rounded-2xl border p-6 ${getBgColor(signal.level)}`}>
-      <h2 className="text-sm font-medium text-gray-400 mb-2">복합 시그널</h2>
-      <p className={`text-3xl font-bold ${signal.color}`}>
-        {signal.level}
-      </p>
-      <p className="text-sm text-gray-400 mt-2">{signal.description}</p>
+    <div className="dot-card p-4 sm:p-5 relative overflow-hidden">
+      {/* Animated signal intensity field */}
+      <SignalField level={signal.level} width={240} height={120} />
+
+      <div className="dot-card-inner">
+        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3">복합 시그널</h2>
+        <div className="relative">
+          <DotMorphTransition
+            text={signal.level}
+            fontScale={5}
+            mode="dissolve"
+            morphDuration={600}
+            color={color}
+          />
+          <InsightBloom trigger={signal.level} dotCount={5} travelDistance={18} dotSize={2} color={color} />
+        </div>
+        <p className="text-xs text-dot-muted mt-2">{signal.description}</p>
+      </div>
     </div>
   );
 }

@@ -1,25 +1,20 @@
 'use client';
 
 import type { FearGreedData } from '@/lib/types';
+import DotScale from './motion/indicators/DotScale';
+import DotKPIValue from './motion/typography/DotKPIValue';
+import DotMorphTransition from './motion/transitions/DotMorphTransition';
 
 interface FearGreedCardProps {
   data: FearGreedData;
 }
 
-function getGaugeColor(value: number): string {
-  if (value <= 25) return 'text-red-400';
-  if (value <= 45) return 'text-orange-400';
-  if (value <= 55) return 'text-yellow-400';
-  if (value <= 75) return 'text-lime-400';
-  return 'text-green-400';
-}
-
-function getBarColor(value: number): string {
-  if (value <= 25) return 'bg-red-500';
-  if (value <= 45) return 'bg-orange-500';
-  if (value <= 55) return 'bg-yellow-500';
-  if (value <= 75) return 'bg-lime-500';
-  return 'bg-green-500';
+function getColor(value: number): string {
+  if (value <= 25) return '#e53935';
+  if (value <= 45) return '#f9a825';
+  if (value <= 55) return '#9ca3af';
+  if (value <= 75) return '#66bb6a';
+  return '#00c853';
 }
 
 const CLASSIFICATION_KR: Record<string, string> = {
@@ -31,22 +26,42 @@ const CLASSIFICATION_KR: Record<string, string> = {
 };
 
 export default function FearGreedCard({ data }: FearGreedCardProps) {
-  const color = getGaugeColor(data.value);
-  const barColor = getBarColor(data.value);
+  const color = getColor(data.value);
   const label = CLASSIFICATION_KR[data.classification] || data.classification;
 
   return (
-    <div className="rounded-2xl bg-gray-900 border border-gray-800 p-6">
-      <h2 className="text-sm font-medium text-gray-400 mb-2">공포탐욕지수</h2>
-      <div className="flex items-baseline gap-3">
-        <p className={`text-3xl font-bold ${color}`}>{data.value}</p>
-        <p className={`text-sm ${color}`}>{label}</p>
-      </div>
-      <div className="mt-3 w-full h-2 bg-gray-800 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${barColor}`}
-          style={{ width: `${data.value}%` }}
-        />
+    <div className="dot-card p-4 sm:p-5">
+      <div className="dot-card-inner">
+        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3">공포탐욕지수</h2>
+        <div className="flex items-end gap-3">
+          <DotKPIValue
+            value={data.value}
+            decimals={0}
+            showSign={false}
+            colorBySentiment={false}
+            color={color}
+            fontScale={5}
+            morphMode="threshold"
+            morphDuration={500}
+          />
+          <DotMorphTransition
+            text={label}
+            fontScale={3}
+            mode="crossfade"
+            morphDuration={400}
+            color={color}
+            className="mb-0.5"
+          />
+        </div>
+        <div className="mt-3">
+          <DotScale
+            value={data.value / 100}
+            max={10}
+            color={color}
+            minSize={6}
+            maxSize={16}
+          />
+        </div>
       </div>
     </div>
   );

@@ -3,5 +3,97 @@
 @tailwind utilities;
 
 body {
-  @apply bg-black text-gray-100 antialiased;
+  @apply bg-dot-bg text-dot-text antialiased;
+}
+
+/* ── Halftone Dot Pattern Utilities ── */
+
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(0,0,0,0.12) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+
+.dot-grid-dense {
+  background-image: radial-gradient(circle, rgba(0,0,0,0.18) 1.5px, transparent 1.5px);
+  background-size: 8px 8px;
+}
+
+.dot-grid-sparse {
+  background-image: radial-gradient(circle, rgba(0,0,0,0.08) 0.8px, transparent 0.8px);
+  background-size: 20px 20px;
+}
+
+/* Dark variants (white dots on dark bg) */
+.dot-grid-light {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+
+.dot-grid-light-dense {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.10) 1.5px, transparent 1.5px);
+  background-size: 8px 8px;
+}
+
+/* Corner halftone vignette effect */
+.dot-vignette {
+  position: relative;
+}
+.dot-vignette::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 0% 0%, rgba(0,0,0,0.06) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 100% 0%, rgba(0,0,0,0.06) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 0% 100%, rgba(0,0,0,0.06) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 100% 100%, rgba(0,0,0,0.06) 1.5px, transparent 1.5px);
+  background-size: 8px 8px;
+  mask-image:
+    radial-gradient(circle at 0% 0%, black 0%, transparent 40%),
+    radial-gradient(circle at 100% 0%, black 0%, transparent 40%),
+    radial-gradient(circle at 0% 100%, black 0%, transparent 40%),
+    radial-gradient(circle at 100% 100%, black 0%, transparent 40%);
+  mask-composite: add;
+  -webkit-mask-composite: source-over;
+}
+
+/* Dot card style */
+.dot-card {
+  @apply bg-white border border-gray-200 relative overflow-hidden;
+}
+
+.dot-card-inner {
+  @apply relative z-10;
+}
+
+/* Dot gauge blocks */
+.dot-gauge {
+  display: flex;
+  gap: 3px;
+}
+.dot-gauge-block {
+  width: 8px;
+  height: 16px;
+  border-radius: 1px;
+  background: #e5e7eb;
+  transition: background 0.3s;
+}
+.dot-gauge-block.active {
+  background: currentColor;
+}
+
+/* iPhone safe area support */
+.env-safe {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Dot border pattern (dashed pixel) */
+.dot-border-b {
+  border-bottom: 2px dotted #d1d5db;
+}
+.dot-border-t {
+  border-top: 2px dotted #d1d5db;
 }
