@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import type { CoinPremium, MultiCoinKimpData } from '@/lib/types';
+import ConvictionLens, { convictionDotStyle } from './motion/heatmap/ConvictionLens';
+import PressureBar from './motion/heatmap/PressureBar';
+import { useReducedMotion } from './motion/core/useReducedMotion';
 
 interface PremiumHeatmapProps {
   data: MultiCoinKimpData;
@@ -38,6 +41,7 @@ function getPremiumBarWidth(premium: number): number {
 
 export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapProps) {
   const [sortKey, setSortKey] = useState<SortKey>('premium');
+  const reducedMotion = useReducedMotion();
 
   const sorted = [...data.coins].sort((a, b) => {
     if (sortKey === 'premium') return b.premium - a.premium;
@@ -80,76 +84,59 @@ export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapPro
           </div>
         </div>
 
-        {/* Dot heatmap grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
-          {sorted.map(coin => {
-            const dotSize = getDotSize(coin.premium);
-            const dotColor = getDotColor(coin.premium);
-            const dotOpacity = getDotOpacity(coin.premium);
-            return (
-              <button
-                key={coin.symbol}
-                onClick={() => onSelectCoin?.(coin)}
-                className="bg-white border border-dot-border p-3 text-center transition-all hover:shadow-md group"
-              >
-                {/* Central dot indicator */}
-                <div className="flex justify-center mb-2">
-                  <div
-                    className="rounded-full transition-all duration-300 group-hover:scale-125"
-                    style={{
-                      width: `${dotSize}px`,
-                      height: `${dotSize}px`,
-                      backgroundColor: dotColor,
-                      opacity: dotOpacity,
-                    }}
-                  />
-                </div>
-                <p className="text-xs font-bold text-dot-text">{coin.symbol}</p>
-                <p className="text-sm font-bold font-mono" style={{ color: dotColor }}>
-                  {coin.premium >= 0 ? '+' : ''}{coin.premium.toFixed(2)}%
-                </p>
-                <p className="text-[10px] text-dot-muted">{coin.name}</p>
-              </button>
-            );
-          })}
-        </div>
+        {/* Dot heatmap grid with Conviction Lens */}
+        <ConvictionLens itemCount={sorted.length}>
+          {({ hoveredIndex, getScale, onHover }) => (
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+              {sorted.map((coin, index) => {
+                const dotSize = getDotSize(coin.premium);
+                const dotColor = getDotColor(coin.premium);
+                const dotOpacity = getDotOpacity(coin.premium);
+                const scale = getScale(index);
+                return (
+                  <button
+                    key={coin.symbol}
+                    onClick={() => onSelectCoin?.(coin)}
+                    onMouseEnter={() => onHover(index)}
+                    onMouseLeave={() => onHover(null)}
+                    className="bg-white border border-dot-border p-3 text-center transition-all hover:shadow-md"
+                  >
+                    {/* Central dot indicator with conviction scaling */}
+                    <div className="flex justify-center mb-2">
+                      <div
+                        className="rounded-full"
+                        style={{
+                          width: `${dotSize}px`,
+                          height: `${dotSize}px`,
+                          backgroundColor: dotColor,
+                          opacity: dotOpacity,
+                          ...convictionDotStyle(scale, reducedMotion),
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs font-bold text-dot-text">{coin.symbol}</p>
+                    <p className="text-sm font-bold font-mono" style={{ color: dotColor }}>
+                      {coin.premium >= 0 ? '+' : ''}{coin.premium.toFixed(2)}%
+                    </p>
+                    <p className="text-[10px] text-dot-muted">{coin.name}</p>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </ConvictionLens>
 
-        {/* Dot bar chart */}
+        {/* Pressure bar chart */}
         <div className="space-y-2">
           {sorted.map(coin => (
             <div key={coin.symbol} className="flex items-center gap-2 text-xs">
               <span className="w-12 text-dot-muted font-mono text-right font-medium">{coin.symbol}</span>
-              <div className="flex-1 h-5 bg-gray-100 relative overflow-hidden">
-                {coin.premium >= 0 ? (
-                  <div
-                    className="h-full transition-all duration-500 relative"
-                    style={{
-                      width: `${getPremiumBarWidth(coin.premium)}%`,
-                      marginLeft: '50%',
-                      backgroundImage: `radial-gradient(circle, ${getDotColor(coin.premium)} 1.5px, transparent 1.5px)`,
-                      backgroundSize: '6px 6px',
-                      opacity: getDotOpacity(coin.premium),
-                    }}
-                  />
-                ) : (
-                  <div
-                    className="h-full transition-all duration-500 ml-auto relative"
-                    style={{
-                      width: `${getPremiumBarWidth(coin.premium)}%`,
-                      marginRight: '50%',
-                      backgroundImage: `radial-gradient(circle, ${getDotColor(coin.premium)} 1.5px, transparent 1.5px)`,
-                      backgroundSize: '6px 6px',
-                      opacity: getDotOpacity(coin.premium),
-                    }}
-                  />
-                )}
-                <div className="absolute top-0 bottom-0 left-1/2 w-px bg-dot-border" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-[10px] text-dot-text font-mono font-medium">
-                    {coin.premium >= 0 ? '+' : ''}{coin.premium.toFixed(2)}%
-                  </span>
-                </div>
-              </div>
+              <PressureBar
+                premium={coin.premium}
+                color={getDotColor(coin.premium)}
+                opacity={getDotOpacity(coin.premium)}
+                widthPercent={getPremiumBarWidth(coin.premium)}
+              />
             </div>
           ))}
         </div>

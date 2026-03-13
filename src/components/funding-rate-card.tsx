@@ -1,6 +1,7 @@
 'use client';
 
 import type { FundingRateData } from '@/lib/types';
+import DotGauge from './motion/indicators/DotGauge';
 
 interface FundingRateCardProps {
   data: FundingRateData;
@@ -25,18 +26,12 @@ export default function FundingRateCard({ data }: FundingRateCardProps) {
         <p className={`text-2xl font-bold font-mono ${color}`}>
           {isPositive ? '+' : ''}{ratePercent}%
         </p>
-        <div className="flex gap-1 mt-2 mb-3">
-          {[...Array(8)].map((_, i) => (
-            <div
-              key={i}
-              className="w-2 h-2 rounded-full"
-              style={{
-                backgroundColor: i < dotCount
-                  ? isPositive ? '#00c853' : '#e53935'
-                  : '#e5e7eb',
-              }}
-            />
-          ))}
+        <div className="mt-2 mb-3">
+          <DotGauge
+            activeDots={dotCount}
+            max={8}
+            activeColor={isPositive ? '#00c853' : '#e53935'}
+          />
         </div>
         <p className="text-xs text-dot-muted font-mono">
           다음 정산: {nextTime}

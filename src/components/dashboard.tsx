@@ -8,6 +8,7 @@ import SignalBadge from './signal-badge';
 import KimpChart from './kimp-chart';
 import PremiumHeatmap from './premium-heatmap';
 import ArbitrageCalculator from './arbitrage-calculator';
+import OrbitalSilence from './motion/storytelling/OrbitalSilence';
 import type { DashboardData, MultiCoinKimpData, CoinPremium, KimpHistoryPoint } from '@/lib/types';
 
 export default function Dashboard() {
@@ -64,21 +65,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex gap-2">
-            {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="w-3 h-3 rounded-full bg-dot-accent"
-                style={{
-                  opacity: 0.2 + (i * 0.2),
-                  animation: `pulse 1.5s ease-in-out ${i * 0.15}s infinite`,
-                }}
-              />
-            ))}
-          </div>
-          <p className="text-dot-sub text-sm">데이터 로딩 중...</p>
-        </div>
+        <OrbitalSilence />
       </div>
     );
   }

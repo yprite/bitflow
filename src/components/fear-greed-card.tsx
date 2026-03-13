@@ -1,6 +1,7 @@
 'use client';
 
 import type { FearGreedData } from '@/lib/types';
+import DotScale from './motion/indicators/DotScale';
 
 interface FearGreedCardProps {
   data: FearGreedData;
@@ -25,8 +26,6 @@ const CLASSIFICATION_KR: Record<string, string> = {
 export default function FearGreedCard({ data }: FearGreedCardProps) {
   const color = getColor(data.value);
   const label = CLASSIFICATION_KR[data.classification] || data.classification;
-  const totalDots = 10;
-  const activeDots = Math.round((data.value / 100) * totalDots);
 
   return (
     <div className="dot-card p-5">
@@ -36,22 +35,14 @@ export default function FearGreedCard({ data }: FearGreedCardProps) {
           <p className="text-2xl font-bold font-mono" style={{ color }}>{data.value}</p>
           <p className="text-xs font-medium" style={{ color }}>{label}</p>
         </div>
-        <div className="flex gap-[4px] mt-3">
-          {[...Array(totalDots)].map((_, i) => {
-            const dotActive = i < activeDots;
-            const dotSize = dotActive ? 10 + Math.round((i / totalDots) * 6) : 6;
-            return (
-              <div
-                key={i}
-                className="rounded-full transition-all duration-300"
-                style={{
-                  width: `${dotSize}px`,
-                  height: `${dotSize}px`,
-                  backgroundColor: dotActive ? color : '#e5e7eb',
-                }}
-              />
-            );
-          })}
+        <div className="mt-3">
+          <DotScale
+            value={data.value / 100}
+            max={10}
+            color={color}
+            minSize={6}
+            maxSize={16}
+          />
         </div>
       </div>
     </div>

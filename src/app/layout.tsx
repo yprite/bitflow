@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import AmbientBackground from '@/components/motion/ambient/AmbientBackground';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -13,7 +14,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <body className="min-h-screen bg-dot-bg dot-grid-sparse">
+      <body className="min-h-screen bg-dot-bg">
+        <AmbientBackground />
         <header className="dot-border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
           <nav className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
             <a href="/" className="text-lg font-bold text-dot-accent tracking-tight">
@@ -39,10 +41,10 @@ export default function RootLayout({
             </div>
           </nav>
         </header>
-        <main className="max-w-3xl mx-auto px-4 py-6">
+        <main className="max-w-3xl mx-auto px-4 py-6 relative z-10">
           {children}
         </main>
-        <footer className="dot-border-t mt-12">
+        <footer className="dot-border-t mt-12 relative z-10">
           <div className="max-w-3xl mx-auto px-4 py-6 text-center text-xs text-dot-muted">
             실시간 데이터는 업비트, 글로벌 시세 API, alternative.me에서 제공됩니다.
           </div>
