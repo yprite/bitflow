@@ -69,6 +69,50 @@ export interface MultiCoinKimpData {
   timestamp: string;
 }
 
+// 지표 페이지 확장 타입
+export interface ExtendedKimpHistoryPoint {
+  collectedAt: string;
+  value: number;
+  usdKrw: number;
+}
+
+export interface FundingRateHistoryPoint {
+  timestamp: string;
+  rate: number;
+}
+
+export interface FearGreedHistoryPoint {
+  timestamp: string;
+  value: number;
+  classification: string;
+}
+
+export interface DailyKimpSummary {
+  date: string;
+  avg: number;
+  min: number;
+  max: number;
+  count: number;
+}
+
+export interface KimpStats {
+  avg: number;
+  min: number;
+  max: number;
+  stdDev: number;
+  median: number;
+  current: number;
+  dataPoints: number;
+}
+
+export interface IndicatorsPageData {
+  kimpHistory: ExtendedKimpHistoryPoint[];
+  fundingRateHistory: FundingRateHistoryPoint[];
+  fearGreedHistory: FearGreedHistoryPoint[];
+  multiCoin: CoinPremium[];
+  usdKrw: number;
+}
+
 // 차익거래 계산기
 export interface ArbitrageParams {
   coin: string;

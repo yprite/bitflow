@@ -1,10 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { KimpHistoryPoint } from '@/lib/types';
 import DotTabBar from './motion/transitions/DotTabBar';
 import { useFieldTransition } from './motion/transitions/useFieldTransition';
+import { useReducedMotion } from './motion/core/useReducedMotion';
 import LivePulse from './motion/indicators/LivePulse';
+import {
+  SignalDensity,
+  ThresholdField,
+  PressureField,
+  DataAfterglow,
+  UncertaintyHaze,
+  type ChartPoint,
+  type ThresholdFieldConfig,
+} from './motion/chart/chart-overlays';
+import { PREMIUM_THRESHOLDS } from './motion/core/constants';
 
 interface KimpChartProps {
   data: KimpHistoryPoint[];
@@ -41,6 +52,7 @@ function formatPercentLabel(value: number): string {
 
 export default function KimpChart({ data }: KimpChartProps) {
   const [period, setPeriod] = useState<Period>('7d');
+  const reducedMotion = useReducedMotion();
   const fieldTransition = useFieldTransition(period, {
     duration: 350,
     fadeStrength: 0.12,
@@ -51,7 +63,44 @@ export default function KimpChart({ data }: KimpChartProps) {
   const cutoff = period === '7d' ? now - 7 * 86400_000 : now - 30 * 86400_000;
   const filtered = data.filter((point) => new Date(point.collectedAt).getTime() >= cutoff);
 
-  if (filtered.length < 2) {
+  const chartMetrics = useMemo(() => {
+    if (filtered.length < 2) return null;
+
+    const values = filtered.map((point) => point.value);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+
+    const padding = 4;
+    const chartHeight = 120;
+    const chartWidth = 100;
+
+    const chartPoints: ChartPoint[] = filtered.map((point, i) => {
+      const x = padding + (i / (filtered.length - 1)) * (chartWidth - padding * 2);
+      const y = padding + (chartHeight - padding * 2) - ((point.value - min) / range) * (chartHeight - padding * 2);
+      return { x, y, value: point.value };
+    });
+
+    // Threshold activation: how many points are near each threshold
+    const thresholdConfigs: ThresholdFieldConfig[] = PREMIUM_THRESHOLDS
+      .filter((t) => t >= min && t <= max) // only thresholds in visible range
+      .map((t) => {
+        const nearCount = values.filter((v) => Math.abs(v - t) < 1).length;
+        const activation = Math.min(nearCount / values.length * 4, 1);
+        const y = padding + (chartHeight - padding * 2) - ((t - min) / range) * (chartHeight - padding * 2);
+
+        return {
+          value: t,
+          y,
+          xRange: [padding, chartWidth - padding] as [number, number],
+          activation,
+        };
+      });
+
+    return { values, min, max, range, chartPoints, thresholdConfigs };
+  }, [filtered]);
+
+  if (!chartMetrics) {
     return (
       <div className="dot-card p-6">
         <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-4 flex items-center gap-1.5">
@@ -63,25 +112,13 @@ export default function KimpChart({ data }: KimpChartProps) {
     );
   }
 
-  const values = filtered.map((point) => point.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-
-  const padding = 4; // padding so dots at edges don't clip
+  const { min, max, range, chartPoints, thresholdConfigs } = chartMetrics;
+  const padding = 4;
   const chartHeight = 120;
   const chartWidth = 100;
   const guideLines = [padding, padding + (chartHeight - padding * 2) / 2, chartHeight - padding];
 
-  // Generate dots for the chart (halftone scatter plot style)
-  const dots = filtered.map((point, i) => {
-    const x = padding + (i / (filtered.length - 1)) * (chartWidth - padding * 2);
-    const y = padding + (chartHeight - padding * 2) - ((point.value - min) / range) * (chartHeight - padding * 2);
-    return { x, y, value: point.value };
-  });
-
-  // Also keep polyline for connectivity
-  const points = dots.map(d => `${d.x},${d.y}`).join(' ');
+  const polylinePoints = chartPoints.map(d => `${d.x},${d.y}`).join(' ');
 
   const yAxisLabels = [max, min + range / 2, min].map((value) => formatPercentLabel(value));
   const axisLabels = [
@@ -143,9 +180,15 @@ export default function KimpChart({ data }: KimpChartProps) {
                 />
               ))}
 
+              {/* Threshold density bands — below data */}
+              <ThresholdField thresholds={thresholdConfigs} />
+
+              {/* Pressure field — momentum compression */}
+              <PressureField points={chartPoints} threshold={0.4} />
+
               {/* Line connecting dots */}
               <polyline
-                points={points}
+                points={polylinePoints}
                 fill="none"
                 stroke="#1a1a1a"
                 strokeWidth="1"
@@ -153,16 +196,27 @@ export default function KimpChart({ data }: KimpChartProps) {
                 vectorEffect="non-scaling-stroke"
               />
 
-              {/* Data point dots at every point */}
-              {dots.map((d, i) => (
-                <circle
-                  key={i}
-                  cx={d.x}
-                  cy={d.y}
-                  r={1.5}
-                  fill="#1a1a1a"
-                />
-              ))}
+              {/* Signal-density data dots (replaces uniform circles) */}
+              <SignalDensity
+                points={chartPoints}
+                config={{
+                  thresholds: PREMIUM_THRESHOLDS,
+                  minRadius: 0.6,
+                  maxRadius: 2.2,
+                  minOpacity: 0.3,
+                  maxOpacity: 0.92,
+                }}
+              />
+
+              {/* Uncertainty haze on trailing edge */}
+              <UncertaintyHaze points={chartPoints} extent={0.15} maxScatter={2} />
+
+              {/* Afterglow on newest points */}
+              <DataAfterglow
+                points={chartPoints}
+                config={{ trailLength: 4, haloRadius: 3.5 }}
+                reducedMotion={reducedMotion}
+              />
             </svg>
             <div className="flex justify-between text-[11px] text-dot-muted mt-2 font-mono">
               <span>{axisLabels[0]}</span>
