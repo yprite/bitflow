@@ -78,6 +78,9 @@ export default function KimpCard({ kimp, avg30d }: KimpCardProps) {
                 </div>
               )}
             </DotValueRefresh>
+            <p className="text-dot-muted font-mono text-[10px] mt-0.5">
+              ≈ ${(kimp.upbitPrice / kimp.usdKrw).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </p>
           </div>
           <div>
             <p className="text-dot-muted text-xs mb-1">해외 BTC</p>
