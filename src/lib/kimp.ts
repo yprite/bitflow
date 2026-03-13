@@ -253,7 +253,6 @@ const TRACKED_COINS = [
   { symbol: 'AVAX', upbit: 'KRW-AVAX', global: 'AVAX-USDT', gecko: 'avalanche-2', name: '아발란체', marketCapRank: 26 },
   { symbol: 'DOT', upbit: 'KRW-DOT', global: 'DOT-USDT', gecko: 'polkadot', name: '폴카닷', marketCapRank: 38 },
   { symbol: 'LINK', upbit: 'KRW-LINK', global: 'LINK-USDT', gecko: 'chainlink', name: '체인링크', marketCapRank: 18 },
-  { symbol: 'POL', upbit: 'KRW-POL', global: 'POL-USDT', gecko: 'polygon-ecosystem-token', name: '폴리곤', marketCapRank: 66 },
 ];
 
 export { TRACKED_COINS };
