@@ -3,6 +3,7 @@
 import type { FundingRateData } from '@/lib/types';
 import DotGauge from './motion/indicators/DotGauge';
 import DotKPIValue from './motion/typography/DotKPIValue';
+import LivePulse from './motion/indicators/LivePulse';
 
 interface FundingRateCardProps {
   data: FundingRateData;
@@ -21,7 +22,10 @@ export default function FundingRateCard({ data }: FundingRateCardProps) {
   return (
     <div className="dot-card p-4 sm:p-5">
       <div className="dot-card-inner">
-        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3">펀딩비 (BTCUSDT)</h2>
+        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <LivePulse size={4} />
+          펀딩비 (BTCUSDT)
+        </h2>
         <DotKPIValue
           value={data.fundingRate * 100}
           decimals={4}

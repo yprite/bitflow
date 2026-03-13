@@ -124,14 +124,15 @@ export default function DotCluster({
       {dots.map((dot, i) => (
         <div
           key={i}
-          className="rounded-full"
+          className={`rounded-full ${i < count && !reducedMotion ? 'dot-breathe' : ''}`}
           style={{
             width: `${dot.currentRadius}px`,
             height: `${dot.currentRadius}px`,
             backgroundColor: i < count ? color : inactiveColor,
             transition: reducedMotion ? 'none' : `all ${DATA_TRANSITION_DURATION}ms cubic-bezier(0.16, 1, 0.3, 1)`,
             opacity: dot.opacity,
-          }}
+            '--breathe-delay': `${i * 300}ms`,
+          } as React.CSSProperties}
         />
       ))}
     </div>

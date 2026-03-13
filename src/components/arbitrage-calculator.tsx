@@ -7,6 +7,7 @@ import DotKPIValue from './motion/typography/DotKPIValue';
 import DotValueRefresh, { refreshStyle, residueStyle } from './motion/transitions/DotValueRefresh';
 import { useFieldTransition } from './motion/transitions/useFieldTransition';
 import { useReducedMotion } from './motion/core/useReducedMotion';
+import LivePulse from './motion/indicators/LivePulse';
 
 interface ArbitrageCalculatorProps {
   data: MultiCoinKimpData;
@@ -90,7 +91,10 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
   return (
     <div className="dot-card p-4 sm:p-6">
       <div className="dot-card-inner">
-        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3 sm:mb-4">차익거래 계산기</h2>
+        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3 sm:mb-4 flex items-center gap-1.5">
+          <LivePulse size={4} />
+          차익거래 계산기
+        </h2>
 
         {/* Input form */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3 sm:mb-4">

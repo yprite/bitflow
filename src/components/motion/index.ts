@@ -14,6 +14,7 @@ export { default as DotCluster } from './indicators/DotCluster';
 export { default as DotGauge } from './indicators/DotGauge';
 export { default as DotScale } from './indicators/DotScale';
 export { default as InsightBloom } from './indicators/InsightBloom';
+export { default as LivePulse } from './indicators/LivePulse';
 
 // Chart
 export { default as PriceDiscoveryDot } from './chart/PriceDiscoveryDot';

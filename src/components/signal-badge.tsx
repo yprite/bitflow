@@ -4,6 +4,7 @@ import type { CompositeSignal } from '@/lib/types';
 import InsightBloom from './motion/indicators/InsightBloom';
 import SignalField from './motion/indicators/SignalField';
 import DotMorphTransition from './motion/transitions/DotMorphTransition';
+import LivePulse from './motion/indicators/LivePulse';
 
 interface SignalBadgeProps {
   signal: CompositeSignal;
@@ -26,7 +27,10 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
       <SignalField level={signal.level} width={240} height={120} />
 
       <div className="dot-card-inner">
-        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3">복합 시그널</h2>
+        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <LivePulse size={4} color={color} />
+          복합 시그널
+        </h2>
         <div className="relative">
           <DotMorphTransition
             text={signal.level}

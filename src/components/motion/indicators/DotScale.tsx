@@ -43,13 +43,14 @@ export default function DotScale({
         return (
           <div
             key={i}
-            className="rounded-full"
+            className={`rounded-full ${isActive && !reducedMotion ? 'dot-breathe' : ''}`}
             style={{
               width: `${dotSize}px`,
               height: `${dotSize}px`,
               backgroundColor: isActive ? color : '#e5e7eb',
               transition: reducedMotion ? 'none' : `all ${DATA_TRANSITION_DURATION}ms cubic-bezier(0.16, 1, 0.3, 1)`,
-            }}
+              '--breathe-delay': `${i * 200}ms`,
+            } as React.CSSProperties}
           />
         );
       })}
