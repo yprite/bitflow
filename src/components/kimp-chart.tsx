@@ -52,14 +52,15 @@ export default function KimpChart({ data }: KimpChartProps) {
   const max = Math.max(...values);
   const range = max - min || 1;
 
+  const padding = 4; // padding so dots at edges don't clip
   const chartHeight = 120;
   const chartWidth = 100;
-  const guideLines = [0, chartHeight / 2, chartHeight];
+  const guideLines = [padding, padding + (chartHeight - padding * 2) / 2, chartHeight - padding];
 
   // Generate dots for the chart (halftone scatter plot style)
   const dots = filtered.map((point, i) => {
-    const x = (i / (filtered.length - 1)) * chartWidth;
-    const y = chartHeight - ((point.value - min) / range) * chartHeight;
+    const x = padding + (i / (filtered.length - 1)) * (chartWidth - padding * 2);
+    const y = padding + (chartHeight - padding * 2) - ((point.value - min) / range) * (chartHeight - padding * 2);
     return { x, y, value: point.value };
   });
 
@@ -104,7 +105,8 @@ export default function KimpChart({ data }: KimpChartProps) {
             <svg
               viewBox={`0 0 ${chartWidth} ${chartHeight}`}
               className="w-full h-32"
-              preserveAspectRatio="none"
+              preserveAspectRatio="xMidYMid meet"
+              overflow="hidden"
             >
               {/* Dot grid background */}
               <defs>
@@ -112,14 +114,14 @@ export default function KimpChart({ data }: KimpChartProps) {
                   <circle cx="2.5" cy="2.5" r="0.3" fill="#d1d5db" />
                 </pattern>
               </defs>
-              <rect width={chartWidth} height={chartHeight} fill="url(#dotGrid)" />
+              <rect width={chartWidth} height={chartHeight} fill="url(#dotGrid)" rx="1" />
 
               {guideLines.map((y) => (
                 <line
                   key={y}
-                  x1="0"
+                  x1={padding}
                   y1={y}
-                  x2={chartWidth}
+                  x2={chartWidth - padding}
                   y2={y}
                   stroke="#e5e7eb"
                   strokeWidth="0.5"
@@ -133,24 +135,21 @@ export default function KimpChart({ data }: KimpChartProps) {
                 points={points}
                 fill="none"
                 stroke="#1a1a1a"
-                strokeWidth="1.5"
+                strokeWidth="1"
+                strokeLinejoin="round"
                 vectorEffect="non-scaling-stroke"
               />
 
-              {/* Data point dots - varying size based on value */}
-              {dots.filter((_, i) => i % Math.max(1, Math.floor(dots.length / 30)) === 0 || i === dots.length - 1).map((d, i) => {
-                const intensity = (d.value - min) / range;
-                const r = 1 + intensity * 2;
-                return (
-                  <circle
-                    key={i}
-                    cx={d.x}
-                    cy={d.y}
-                    r={r}
-                    fill="#1a1a1a"
-                  />
-                );
-              })}
+              {/* Data point dots at every point */}
+              {dots.map((d, i) => (
+                <circle
+                  key={i}
+                  cx={d.x}
+                  cy={d.y}
+                  r={1.5}
+                  fill="#1a1a1a"
+                />
+              ))}
             </svg>
             <div className="flex justify-between text-[11px] text-dot-muted mt-2 font-mono">
               <span>{axisLabels[0]}</span>
