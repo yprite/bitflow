@@ -23,10 +23,18 @@ export interface FearGreedData {
   timestamp: string;
 }
 
+export interface SignalFactor {
+  label: string;
+  value: string;
+  direction: '과열' | '중립' | '침체';
+}
+
 export interface CompositeSignal {
   level: '과열' | '중립' | '침체';
   color: string;
   description: string;
+  score: number;
+  factors: SignalFactor[];
 }
 
 export interface AlertUser {

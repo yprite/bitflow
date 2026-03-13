@@ -78,23 +78,29 @@ export default function KimpCard({ kimp, avg30d }: KimpCardProps) {
                 </div>
               )}
             </DotValueRefresh>
+            <p className="text-dot-muted font-mono text-[10px] mt-0.5">
+              ≈ ${(kimp.upbitPrice / kimp.usdKrw).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </p>
           </div>
           <div>
             <p className="text-dot-muted text-xs mb-1">해외 BTC</p>
-            <DotValueRefresh value={kimp.globalPrice}>
+            <DotValueRefresh value={Math.round(kimp.globalPrice * kimp.usdKrw)}>
               {({ current, previous, showResidue, residueOpacity, pulseScale }) => (
                 <div className="relative">
                   {showResidue && previous !== null && (
                     <p className="text-dot-text font-mono font-medium text-xs sm:text-sm" style={residueStyle(residueOpacity, reducedMotion)}>
-                      ${Number(previous).toLocaleString()}
+                      {Number(previous).toLocaleString()}원
                     </p>
                   )}
                   <p className="text-dot-text font-mono font-medium text-xs sm:text-sm" style={refreshStyle(pulseScale, reducedMotion)}>
-                    ${Number(current).toLocaleString()}
+                    {Number(current).toLocaleString()}원
                   </p>
                 </div>
               )}
             </DotValueRefresh>
+            <p className="text-dot-muted font-mono text-[10px] mt-0.5">
+              ≈ ${kimp.globalPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </p>
           </div>
           <div>
             <p className="text-dot-muted text-xs mb-1">환율</p>
