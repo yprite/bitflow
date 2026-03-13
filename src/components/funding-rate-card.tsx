@@ -19,7 +19,7 @@ export default function FundingRateCard({ data }: FundingRateCardProps) {
   const dotCount = Math.min(Math.round(Math.abs(data.fundingRate) * 100 * 50), 8);
 
   return (
-    <div className="dot-card p-5">
+    <div className="dot-card p-4 sm:p-5">
       <div className="dot-card-inner">
         <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3">펀딩비 (BTCUSDT)</h2>
         <DotKPIValue

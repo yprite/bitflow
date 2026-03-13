@@ -75,9 +75,9 @@ export default function KimpChart({ data }: KimpChartProps) {
   ].map((point) => formatAxisLabel(point.collectedAt));
 
   return (
-    <div className="dot-card p-6">
+    <div className="dot-card p-4 sm:p-6">
       <div className="dot-card-inner">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider">김프 히스토리</h2>
           <div className="flex gap-1">
             {(['7d', '30d'] as Period[]).map(p => (

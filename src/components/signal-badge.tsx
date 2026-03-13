@@ -21,7 +21,7 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
   const color = getColor(signal.level);
 
   return (
-    <div className="dot-card p-5 relative overflow-hidden">
+    <div className="dot-card p-4 sm:p-5 relative overflow-hidden">
       {/* Animated signal intensity field */}
       <SignalField level={signal.level} width={240} height={120} />
 

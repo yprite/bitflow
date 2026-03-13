@@ -83,6 +83,13 @@ body {
   background: currentColor;
 }
 
+/* iPhone safe area support */
+.env-safe {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* Dot border pattern (dashed pixel) */
 .dot-border-b {
   border-bottom: 2px dotted #d1d5db;

@@ -34,12 +34,12 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
     : 'buy-global-sell-kr';
 
   return (
-    <div className="dot-card p-6">
+    <div className="dot-card p-4 sm:p-6">
       <div className="dot-card-inner">
-        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-4">차익거래 계산기</h2>
+        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3 sm:mb-4">차익거래 계산기</h2>
 
         {/* Input form */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3 sm:mb-4">
           <div>
             <label className="text-xs text-dot-muted block mb-1 font-mono">코인</label>
             <select
@@ -107,7 +107,7 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
 
         {/* Result */}
         {result && (
-          <div className={`p-4 border-2 ${result.viable ? 'border-dot-green bg-emerald-50/50' : 'border-dot-red bg-red-50/50'}`}>
+          <div className={`p-3 sm:p-4 border-2 ${result.viable ? 'border-dot-green bg-emerald-50/50' : 'border-dot-red bg-red-50/50'}`}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className={`text-xs px-2 py-0.5 font-mono font-medium border ${
@@ -149,7 +149,7 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
             </div>
 
             {/* Detail breakdown */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
               <div className="flex justify-between">
                 <span className="text-dot-muted">투자금액</span>
                 <span className="text-dot-text font-mono">{result.investmentKrw.toLocaleString()}원</span>
@@ -169,7 +169,7 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
                 </span>
               </div>
 
-              <div className="col-span-2 dot-border-t my-1" />
+              <div className="col-span-1 sm:col-span-2 dot-border-t my-1" />
 
               <div className="flex justify-between text-dot-muted">
                 <span>한국 거래소 수수료</span>

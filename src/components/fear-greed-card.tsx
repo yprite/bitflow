@@ -30,7 +30,7 @@ export default function FearGreedCard({ data }: FearGreedCardProps) {
   const label = CLASSIFICATION_KR[data.classification] || data.classification;
 
   return (
-    <div className="dot-card p-5">
+    <div className="dot-card p-4 sm:p-5">
       <div className="dot-card-inner">
         <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3">공포탐욕지수</h2>
         <div className="flex items-end gap-3">

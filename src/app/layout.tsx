@@ -14,10 +14,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <body className="min-h-screen bg-dot-bg">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      </head>
+      <body className="min-h-screen bg-dot-bg env-safe">
         <AmbientBackground />
         <header className="dot-border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-          <nav className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+          <nav className="max-w-3xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
             <a href="/" className="text-lg font-bold text-dot-accent tracking-tight">
               <span className="inline-flex items-center gap-2">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="opacity-80">
@@ -31,7 +34,7 @@ export default function RootLayout({
                 김프 트래커
               </span>
             </a>
-            <div className="flex gap-6 text-sm">
+            <div className="flex gap-4 sm:gap-6 text-sm">
               <a href="/" className="text-dot-sub hover:text-dot-accent transition font-medium">
                 대시보드
               </a>
@@ -41,7 +44,7 @@ export default function RootLayout({
             </div>
           </nav>
         </header>
-        <main className="max-w-3xl mx-auto px-4 py-6 relative z-10">
+        <main className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 relative z-10">
           {children}
         </main>
         <footer className="dot-border-t mt-12 relative z-10">

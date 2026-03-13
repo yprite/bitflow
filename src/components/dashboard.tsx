@@ -89,7 +89,7 @@ export default function Dashboard() {
   const chartData = data.history.length > 0 ? data.history : sessionHistory;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 sm:space-y-5">
       <div className="flex items-center justify-between">
         <p className="text-xs text-dot-muted font-mono">마지막 업데이트: {lastUpdated}</p>
         <button
@@ -102,7 +102,7 @@ export default function Dashboard() {
 
       <KimpCard kimp={data.kimp} avg30d={data.avg30d} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <FundingRateCard data={data.fundingRate} />
         <FearGreedCard data={data.fearGreed} />
         <SignalBadge signal={data.signal} />

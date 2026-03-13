@@ -27,7 +27,7 @@ export default function KimpCard({ kimp, avg30d }: KimpCardProps) {
     : '';
 
   return (
-    <div className="dot-card p-6 dot-vignette">
+    <div className="dot-card p-4 sm:p-6 dot-vignette">
       <div className="dot-card-inner">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-dot-sub uppercase tracking-wider">김치프리미엄</h2>
@@ -56,7 +56,7 @@ export default function KimpCard({ kimp, avg30d }: KimpCardProps) {
           <DotCluster value={kimp.kimchiPremium} pulse />
         </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-4 text-sm dot-border-t pt-4">
+        <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-4 text-sm dot-border-t pt-4">
           {/* Sub-values with refresh transition */}
           <div>
             <p className="text-dot-muted text-xs mb-1">업비트 BTC</p>
@@ -64,11 +64,11 @@ export default function KimpCard({ kimp, avg30d }: KimpCardProps) {
               {({ current, previous, showResidue, residueOpacity, pulseScale }) => (
                 <div className="relative">
                   {showResidue && previous !== null && (
-                    <p className="text-dot-text font-mono font-medium" style={residueStyle(residueOpacity, reducedMotion)}>
+                    <p className="text-dot-text font-mono font-medium text-xs sm:text-sm" style={residueStyle(residueOpacity, reducedMotion)}>
                       {Number(previous).toLocaleString()}원
                     </p>
                   )}
-                  <p className="text-dot-text font-mono font-medium" style={refreshStyle(pulseScale, reducedMotion)}>
+                  <p className="text-dot-text font-mono font-medium text-xs sm:text-sm" style={refreshStyle(pulseScale, reducedMotion)}>
                     {Number(current).toLocaleString()}원
                   </p>
                 </div>
@@ -81,11 +81,11 @@ export default function KimpCard({ kimp, avg30d }: KimpCardProps) {
               {({ current, previous, showResidue, residueOpacity, pulseScale }) => (
                 <div className="relative">
                   {showResidue && previous !== null && (
-                    <p className="text-dot-text font-mono font-medium" style={residueStyle(residueOpacity, reducedMotion)}>
+                    <p className="text-dot-text font-mono font-medium text-xs sm:text-sm" style={residueStyle(residueOpacity, reducedMotion)}>
                       ${Number(previous).toLocaleString()}
                     </p>
                   )}
-                  <p className="text-dot-text font-mono font-medium" style={refreshStyle(pulseScale, reducedMotion)}>
+                  <p className="text-dot-text font-mono font-medium text-xs sm:text-sm" style={refreshStyle(pulseScale, reducedMotion)}>
                     ${Number(current).toLocaleString()}
                   </p>
                 </div>
@@ -98,11 +98,11 @@ export default function KimpCard({ kimp, avg30d }: KimpCardProps) {
               {({ current, previous, showResidue, residueOpacity, pulseScale }) => (
                 <div className="relative">
                   {showResidue && previous !== null && (
-                    <p className="text-dot-text font-mono font-medium" style={residueStyle(residueOpacity, reducedMotion)}>
+                    <p className="text-dot-text font-mono font-medium text-xs sm:text-sm" style={residueStyle(residueOpacity, reducedMotion)}>
                       {Number(previous).toLocaleString()}원
                     </p>
                   )}
-                  <p className="text-dot-text font-mono font-medium" style={refreshStyle(pulseScale, reducedMotion)}>
+                  <p className="text-dot-text font-mono font-medium text-xs sm:text-sm" style={refreshStyle(pulseScale, reducedMotion)}>
                     {Number(current).toLocaleString()}원
                   </p>
                 </div>

@@ -58,21 +58,21 @@ export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapPro
   const minPremium = data.coins.length > 0 ? Math.min(...data.coins.map(c => c.premium)) : 0;
 
   return (
-    <div className="dot-card p-6">
+    <div className="dot-card p-4 sm:p-6">
       <div className="dot-card-inner">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
           <div>
             <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider">멀티코인 김프 히트맵</h2>
-            <p className="text-xs text-dot-muted mt-1 font-mono">
+            <p className="text-[10px] sm:text-xs text-dot-muted mt-1 font-mono">
               평균 {avgPremium >= 0 ? '+' : ''}{avgPremium.toFixed(2)}% · 최고 {maxPremium >= 0 ? '+' : ''}{maxPremium.toFixed(2)}% · 최저 {minPremium >= 0 ? '+' : ''}{minPremium.toFixed(2)}%
             </p>
           </div>
-          <div className="flex flex-wrap justify-end gap-1">
+          <div className="flex gap-1">
             {(['premium', 'marketCap', 'symbol'] as SortKey[]).map(key => (
               <button
                 key={key}
                 onClick={() => setSortKey(key)}
-                className={`px-3 py-1 text-xs font-mono transition border ${
+                className={`px-2 sm:px-3 py-1 text-xs font-mono transition border ${
                   sortKey === key
                     ? 'bg-dot-accent text-white border-dot-accent'
                     : 'text-dot-muted border-dot-border hover:text-dot-accent hover:border-dot-accent'
@@ -87,7 +87,7 @@ export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapPro
         {/* Dot heatmap grid with Conviction Lens */}
         <ConvictionLens itemCount={sorted.length}>
           {({ hoveredIndex, getScale, onHover }) => (
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-5">
               {sorted.map((coin, index) => {
                 const dotSize = getDotSize(coin.premium);
                 const dotColor = getDotColor(coin.premium);
@@ -99,7 +99,7 @@ export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapPro
                     onClick={() => onSelectCoin?.(coin)}
                     onMouseEnter={() => onHover(index)}
                     onMouseLeave={() => onHover(null)}
-                    className="bg-white border border-dot-border p-3 text-center transition-all hover:shadow-md"
+                    className="bg-white border border-dot-border p-2 sm:p-3 text-center transition-all hover:shadow-md"
                   >
                     {/* Central dot indicator with conviction scaling */}
                     <div className="flex justify-center mb-2">
@@ -130,7 +130,7 @@ export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapPro
         <div className="space-y-2">
           {sorted.map(coin => (
             <div key={coin.symbol} className="flex items-center gap-2 text-xs">
-              <span className="w-12 text-dot-muted font-mono text-right font-medium">{coin.symbol}</span>
+              <span className="w-10 sm:w-12 text-dot-muted font-mono text-right font-medium text-[10px] sm:text-xs">{coin.symbol}</span>
               <PressureBar
                 premium={coin.premium}
                 color={getDotColor(coin.premium)}
