@@ -3,11 +3,19 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { DashboardData, MultiCoinKimpData, KimpHistoryPoint } from '@/lib/types';
 
+export interface DayRange {
+  min: number;
+  max: number;
+  current: number;
+}
+
 interface DataContextType {
   data: DashboardData | null;
   multiCoinData: MultiCoinKimpData | null;
   sessionHistory: KimpHistoryPoint[];
   chartData: KimpHistoryPoint[];
+  fundingRange: DayRange | null;
+  fearGreedRange: DayRange | null;
   error: string | null;
   loading: boolean;
   lastUpdated: string;
@@ -29,6 +37,8 @@ export default function DataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [fundingRange, setFundingRange] = useState<DayRange | null>(null);
+  const [fearGreedRange, setFearGreedRange] = useState<DayRange | null>(null);
 
   const fetchData = async () => {
     try {
@@ -48,6 +58,21 @@ export default function DataProvider({ children }: { children: ReactNode }) {
 
       setError(null);
       setLastUpdated(new Date().toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul' }));
+
+      // Track daily range for funding rate
+      const fr = json.fundingRate.fundingRate * 100;
+      setFundingRange((prev) => {
+        if (!prev) return { min: fr, max: fr, current: fr };
+        return { min: Math.min(prev.min, fr), max: Math.max(prev.max, fr), current: fr };
+      });
+
+      // Track daily range for fear & greed
+      const fg = json.fearGreed.value;
+      setFearGreedRange((prev) => {
+        if (!prev) return { min: fg, max: fg, current: fg };
+        return { min: Math.min(prev.min, fg), max: Math.max(prev.max, fg), current: fg };
+      });
+
       setSessionHistory((prev) => {
         if (json.history.length > 0) {
           return prev;
@@ -74,7 +99,7 @@ export default function DataProvider({ children }: { children: ReactNode }) {
   const chartData = data && data.history.length > 0 ? data.history : sessionHistory;
 
   return (
-    <DataContext.Provider value={{ data, multiCoinData, sessionHistory, chartData, error, loading, lastUpdated, fetchData }}>
+    <DataContext.Provider value={{ data, multiCoinData, sessionHistory, chartData, fundingRange, fearGreedRange, error, loading, lastUpdated, fetchData }}>
       {children}
     </DataContext.Provider>
   );

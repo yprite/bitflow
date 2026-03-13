@@ -8,7 +8,7 @@ import OrbitalSilence from './motion/storytelling/OrbitalSilence';
 import { useData } from './data-provider';
 
 export default function Dashboard() {
-  const { data, error, loading, lastUpdated, fetchData } = useData();
+  const { data, error, loading, lastUpdated, fetchData, fundingRange, fearGreedRange } = useData();
 
   if (loading) {
     return (
@@ -49,8 +49,8 @@ export default function Dashboard() {
       <KimpCard kimp={data.kimp} avg30d={data.avg30d} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <FundingRateCard data={data.fundingRate} />
-        <FearGreedCard data={data.fearGreed} />
+        <FundingRateCard data={data.fundingRate} dayRange={fundingRange} />
+        <FearGreedCard data={data.fearGreed} dayRange={fearGreedRange} />
         <SignalBadge signal={data.signal} />
       </div>
     </div>

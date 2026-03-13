@@ -1,13 +1,16 @@
 'use client';
 
 import type { FearGreedData } from '@/lib/types';
+import type { DayRange } from './data-provider';
 import DotScale from './motion/indicators/DotScale';
 import DotKPIValue from './motion/typography/DotKPIValue';
 import DotMorphTransition from './motion/transitions/DotMorphTransition';
 import LivePulse from './motion/indicators/LivePulse';
+import DayRangeSlider from './day-range-slider';
 
 interface FearGreedCardProps {
   data: FearGreedData;
+  dayRange?: DayRange | null;
 }
 
 function getColor(value: number): string {
@@ -26,7 +29,7 @@ const CLASSIFICATION_KR: Record<string, string> = {
   'Extreme Greed': '극도의 탐욕',
 };
 
-export default function FearGreedCard({ data }: FearGreedCardProps) {
+export default function FearGreedCard({ data, dayRange }: FearGreedCardProps) {
   const color = getColor(data.value);
   const label = CLASSIFICATION_KR[data.classification] || data.classification;
 
@@ -66,6 +69,9 @@ export default function FearGreedCard({ data }: FearGreedCardProps) {
             maxSize={16}
           />
         </div>
+        {dayRange && dayRange.min !== dayRange.max && (
+          <DayRangeSlider range={dayRange} decimals={0} />
+        )}
       </div>
     </div>
   );
