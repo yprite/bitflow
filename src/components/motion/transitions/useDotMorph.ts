@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { parseText, type TextDot } from '../typography/dot-font';
 import { useReducedMotion } from '../core/useReducedMotion';
-import { easeOut, easeFade, lerp, clamp, valueNoise } from '../core/dot-math';
+import { easeOut, lerp, clamp, valueNoise } from '../core/dot-math';
 
 export type MorphMode =
   | 'crossfade'       // old fades, new fades in (simplest)
@@ -32,6 +32,8 @@ export interface MorphDot {
   wasActive: boolean;
   /** Whether this dot is active in the new state. */
   isActive: boolean;
+  /** Character index within the rendered string. */
+  charIndex: number;
 }
 
 export interface UseDotMorphConfig {
@@ -62,6 +64,8 @@ export interface UseDotMorphResult {
   morphing: boolean;
   /** Residue dots (ghost of previous state). Null if no residue active. */
   residueDots: MorphDot[] | null;
+  /** 0–1 progress of residue fade. 0 = full residue, 1 = fully faded. */
+  residueProgress: number;
 }
 
 /**
@@ -71,7 +75,7 @@ export interface UseDotMorphResult {
  * 1. Parses both old and new text into dot grids
  * 2. Pairs dots from old → new positions
  * 3. Interpolates position, radius, opacity over `morphDuration`
- * 4. Optionally holds a residue ghost of the old state
+ * 4. Holds a residue ghost of the old state that animates out
  * 5. Applies a subtle pulse on completion
  *
  * The result is a frame-by-frame array of `MorphDot` objects
@@ -94,10 +98,12 @@ export function useDotMorph(
   const reducedMotion = useReducedMotion();
   const prevValueRef = useRef(value);
   const morphStartRef = useRef(0);
+  const morphDoneRef = useRef(false);
   const rafRef = useRef(0);
 
   const [morphing, setMorphing] = useState(false);
   const [residueDots, setResidueDots] = useState<MorphDot[] | null>(null);
+  const [residueProgress, setResidueProgress] = useState(0);
 
   // Parse current value
   const currentParsed = parseText(value, spacing);
@@ -115,6 +121,7 @@ export function useDotMorph(
       toY: d.y,
       wasActive: d.active,
       isActive: d.active,
+      charIndex: d.charIndex,
     }))
   );
 
@@ -127,8 +134,6 @@ export function useDotMorph(
   const buildMorphDots = useCallback((
     oldDots: TextDot[],
     newDots: TextDot[],
-    oldWidth: number,
-    newWidth: number,
   ): MorphDot[] => {
     const maxLen = Math.max(oldDots.length, newDots.length);
     const result: MorphDot[] = [];
@@ -150,6 +155,7 @@ export function useDotMorph(
           toY: newDot.y,
           wasActive: oldDot.active,
           isActive: newDot.active,
+          charIndex: newDot.charIndex,
         });
       } else if (newDot) {
         // New dot with no old counterpart: fade in from scattered position
@@ -166,6 +172,7 @@ export function useDotMorph(
           toY: newDot.y,
           wasActive: false,
           isActive: newDot.active,
+          charIndex: newDot.charIndex,
         });
       } else if (oldDot) {
         // Old dot with no new counterpart: fade out and scatter
@@ -182,6 +189,7 @@ export function useDotMorph(
           toY: scatterY,
           wasActive: oldDot.active,
           isActive: false,
+          charIndex: oldDot.charIndex,
         });
       }
     }
@@ -195,8 +203,6 @@ export function useDotMorph(
     progress: number, // 0–1
     totalWidth: number,
   ): MorphDot[] => {
-    const t = easeOut(progress);
-
     return morphDots.map((d, i) => {
       let x: number, y: number, radius: number, opacity: number;
 
@@ -207,6 +213,7 @@ export function useDotMorph(
 
       switch (mode) {
         case 'crossfade': {
+          const t = easeOut(progress);
           x = lerp(d.fromX, d.toX, t);
           y = lerp(d.fromY, d.toY, t);
           radius = lerp(fromRadius, targetRadius, t);
@@ -215,29 +222,91 @@ export function useDotMorph(
         }
 
         case 'reconfigure': {
-          // Dots drift from old to new with slight overshoot
-          x = lerp(d.fromX, d.toX, t);
-          y = lerp(d.fromY, d.toY, t);
-          radius = lerp(fromRadius, targetRadius, t);
-          opacity = lerp(fromOpacity, targetOpacity, t);
+          // Per-character stagger: characters further right start slightly later
+          const staggerDelay = d.charIndex * 0.04;
+          const staggeredP = clamp(
+            (progress - staggerDelay) / Math.max(1 - staggerDelay, 0.01),
+            0, 1,
+          );
 
-          // Subtle Y wobble during transit
-          if (progress > 0.1 && progress < 0.9) {
-            const wobble = Math.sin(progress * Math.PI * 3 + i * 0.5) * 0.15;
-            y += wobble;
-          }
+          const stateChanged = d.wasActive !== d.isActive;
 
-          // Arrival pulse
-          if (progress > 0.85 && d.isActive) {
-            const pulseT = (progress - 0.85) / 0.15;
-            const pulse = Math.sin(pulseT * Math.PI) * pulseStrength;
-            radius *= (1 + pulse);
+          if (staggeredP <= 0) {
+            // Before this character's morph begins
+            x = d.fromX;
+            y = d.fromY;
+            radius = fromRadius;
+            opacity = fromOpacity;
+          } else if (stateChanged && d.wasActive && !d.isActive) {
+            // ── Deactivating dot: loosen → scatter → dissolve ──
+            const nx = valueNoise(d.fromX * 3.1, d.fromY * 2.7, 13);
+            const ny = valueNoise(d.fromY * 2.3, d.fromX * 3.9, 17);
+
+            if (staggeredP < 0.3) {
+              // Loosen: radius shrinks, slight outward scatter
+              const lt = easeOut(staggeredP / 0.3);
+              x = d.fromX + (nx - 0.5) * 1.4 * lt;
+              y = d.fromY + (ny - 0.5) * 1.0 * lt;
+              radius = lerp(1, 0.35, lt);
+              opacity = lerp(1, 0.45, lt);
+            } else {
+              // Dissolve: scatter further, fade to nothing
+              const dt = easeOut((staggeredP - 0.3) / 0.7);
+              const baseScatter = 1.4;
+              x = d.fromX + (nx - 0.5) * (baseScatter + dt * 1.2);
+              y = d.fromY + (ny - 0.5) * (baseScatter * 0.7 + dt * 0.8);
+              radius = lerp(0.35, 0, dt);
+              opacity = lerp(0.45, 0, dt);
+            }
+          } else if (stateChanged && !d.wasActive && d.isActive) {
+            // ── Activating dot: pre-scatter → gather → crystallize ──
+            const nx = valueNoise(d.toX * 2.9, d.toY * 3.3, 7);
+            const ny = valueNoise(d.toY * 3.7, d.toX * 2.1, 11);
+            const scatterX = (nx - 0.5) * 1.8;
+            const scatterY = (ny - 0.5) * 1.2;
+
+            if (staggeredP < 0.35) {
+              // Pre-phase: faint dot appears at scattered position
+              const pt = staggeredP / 0.35;
+              x = d.toX + scatterX;
+              y = d.toY + scatterY;
+              radius = 0.15 * pt;
+              opacity = 0.1 * pt;
+            } else {
+              // Crystallize: gather inward to final position
+              const ct = easeOut((staggeredP - 0.35) / 0.65);
+              x = lerp(d.toX + scatterX, d.toX, ct);
+              y = lerp(d.toY + scatterY, d.toY, ct);
+              radius = lerp(0.15, targetRadius, ct);
+              opacity = lerp(0.1, targetOpacity, ct);
+
+              // Arrival pulse at end of crystallization
+              if (ct > 0.7) {
+                const pulseT = (ct - 0.7) / 0.3;
+                const pulse = Math.sin(pulseT * Math.PI) * pulseStrength;
+                radius *= (1 + pulse);
+              }
+            }
+          } else {
+            // ── No state change: smooth drift ──
+            const t = easeOut(staggeredP);
+            x = lerp(d.fromX, d.toX, t);
+            y = lerp(d.fromY, d.toY, t);
+            radius = lerp(fromRadius, targetRadius, t);
+            opacity = lerp(fromOpacity, targetOpacity, t);
+
+            // Subtle radius breathing for active dots during transit
+            if (d.isActive && staggeredP > 0.05 && staggeredP < 0.95) {
+              const breathe = Math.sin(staggeredP * Math.PI) * 0.06;
+              radius *= (1 + breathe);
+            }
           }
           break;
         }
 
         case 'threshold': {
           // Sweep from left to right
+          const t = easeOut(progress);
           const sweepX = t * (totalWidth + 2);
           const dotWorldX = d.toX;
           const crossed = dotWorldX <= sweepX;
@@ -286,6 +355,7 @@ export function useDotMorph(
         }
 
         default: {
+          const t = easeOut(progress);
           x = lerp(d.fromX, d.toX, t);
           y = lerp(d.fromY, d.toY, t);
           radius = lerp(fromRadius, targetRadius, t);
@@ -324,15 +394,13 @@ export function useDotMorph(
         fromX: d.x, fromY: d.y,
         toX: d.x, toY: d.y,
         wasActive: d.active, isActive: d.active,
+        charIndex: d.charIndex,
       })));
       return;
     }
 
     // Build morph pairs
-    const morphDots = buildMorphDots(
-      oldParsed.dots, newParsed.dots,
-      oldParsed.width, newParsed.width,
-    );
+    const morphDots = buildMorphDots(oldParsed.dots, newParsed.dots);
 
     // Start residue (ghost of old value)
     if (residueAmount > 0) {
@@ -343,28 +411,29 @@ export function useDotMorph(
         fromX: d.x, fromY: d.y,
         toX: d.x, toY: d.y,
         wasActive: d.active, isActive: false,
+        charIndex: d.charIndex,
       })));
-
-      // Clear residue after duration
-      setTimeout(() => setResidueDots(null), morphDuration + residueDuration);
+      setResidueProgress(0);
     }
 
-    // Animate
+    // Animate over morphDuration + residueDuration
+    const totalDuration = morphDuration + (residueAmount > 0 ? residueDuration : 0);
     setMorphing(true);
+    morphDoneRef.current = false;
     morphStartRef.current = performance.now();
     cancelAnimationFrame(rafRef.current);
 
     const tick = (now: number) => {
       const elapsed = now - morphStartRef.current;
-      const progress = clamp(elapsed / morphDuration, 0, 1);
+      const morphProgress = clamp(elapsed / morphDuration, 0, 1);
+      const totalProgress = clamp(elapsed / totalDuration, 0, 1);
 
-      setDots(interpolate(morphDots, progress, newWidth));
-
-      if (progress < 1) {
-        rafRef.current = requestAnimationFrame(tick);
-      } else {
-        setMorphing(false);
-        // Set final clean state
+      // Update main dots during morph phase
+      if (morphProgress < 1) {
+        setDots(interpolate(morphDots, morphProgress, newWidth));
+      } else if (!morphDoneRef.current) {
+        // Set final clean state once morph completes
+        morphDoneRef.current = true;
         setDots(newParsed.dots.map(d => ({
           x: d.x, y: d.y,
           radius: d.active ? 1 : 0,
@@ -372,7 +441,24 @@ export function useDotMorph(
           fromX: d.x, fromY: d.y,
           toX: d.x, toY: d.y,
           wasActive: d.active, isActive: d.active,
+          charIndex: d.charIndex,
         })));
+      }
+
+      // Update residue progress (fades during morph and continues after)
+      if (residueAmount > 0) {
+        const rp = elapsed < morphDuration
+          ? clamp(elapsed / morphDuration, 0, 1) * 0.3     // 0→0.3 during morph
+          : 0.3 + clamp((elapsed - morphDuration) / residueDuration, 0, 1) * 0.7; // 0.3→1.0 after
+        setResidueProgress(clamp(rp, 0, 1));
+      }
+
+      if (totalProgress < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        setMorphing(false);
+        setResidueDots(null);
+        setResidueProgress(0);
       }
     };
 
@@ -387,5 +473,6 @@ export function useDotMorph(
     height: dimensions.height,
     morphing,
     residueDots,
+    residueProgress,
   };
 }

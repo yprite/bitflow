@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { KimpHistoryPoint } from '@/lib/types';
 import DotTabBar from './motion/transitions/DotTabBar';
 import { useFieldTransition } from './motion/transitions/useFieldTransition';
+import LivePulse from './motion/indicators/LivePulse';
 
 interface KimpChartProps {
   data: KimpHistoryPoint[];
@@ -53,7 +54,10 @@ export default function KimpChart({ data }: KimpChartProps) {
   if (filtered.length < 2) {
     return (
       <div className="dot-card p-6">
-        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-4">김프 히스토리</h2>
+        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-4 flex items-center gap-1.5">
+          <LivePulse size={4} />
+          김프 히스토리
+        </h2>
         <p className="text-dot-muted text-sm">데이터 수집 중... 저장된 히스토리가 쌓이면 표시됩니다.</p>
       </div>
     );
@@ -90,7 +94,10 @@ export default function KimpChart({ data }: KimpChartProps) {
     <div className="dot-card p-4 sm:p-6">
       <div className="dot-card-inner">
         <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider">김프 히스토리</h2>
+          <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider flex items-center gap-1.5">
+              <LivePulse size={4} />
+              김프 히스토리
+            </h2>
           <DotTabBar
             tabs={PERIOD_TABS}
             activeKey={period}

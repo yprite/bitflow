@@ -6,6 +6,7 @@ import InsightBloom from './motion/indicators/InsightBloom';
 import DotKPIValue from './motion/typography/DotKPIValue';
 import DotValueRefresh, { refreshStyle, residueStyle } from './motion/transitions/DotValueRefresh';
 import { useReducedMotion } from './motion/core/useReducedMotion';
+import LivePulse from './motion/indicators/LivePulse';
 
 interface KimpCardProps {
   kimp: KimpData;
@@ -27,10 +28,13 @@ export default function KimpCard({ kimp, avg30d }: KimpCardProps) {
     : '';
 
   return (
-    <div className="dot-card p-4 sm:p-6 dot-vignette">
+    <div className="dot-card p-4 sm:p-6">
       <div className="dot-card-inner">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-dot-sub uppercase tracking-wider">김치프리미엄</h2>
+          <h2 className="text-sm font-semibold text-dot-sub uppercase tracking-wider flex items-center gap-2">
+            <LivePulse size={5} />
+            김치프리미엄
+          </h2>
           {badge && (
             <span className={`text-xs px-2 py-0.5 font-mono relative ${badgeColor}`}>
               30일 {badge}

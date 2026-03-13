@@ -4,6 +4,7 @@ import { useRef, useEffect, useCallback } from 'react';
 import { useDotMorph, type MorphMode, type MorphDot } from '../transitions/useDotMorph';
 import { DOT_COLOR } from '../core/constants';
 import { useReducedMotion } from '../core/useReducedMotion';
+import { valueNoise } from '../core/dot-math';
 
 export interface DotMorphNumberProps {
   /** The numeric value to display. Formatted to string internally. */
@@ -51,7 +52,7 @@ function formatValue(value: number, decimals: number, prefix: string, suffix: st
  *
  * When the value changes, the old dot configuration smoothly
  * reconfigures into the new number. Previous value leaves a
- * brief ghost residue.
+ * brief ghost residue that dissolves in place.
  *
  * This is the primary component for animated KPI values,
  * percentage changes, and live market data.
@@ -80,7 +81,7 @@ export default function DotMorphNumber({
 
   const text = formatValue(value, decimals, prefix, suffix);
 
-  const { dots, width, height, morphing, residueDots } = useDotMorph(text, {
+  const { dots, width, height, morphing, residueDots, residueProgress } = useDotMorph(text, {
     morphDuration,
     residueDuration,
     pulseStrength,
@@ -99,25 +100,36 @@ export default function DotMorphNumber({
     scale: number,
     minR: number,
     maxR: number,
-    yOffset: number,
+    opacityMultiplier: number = 1,
+    drift: number = 0,
   ) => {
     for (const dot of dotsToRender) {
       const isActive = dot.isActive || dot.wasActive;
       const baseR = isActive
         ? maxR * scale * Math.max(dot.radius, 0)
         : minR * scale;
-      const r = Math.max(baseR, 0);
-      const alpha = dot.opacity;
+      let r = Math.max(baseR, 0);
+      const alpha = dot.opacity * opacityMultiplier;
 
-      if (r <= 0 || alpha <= 0) continue;
+      if (r <= 0 || alpha <= 0.005) continue;
 
-      const cx = dot.x * scale + scale / 2;
-      const cy = dot.y * scale + scale / 2 + yOffset;
+      let cx = dot.x * scale + scale / 2;
+      let cy = dot.y * scale + scale / 2;
+
+      // Apply drift for residue dissolution effect
+      if (drift > 0) {
+        const nx = valueNoise(dot.x * 3.1, dot.y * 2.7, 31);
+        const ny = valueNoise(dot.y * 2.3, dot.x * 3.9, 37);
+        cx += (nx - 0.5) * drift * scale;
+        cy += (ny - 0.5) * drift * scale * 0.7;
+        // Residue dots shrink as they drift
+        r *= (1 - drift * 0.3);
+      }
 
       ctx.beginPath();
       ctx.globalAlpha = alpha;
       ctx.fillStyle = dotColor;
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.arc(cx, cy, Math.max(r, 0), 0, Math.PI * 2);
       ctx.fill();
     }
   }, []);
@@ -127,13 +139,11 @@ export default function DotMorphNumber({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const residueHeight = residueDots ? height * 0.3 : 0;
-    const totalH = height + residueHeight;
-
+    // Canvas size matches current value dimensions — no extra height for residue
     canvas.width = width * dpr;
-    canvas.height = totalH * dpr;
+    canvas.height = height * dpr;
     canvas.style.width = `${width}px`;
-    canvas.style.height = `${totalH}px`;
+    canvas.style.height = `${height}px`;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -143,21 +153,22 @@ export default function DotMorphNumber({
       ctx.save();
       ctx.scale(dpr, dpr);
 
-      // Render residue above (ghostly old value)
+      // Render residue (ghost of old value) — overlaid at SAME position, fading + drifting
       if (residueDots) {
-        renderDots(ctx, residueDots, residueColor, fontScale, minRadius, maxRadius, 0);
+        const fadeOpacity = 1 - residueProgress;
+        const drift = residueProgress * 0.8;
+        renderDots(ctx, residueDots, residueColor, fontScale, minRadius, maxRadius, fadeOpacity, drift);
       }
 
-      // Render main dots
-      const mainOffset = residueDots ? residueHeight : 0;
-      renderDots(ctx, dots, color, fontScale, minRadius, maxRadius, mainOffset);
+      // Render main dots on top
+      renderDots(ctx, dots, color, fontScale, minRadius, maxRadius);
 
       ctx.restore();
     };
 
     draw();
 
-    // If morphing, keep redrawing
+    // Keep redrawing while morphing (covers both morph and residue fade phases)
     if (morphing) {
       const tick = () => {
         draw();
@@ -166,7 +177,7 @@ export default function DotMorphNumber({
       rafBreathRef.current = requestAnimationFrame(tick);
       return () => cancelAnimationFrame(rafBreathRef.current);
     }
-  }, [dots, residueDots, width, height, dpr, fontScale, minRadius, maxRadius, color, residueColor, morphing, renderDots]);
+  }, [dots, residueDots, residueProgress, width, height, dpr, fontScale, minRadius, maxRadius, color, residueColor, morphing, renderDots]);
 
   return (
     <canvas

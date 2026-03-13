@@ -58,14 +58,15 @@ export default function DotGauge({
       {visibleDots.map((active, i) => (
         <div
           key={i}
-          className="rounded-full"
+          className={`rounded-full ${active && !reducedMotion ? 'dot-breathe' : ''}`}
           style={{
             width: `${dotSize}px`,
             height: `${dotSize}px`,
             backgroundColor: active ? activeColor : '#e5e7eb',
             transition: reducedMotion ? 'none' : `all ${DATA_TRANSITION_DURATION}ms cubic-bezier(0.16, 1, 0.3, 1)`,
             transform: active ? 'scale(1)' : 'scale(0.7)',
-          }}
+            '--breathe-delay': `${i * 250}ms`,
+          } as React.CSSProperties}
         />
       ))}
     </div>

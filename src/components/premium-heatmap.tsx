@@ -7,6 +7,7 @@ import PressureBar from './motion/heatmap/PressureBar';
 import DotTabBar from './motion/transitions/DotTabBar';
 import { useFieldTransition } from './motion/transitions/useFieldTransition';
 import { useReducedMotion } from './motion/core/useReducedMotion';
+import LivePulse from './motion/indicators/LivePulse';
 
 interface PremiumHeatmapProps {
   data: MultiCoinKimpData;
@@ -75,7 +76,10 @@ export default function PremiumHeatmap({ data, onSelectCoin }: PremiumHeatmapPro
       <div className="dot-card-inner">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
           <div>
-            <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider">멀티코인 김프 히트맵</h2>
+            <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider flex items-center gap-1.5">
+              <LivePulse size={4} />
+              멀티코인 김프 히트맵
+            </h2>
             <p className="text-[10px] sm:text-xs text-dot-muted mt-1 font-mono">
               평균 {avgPremium >= 0 ? '+' : ''}{avgPremium.toFixed(2)}% · 최고 {maxPremium >= 0 ? '+' : ''}{maxPremium.toFixed(2)}% · 최저 {minPremium >= 0 ? '+' : ''}{minPremium.toFixed(2)}%
             </p>

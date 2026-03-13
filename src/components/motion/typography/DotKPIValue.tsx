@@ -65,9 +65,9 @@ export default function DotKPIValue({
       fontScale={fontScale}
       morphDuration={morphDuration}
       morphMode={morphMode}
-      pulseStrength={0.18}
-      residueAmount={0.1}
-      residueDuration={400}
+      pulseStrength={0.25}
+      residueAmount={0.18}
+      residueDuration={500}
       color={resolvedColor}
       residueColor={DOT_COLOR}
       className={className}

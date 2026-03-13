@@ -4,6 +4,7 @@ import type { FearGreedData } from '@/lib/types';
 import DotScale from './motion/indicators/DotScale';
 import DotKPIValue from './motion/typography/DotKPIValue';
 import DotMorphTransition from './motion/transitions/DotMorphTransition';
+import LivePulse from './motion/indicators/LivePulse';
 
 interface FearGreedCardProps {
   data: FearGreedData;
@@ -32,7 +33,10 @@ export default function FearGreedCard({ data }: FearGreedCardProps) {
   return (
     <div className="dot-card p-4 sm:p-5">
       <div className="dot-card-inner">
-        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3">공포탐욕지수</h2>
+        <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <LivePulse size={4} color={color} />
+          공포탐욕지수
+        </h2>
         <div className="flex items-end gap-3">
           <DotKPIValue
             value={data.value}
