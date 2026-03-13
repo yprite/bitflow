@@ -1,6 +1,8 @@
 'use client';
 
 import KimpCard from './kimp-card';
+import FundingRateCard from './funding-rate-card';
+import FearGreedCard from './fear-greed-card';
 import SignalBadge from './signal-badge';
 import OrbitalSilence from './motion/storytelling/OrbitalSilence';
 import { useData } from './data-provider';
@@ -74,14 +76,18 @@ export default function Dashboard() {
 
       <KimpCard kimp={data.kimp} avg30d={data.avg30d} />
 
-      <SignalBadge signal={data.signal} />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <FundingRateCard data={data.fundingRate} />
+        <FearGreedCard data={data.fearGreed} />
+        <SignalBadge signal={data.signal} />
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <NavCard
           href="/indicators"
           title="지표"
-          description="시장 상세 지표와 추이를 확인합니다"
-          items={['펀딩비율', '공포탐욕', '김프 차트']}
+          description="김프 추이 차트를 확인합니다"
+          items={['김프 차트']}
         />
         <NavCard
           href="/tools"
