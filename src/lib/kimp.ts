@@ -1,4 +1,4 @@
-import { KimpData, FundingRateData, FearGreedData, CompositeSignal, SignalFactor, CoinPremium, MultiCoinKimpData, ArbitrageResult } from './types';
+import { KimpData, FundingRateData, FearGreedData, CompositeSignal, SignalFactor, CoinPremium, MultiCoinKimpData, ArbitrageResult, FundingRateHistoryPoint, FearGreedHistoryPoint } from './types';
 
 interface OkxResponse<T> {
   code: string;
@@ -240,6 +240,64 @@ export async function getKimpData(): Promise<KimpData> {
     kimchiPremium,
     timestamp: new Date().toISOString(),
   };
+}
+
+// 펀딩비 히스토리 (OKX)
+export async function fetchFundingRateHistory(limit = 100): Promise<FundingRateHistoryPoint[]> {
+  try {
+    const res = await fetch(
+      `https://www.okx.com/api/v5/public/funding-rate-history?instId=BTC-USDT-SWAP&limit=${limit}`,
+      {
+        next: { revalidate: 300 },
+        headers: { 'User-Agent': 'bitflow/1.0' },
+      }
+    );
+
+    if (!res.ok) return [];
+
+    const data = await res.json() as OkxResponse<{
+      fundingRate: string;
+      fundingTime: string;
+    }>;
+
+    if (data.code !== '0' || !data.data) return [];
+
+    return data.data
+      .map((d) => ({
+        timestamp: new Date(Number(d.fundingTime)).toISOString(),
+        rate: Number(d.fundingRate),
+      }))
+      .filter((d) => Number.isFinite(d.rate))
+      .reverse();
+  } catch {
+    return [];
+  }
+}
+
+// 공포탐욕지수 히스토리
+export async function fetchFearGreedHistory(limit = 30): Promise<FearGreedHistoryPoint[]> {
+  try {
+    const res = await fetch(`https://api.alternative.me/fng/?limit=${limit}`, {
+      next: { revalidate: 300 },
+      headers: { 'User-Agent': 'bitflow/1.0' },
+    });
+
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    if (!data.data) return [];
+
+    return (data.data as Array<{ value: string; value_classification: string; timestamp: string }>)
+      .map((d) => ({
+        timestamp: new Date(Number(d.timestamp) * 1000).toISOString(),
+        value: parseInt(d.value, 10),
+        classification: d.value_classification,
+      }))
+      .filter((d) => Number.isFinite(d.value))
+      .reverse();
+  } catch {
+    return [];
+  }
 }
 
 // 멀티코인 김프 데이터

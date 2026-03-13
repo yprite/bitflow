@@ -1,4 +1,4 @@
-import type { KimpData, KimpHistoryPoint } from './types';
+import type { KimpData, KimpHistoryPoint, ExtendedKimpHistoryPoint } from './types';
 import { createServiceClient, hasSupabaseServiceConfig } from './supabase';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -10,6 +10,10 @@ const MIN_AVERAGE_POINTS = 12;
 interface KimpHistoryRow {
   bucket_at: string;
   kimchi_premium: number | string;
+}
+
+interface ExtendedKimpHistoryRow extends KimpHistoryRow {
+  usd_krw: number | string;
 }
 
 interface SupabaseErrorLike {
@@ -158,6 +162,44 @@ export function calculateKimpAverage(points: KimpHistoryPoint[]): number | null 
 
   const total = points.reduce((sum, point) => sum + point.value, 0);
   return total / points.length;
+}
+
+export async function loadExtendedKimpHistory(days = HISTORY_WINDOW_DAYS): Promise<ExtendedKimpHistoryPoint[]> {
+  if (!hasSupabaseServiceConfig()) {
+    return [];
+  }
+
+  const safeDays = Math.min(Math.max(days, 1), HISTORY_WINDOW_DAYS);
+  const limit = (safeDays * 24 * 60) / HISTORY_BUCKET_MINUTES;
+  const since = new Date(Date.now() - safeDays * DAY_MS).toISOString();
+
+  try {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from('kimp_history')
+      .select('bucket_at, kimchi_premium, usd_krw')
+      .gte('bucket_at', since)
+      .order('bucket_at', { ascending: true })
+      .limit(Math.min(limit, MAX_HISTORY_POINTS));
+
+    if (error) {
+      logHistoryError('load-extended', error);
+      return [];
+    }
+
+    return (data ?? [])
+      .map((row) => {
+        const r = row as ExtendedKimpHistoryRow;
+        const value = Number(r.kimchi_premium);
+        const usdKrw = Number(r.usd_krw);
+        if (!Number.isFinite(value) || !Number.isFinite(usdKrw)) return null;
+        return { collectedAt: r.bucket_at, value, usdKrw };
+      })
+      .filter((row): row is ExtendedKimpHistoryPoint => row !== null);
+  } catch (error) {
+    logHistoryError('load-extended', error);
+    return [];
+  }
 }
 
 export async function loadKimpHistorySnapshot(kimp: KimpData) {
