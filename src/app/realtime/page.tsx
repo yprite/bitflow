@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import KimpCard from '@/components/kimp-card';
 import FundingRateCard from '@/components/funding-rate-card';
 import FearGreedCard from '@/components/fear-greed-card';
@@ -25,10 +25,26 @@ export default function RealtimePage() {
     oiRange, liqRange, stableRange, volumeRange, strategyRange,
   } = useData();
 
-  if (loading) {
+  const [phase, setPhase] = useState<'loading' | 'exiting' | 'ready'>('loading');
+
+  useEffect(() => {
+    if (!loading && data && phase === 'loading') {
+      setPhase('exiting');
+      const timer = setTimeout(() => setPhase('ready'), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, data, phase]);
+
+  useEffect(() => {
+    if (loading) setPhase('loading');
+  }, [loading]);
+
+  if (phase === 'loading' || (phase === 'exiting' && !error)) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <OrbitalSilence />
+        <div className={phase === 'exiting' ? 'dot-exit' : ''}>
+          <OrbitalSilence />
+        </div>
       </div>
     );
   }
