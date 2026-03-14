@@ -43,10 +43,66 @@ export interface AlertUser {
   active: boolean;
 }
 
+export interface UsdtPremiumData {
+  usdtKrwPrice: number;
+  actualUsdKrw: number;
+  premium: number;
+  timestamp: string;
+}
+
+export interface BtcDominanceData {
+  dominance: number;
+  totalMarketCap: number;
+  btcMarketCap: number;
+  timestamp: string;
+}
+
+export interface LongShortRatioData {
+  longRatio: number;
+  shortRatio: number;
+  longShortRatio: number;
+  timestamp: string;
+}
+
+export interface OpenInterestData {
+  oi: number;
+  oiUsd: number;
+  changeRate: number;   // 24h OI 변화율 (%)
+  timestamp: string;
+}
+
+export interface LiquidationData {
+  longLiqUsd: number;
+  shortLiqUsd: number;
+  totalLiqUsd: number;
+  ratio: number;         // long/total (0~1)
+  timestamp: string;
+}
+
+export interface StablecoinMcapData {
+  totalMcap: number;
+  change24h: number;     // 24h 변화율 (%)
+  timestamp: string;
+}
+
+export interface VolumeChangeData {
+  volume24h: number;
+  volumeAvg7d: number;
+  changeRate: number;    // (24h / 7d avg - 1) * 100
+  timestamp: string;
+}
+
 export interface DashboardData {
   kimp: KimpData;
   fundingRate: FundingRateData;
   fearGreed: FearGreedData;
+  usdtPremium: UsdtPremiumData;
+  btcDominance: BtcDominanceData;
+  longShortRatio: LongShortRatioData;
+  openInterest: OpenInterestData;
+  liquidation: LiquidationData;
+  stablecoinMcap: StablecoinMcapData;
+  volumeChange: VolumeChangeData;
   signal: CompositeSignal;
   avg30d: number | null;
   history: KimpHistoryPoint[];

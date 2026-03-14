@@ -16,6 +16,13 @@ interface DataContextType {
   chartData: KimpHistoryPoint[];
   fundingRange: DayRange | null;
   fearGreedRange: DayRange | null;
+  usdtPremiumRange: DayRange | null;
+  btcDominanceRange: DayRange | null;
+  longShortRange: DayRange | null;
+  oiRange: DayRange | null;
+  liqRange: DayRange | null;
+  stableRange: DayRange | null;
+  volumeRange: DayRange | null;
   error: string | null;
   loading: boolean;
   lastUpdated: string;
@@ -39,6 +46,13 @@ export default function DataProvider({ children }: { children: ReactNode }) {
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const [fundingRange, setFundingRange] = useState<DayRange | null>(null);
   const [fearGreedRange, setFearGreedRange] = useState<DayRange | null>(null);
+  const [usdtPremiumRange, setUsdtPremiumRange] = useState<DayRange | null>(null);
+  const [btcDominanceRange, setBtcDominanceRange] = useState<DayRange | null>(null);
+  const [longShortRange, setLongShortRange] = useState<DayRange | null>(null);
+  const [oiRange, setOiRange] = useState<DayRange | null>(null);
+  const [liqRange, setLiqRange] = useState<DayRange | null>(null);
+  const [stableRange, setStableRange] = useState<DayRange | null>(null);
+  const [volumeRange, setVolumeRange] = useState<DayRange | null>(null);
 
   const fetchData = async () => {
     try {
@@ -73,6 +87,55 @@ export default function DataProvider({ children }: { children: ReactNode }) {
         return { min: Math.min(prev.min, fg), max: Math.max(prev.max, fg), current: fg };
       });
 
+      // Track daily range for USDT premium
+      const up = json.usdtPremium.premium;
+      setUsdtPremiumRange((prev) => {
+        if (!prev) return { min: up, max: up, current: up };
+        return { min: Math.min(prev.min, up), max: Math.max(prev.max, up), current: up };
+      });
+
+      // Track daily range for BTC dominance
+      const dom = json.btcDominance.dominance;
+      setBtcDominanceRange((prev) => {
+        if (!prev) return { min: dom, max: dom, current: dom };
+        return { min: Math.min(prev.min, dom), max: Math.max(prev.max, dom), current: dom };
+      });
+
+      // Track daily range for long/short ratio
+      const ls = json.longShortRatio.longShortRatio;
+      setLongShortRange((prev) => {
+        if (!prev) return { min: ls, max: ls, current: ls };
+        return { min: Math.min(prev.min, ls), max: Math.max(prev.max, ls), current: ls };
+      });
+
+      // Track daily range for open interest
+      const oiVal = json.openInterest.oiUsd;
+      setOiRange((prev) => {
+        if (!prev) return { min: oiVal, max: oiVal, current: oiVal };
+        return { min: Math.min(prev.min, oiVal), max: Math.max(prev.max, oiVal), current: oiVal };
+      });
+
+      // Track daily range for liquidation ratio
+      const liqVal = json.liquidation.ratio;
+      setLiqRange((prev) => {
+        if (!prev) return { min: liqVal, max: liqVal, current: liqVal };
+        return { min: Math.min(prev.min, liqVal), max: Math.max(prev.max, liqVal), current: liqVal };
+      });
+
+      // Track daily range for stablecoin change
+      const stableVal = json.stablecoinMcap.change24h;
+      setStableRange((prev) => {
+        if (!prev) return { min: stableVal, max: stableVal, current: stableVal };
+        return { min: Math.min(prev.min, stableVal), max: Math.max(prev.max, stableVal), current: stableVal };
+      });
+
+      // Track daily range for volume change
+      const volVal = json.volumeChange.changeRate;
+      setVolumeRange((prev) => {
+        if (!prev) return { min: volVal, max: volVal, current: volVal };
+        return { min: Math.min(prev.min, volVal), max: Math.max(prev.max, volVal), current: volVal };
+      });
+
       setSessionHistory((prev) => {
         if (json.history.length > 0) {
           return prev;
@@ -99,7 +162,7 @@ export default function DataProvider({ children }: { children: ReactNode }) {
   const chartData = data && data.history.length > 0 ? data.history : sessionHistory;
 
   return (
-    <DataContext.Provider value={{ data, multiCoinData, sessionHistory, chartData, fundingRange, fearGreedRange, error, loading, lastUpdated, fetchData }}>
+    <DataContext.Provider value={{ data, multiCoinData, sessionHistory, chartData, fundingRange, fearGreedRange, usdtPremiumRange, btcDominanceRange, longShortRange, oiRange, liqRange, stableRange, volumeRange, error, loading, lastUpdated, fetchData }}>
       {children}
     </DataContext.Provider>
   );
