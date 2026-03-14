@@ -28,18 +28,22 @@ export default function RealtimePage() {
   const [phase, setPhase] = useState<'loading' | 'exiting' | 'ready'>('loading');
 
   useEffect(() => {
-    if (!loading && data && phase === 'loading') {
-      setPhase('exiting');
-      const timer = setTimeout(() => setPhase('ready'), 400);
-      return () => clearTimeout(timer);
+    if (!loading && phase === 'loading') {
+      if (data) {
+        setPhase('exiting');
+        const timer = setTimeout(() => setPhase('ready'), 400);
+        return () => clearTimeout(timer);
+      } else {
+        setPhase('ready');
+      }
     }
   }, [loading, data, phase]);
 
   useEffect(() => {
-    if (loading) setPhase('loading');
-  }, [loading]);
+    if (loading && phase === 'ready') setPhase('loading');
+  }, [loading, phase]);
 
-  if (phase === 'loading' || (phase === 'exiting' && !error)) {
+  if (phase !== 'ready') {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className={phase === 'exiting' ? 'dot-exit' : ''}>
