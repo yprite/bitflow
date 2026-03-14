@@ -37,8 +37,8 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
   const W = 400;
   const H = 100;
   const padY = 8;
-  const blurEdgeX = W * 0.34;
-  const blendWidth = 44;
+  const blurEdgeX = W * 0.42;
+  const blendWidth = 34;
   const fillId = `btc-spark-fill-${uid}`;
   const blurId = `btc-spark-blur-${uid}`;
   const sharpMaskId = `btc-spark-sharp-mask-${uid}`;
@@ -63,7 +63,7 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
   return (
     <div
       className="absolute top-0 right-0 pointer-events-none overflow-hidden"
-      style={{ width: '70%', height: '70%' }}
+      style={{ width: '58%', height: '58%' }}
       aria-hidden="true"
     >
       <svg
@@ -77,7 +77,7 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
           <filter id={blurId} x="-10%" y="-10%" width="120%" height="120%">
-            <feGaussianBlur stdDeviation="3.5" />
+            <feGaussianBlur stdDeviation="2.6" />
           </filter>
           <linearGradient id={sharpFadeId} x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="white" stopOpacity="0" />
