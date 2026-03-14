@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import SignalBadge from './signal-badge';
 import MarketBriefing from './market-briefing';
 import EventStrip from './event-strip';
@@ -8,11 +9,30 @@ import { useData } from './data-provider';
 
 export default function Dashboard() {
   const { data, error, loading, lastUpdated, fetchData } = useData();
+  const [phase, setPhase] = useState<'loading' | 'exiting' | 'ready'>('loading');
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading && data && phase === 'loading') {
+      // Trigger exit animation, then show content
+      setPhase('exiting');
+      const timer = setTimeout(() => setPhase('ready'), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, data, phase]);
+
+  // Reset to loading when fetchData triggers a reload
+  useEffect(() => {
+    if (loading) setPhase('loading');
+  }, [loading]);
+
+  if (phase === 'loading' || (phase === 'exiting' && !error)) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <OrbitalSilence />
+        <div
+          className={phase === 'exiting' ? 'dot-exit' : ''}
+        >
+          <OrbitalSilence />
+        </div>
       </div>
     );
   }
@@ -46,22 +66,22 @@ export default function Dashboard() {
       </div>
 
       {/* 시장 온도 */}
-      <div className="dot-entrance" style={{ '--entrance-delay': '80ms' } as React.CSSProperties}>
-        <SignalBadge signal={data.signal} />
+      <div className="dot-entrance" style={{ '--entrance-delay': '120ms' } as React.CSSProperties}>
+        <SignalBadge signal={data.signal} upbitPrice={data.kimp.upbitPrice} />
       </div>
 
       {/* 시장 브리핑 — 인사이트 해석 레이어 */}
-      <div className="dot-entrance" style={{ '--entrance-delay': '120ms' } as React.CSSProperties}>
+      <div className="dot-entrance" style={{ '--entrance-delay': '240ms' } as React.CSSProperties}>
         <MarketBriefing data={data} />
       </div>
 
       {/* 매크로 이벤트 캘린더 */}
-      <div className="dot-entrance" style={{ '--entrance-delay': '160ms' } as React.CSSProperties}>
+      <div className="dot-entrance" style={{ '--entrance-delay': '360ms' } as React.CSSProperties}>
         <EventStrip />
       </div>
 
       {/* 지표 상세 페이지 링크 */}
-      <div className="dot-entrance" style={{ '--entrance-delay': '200ms' } as React.CSSProperties}>
+      <div className="dot-entrance" style={{ '--entrance-delay': '480ms' } as React.CSSProperties}>
         <a
           href="/realtime"
           className="dot-card p-4 flex items-center justify-between group hover:border-dot-accent/40 transition-colors"

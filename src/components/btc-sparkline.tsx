@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useId, useState } from 'react';
 import type { SignalLevel } from '@/lib/types';
 import { getSignalColor } from './signal-badge';
 
@@ -15,7 +15,7 @@ interface PricePoint {
 
 export default function BtcSparkline({ level }: BtcSparklineProps) {
   const [points, setPoints] = useState<PricePoint[]>([]);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const uid = useId().replace(/:/g, '');
 
   useEffect(() => {
     fetch('/api/btc-chart')
@@ -37,6 +37,12 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
   const W = 400;
   const H = 100;
   const padY = 8;
+  const blurEdgeX = W * 0.34;
+  const blendWidth = 44;
+  const fillId = `btc-spark-fill-${uid}`;
+  const blurId = `btc-spark-blur-${uid}`;
+  const sharpMaskId = `btc-spark-sharp-mask-${uid}`;
+  const sharpFadeId = `btc-spark-sharp-fade-${uid}`;
 
   // Build path
   const toX = (i: number) => (i / (points.length - 1)) * W;
@@ -56,7 +62,6 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
 
   return (
     <div
-      ref={containerRef}
       className="absolute top-0 right-0 pointer-events-none overflow-hidden"
       style={{ width: '70%', height: '70%' }}
       aria-hidden="true"
@@ -67,23 +72,47 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
         className="w-full h-full"
       >
         <defs>
-          <linearGradient id="btc-spark-fill" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity="0.06" />
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
+          <filter id={blurId} x="-10%" y="-10%" width="120%" height="120%">
+            <feGaussianBlur stdDeviation="3.5" />
+          </filter>
+          <linearGradient id={sharpFadeId} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="white" stopOpacity="0" />
+            <stop offset={`${(blurEdgeX / W) * 100}%`} stopColor="white" stopOpacity="0" />
+            <stop offset={`${((blurEdgeX + blendWidth) / W) * 100}%`} stopColor="white" stopOpacity="1" />
+            <stop offset="100%" stopColor="white" stopOpacity="1" />
+          </linearGradient>
+          <mask id={sharpMaskId}>
+            <rect x="0" y="0" width={W} height={H} fill={`url(#${sharpFadeId})`} />
+          </mask>
         </defs>
-        {/* 연한 영역 채우기 */}
-        <path d={areaPath} fill="url(#btc-spark-fill)" />
-        {/* 연한 라인 */}
-        <path
-          d={linePath}
-          fill="none"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.10"
-        />
+        <g filter={`url(#${blurId})`} opacity="0.85">
+          <path d={areaPath} fill={`url(#${fillId})`} />
+          <path
+            d={linePath}
+            fill="none"
+            stroke={color}
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity="0.10"
+          />
+        </g>
+        <g mask={`url(#${sharpMaskId})`}>
+          <path d={areaPath} fill={`url(#${fillId})`} />
+          <path
+            d={linePath}
+            fill="none"
+            stroke={color}
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity="0.10"
+          />
+        </g>
       </svg>
     </div>
   );

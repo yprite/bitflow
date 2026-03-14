@@ -10,6 +10,7 @@ import BtcSparkline from './btc-sparkline';
 
 interface SignalBadgeProps {
   signal: CompositeSignal;
+  upbitPrice?: number;
 }
 
 export function getSignalColor(level: SignalLevel): string {
@@ -175,7 +176,7 @@ function FactorSummaryStrip({ factors }: { factors: SignalFactor[] }) {
   );
 }
 
-export default function SignalBadge({ signal }: SignalBadgeProps) {
+export default function SignalBadge({ signal, upbitPrice }: SignalBadgeProps) {
   const [expanded, setExpanded] = useState(false);
   const color = getSignalColor(signal.level);
   const fieldLevel = getSignalFieldLevel(signal.level);
@@ -192,6 +193,16 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
       <SignalField level={fieldLevel} width={240} height={120} />
 
       <div className="dot-card-inner">
+        {upbitPrice ? (
+          <div className="absolute top-0 right-0 text-right px-2 py-1 rounded-sm border border-white/40 bg-white/65 backdrop-blur-[1px] pointer-events-none">
+            <p className="text-[8px] sm:text-[9px] font-mono uppercase tracking-wider text-dot-muted/75">
+              업비트 BTC
+            </p>
+            <p className="text-[10px] sm:text-[11px] font-mono tabular-nums text-dot-sub leading-tight">
+              {upbitPrice.toLocaleString()}원
+            </p>
+          </div>
+        ) : null}
         <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-1 flex items-center gap-1.5">
           <LivePulse size={4} color={color} />
           시장 온도
