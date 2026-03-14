@@ -103,7 +103,7 @@ export default function IndicatorsPage() {
           eyebrow="과거 흐름"
           title="히스토리"
           description="김프와 파생 심리, 평균 회귀 구간을 한 화면에서 읽기 위한 과거 데이터 페이지입니다."
-          backHref="/"
+
         />
       </DotAssemblyReveal>
 

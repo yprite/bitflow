@@ -120,9 +120,6 @@ export default function RootLayout({
               </span>
             </Link>
             <div className="flex gap-4 sm:gap-6 text-xs sm:text-sm">
-              <Link href="/" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
-                홈
-              </Link>
               <Link href="/realtime" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
                 실시간
               </Link>

@@ -40,7 +40,6 @@ export default function AlertPage() {
           eyebrow="텔레그램 알림"
           title="알림"
           description="김치프리미엄이 설정한 임계값을 넘으면 텔레그램으로 즉시 알림을 받을 수 있습니다."
-          backHref="/"
           action={<AlertBotCta />}
         />
       </DotAssemblyReveal>

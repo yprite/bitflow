@@ -47,7 +47,7 @@ export default function ToolsPage() {
           eyebrow="실전 도구"
           title="도구"
           description="상대 과열 구간을 비교하고, 실제 체결 전 기대 수익률을 빠르게 점검하는 화면입니다."
-          backHref="/"
+
         />
       </DotAssemblyReveal>
 
