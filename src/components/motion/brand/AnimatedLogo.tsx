@@ -34,11 +34,11 @@ export interface AnimatedLogoProps {
   className?: string;
   /** How far dots scatter from their home position (px in viewBox). Default: 4 */
   spread?: number;
-  /** Duration of converge/release phase in ms. Default: 2400 */
+  /** Duration of converge/release phase in ms. Default: 1400 */
   transitionDuration?: number;
-  /** Duration of the stable hold in ms. Default: 2000 */
+  /** Duration of the stable hold in ms. Default: 1200 */
   holdDuration?: number;
-  /** Duration of the dispersed/latent pause in ms. Default: 1200 */
+  /** Duration of the dispersed/latent pause in ms. Default: 600 */
   dispersedDuration?: number;
   /** Overall intensity 0–1 (scales spread + opacity variation). Default: 1 */
   intensity?: number;
@@ -72,14 +72,15 @@ export default function AnimatedLogo({
   size = 24,
   className = 'opacity-80',
   spread = 4,
-  transitionDuration = 2400,
-  holdDuration = 2000,
-  dispersedDuration = 1200,
+  transitionDuration = 1400,
+  holdDuration = 1200,
+  dispersedDuration = 600,
   intensity = 1,
   color = '#1a1a1a',
 }: AnimatedLogoProps) {
   const reducedMotion = useReducedMotion();
   const circleRefs = useRef<(SVGCircleElement | null)[]>([]);
+  const groupRef = useRef<SVGGElement | null>(null);
   const rafRef = useRef<number>(0);
   const startRef = useRef<number>(0);
 
@@ -153,6 +154,13 @@ export default function AnimatedLogo({
         el.setAttribute('opacity', opacity.toFixed(3));
       }
 
+      // Rotate the whole logo group: full 360° over one cycle
+      if (groupRef.current) {
+        const rotationProgress = elapsed / cycleDuration;
+        const angle = rotationProgress * 360;
+        groupRef.current.setAttribute('transform', `rotate(${angle.toFixed(1)} 12 12)`);
+      }
+
       rafRef.current = requestAnimationFrame(animate);
     },
     [cycleDuration, dispersedDuration, transitionDuration, holdDuration, effectiveSpread, intensity, offsets],
@@ -191,18 +199,20 @@ export default function AnimatedLogo({
       className={className}
       aria-hidden="true"
     >
-      {LOGO_DOTS.map((dot, i) => (
-        <circle
-          key={i}
-          ref={(el) => {
-            circleRefs.current[i] = el;
-          }}
-          cx={dot.cx}
-          cy={dot.cy}
-          r={dot.r}
-          fill={color}
-        />
-      ))}
+      <g ref={groupRef}>
+        {LOGO_DOTS.map((dot, i) => (
+          <circle
+            key={i}
+            ref={(el) => {
+              circleRefs.current[i] = el;
+            }}
+            cx={dot.cx}
+            cy={dot.cy}
+            r={dot.r}
+            fill={color}
+          />
+        ))}
+      </g>
     </svg>
   );
 }
