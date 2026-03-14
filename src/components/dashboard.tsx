@@ -7,8 +7,11 @@ import UsdtPremiumCard from './usdt-premium-card';
 import BtcDominanceCard from './btc-dominance-card';
 import LongShortCard from './long-short-card';
 import SignalBadge from './signal-badge';
+import IndicatorCarousel from './indicator-carousel';
 import OrbitalSilence from './motion/storytelling/OrbitalSilence';
 import { useData } from './data-provider';
+
+const CAROUSEL_LABELS = ['김프', '펀딩비', '공포탐욕', 'USDT', '도미넌스', '롱숏'];
 
 export default function Dashboard() {
   const {
@@ -42,7 +45,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-5">
+    <div className="space-y-3 sm:space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-xs text-dot-muted font-mono">마지막 업데이트: {lastUpdated}</p>
         <button
@@ -53,16 +56,18 @@ export default function Dashboard() {
         </button>
       </div>
 
-      <KimpCard kimp={data.kimp} avg30d={data.avg30d} />
+      {/* Fixed: 시장 온도 (6-factor signal) */}
+      <SignalBadge signal={data.signal} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      {/* Carousel: 개별 지표 상세 */}
+      <IndicatorCarousel labels={CAROUSEL_LABELS}>
+        <KimpCard kimp={data.kimp} avg30d={data.avg30d} />
         <FundingRateCard data={data.fundingRate} dayRange={fundingRange} />
         <FearGreedCard data={data.fearGreed} dayRange={fearGreedRange} />
         <UsdtPremiumCard data={data.usdtPremium} dayRange={usdtPremiumRange} />
         <BtcDominanceCard data={data.btcDominance} dayRange={btcDominanceRange} />
         <LongShortCard data={data.longShortRatio} dayRange={longShortRange} />
-        <SignalBadge signal={data.signal} />
-      </div>
+      </IndicatorCarousel>
     </div>
   );
 }
