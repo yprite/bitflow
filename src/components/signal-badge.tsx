@@ -6,6 +6,7 @@ import InsightBloom from './motion/indicators/InsightBloom';
 import SignalField from './motion/indicators/SignalField';
 import DotMorphTransition from './motion/transitions/DotMorphTransition';
 import LivePulse from './motion/indicators/LivePulse';
+import BtcSparkline from './btc-sparkline';
 
 interface SignalBadgeProps {
   signal: CompositeSignal;
@@ -103,6 +104,7 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
 
   return (
     <div className="dot-card p-4 sm:p-5 relative overflow-hidden">
+      <BtcSparkline level={signal.level} />
       <SignalField level={fieldLevel} width={240} height={120} />
 
       <div className="dot-card-inner">
