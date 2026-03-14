@@ -355,9 +355,6 @@ export default function AdminPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <a href="/" className="text-dot-muted hover:text-dot-accent transition text-sm font-mono">
-            ← 홈
-          </a>
           <h1 className="text-sm font-semibold text-dot-sub uppercase tracking-wider">이벤트 대시보드</h1>
         </div>
         <div className="flex items-center gap-2">

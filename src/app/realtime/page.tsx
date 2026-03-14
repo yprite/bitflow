@@ -107,7 +107,6 @@ export default function RealtimePage() {
         <PageHeader
           eyebrow="시장 스냅샷"
           title="실시간 지표"
-          backHref="/"
           action={(
             <div className="flex items-center gap-3">
               <span className="text-xs text-dot-muted font-mono hidden sm:inline">{lastUpdated}</span>
