@@ -3,13 +3,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import KimpChart from '@/components/kimp-chart';
 import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
+import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import { useData } from '@/components/data-provider';
 import FundingRateHistoryChart from '@/components/indicators/funding-rate-history-chart';
 import FearGreedHistoryChart from '@/components/indicators/fear-greed-history-chart';
 import KimpStatsCard from '@/components/indicators/kimp-stats-card';
 import ExchangeRateChart from '@/components/indicators/exchange-rate-chart';
-import KimpCalendar from '@/components/indicators/kimp-calendar';
+import BtcReturnHeatmap from '@/components/indicators/btc-return-heatmap';
 import KimpCorrelationChart from '@/components/indicators/kimp-correlation-chart';
+import GuideCard from '@/components/guide-card';
+import PageHeader from '@/components/page-header';
 import type {
   IndicatorsPageData,
   KimpStats,
@@ -43,8 +46,6 @@ export default function IndicatorsPage() {
   const { data, chartData, error, loading, fetchData } = useData();
   const [indicatorData, setIndicatorData] = useState<IndicatorsPageData | null>(null);
   const [indicatorLoading, setIndicatorLoading] = useState(true);
-  const [guideExpanded, setGuideExpanded] = useState(false);
-  const [guideReady, setGuideReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,16 +63,6 @@ export default function IndicatorsPage() {
     }
     loadIndicators();
     return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    const hasSeenGuide = window.localStorage.getItem(GUIDE_STORAGE_KEY) === '1';
-    setGuideExpanded(!hasSeenGuide);
-    setGuideReady(true);
-
-    if (!hasSeenGuide) {
-      window.localStorage.setItem(GUIDE_STORAGE_KEY, '1');
-    }
   }, []);
 
   const stats = useMemo(() => {
@@ -107,59 +98,43 @@ export default function IndicatorsPage() {
 
   return (
     <div className="space-y-3 sm:space-y-5">
-      <div className="flex items-center gap-3">
-        <a href="/" className="text-dot-muted hover:text-dot-accent transition text-sm font-mono">← 홈</a>
-        <h1 className="text-sm font-semibold text-dot-sub uppercase tracking-wider">지표</h1>
-      </div>
+      <DotAssemblyReveal delay={0} duration={520} density="low">
+        <PageHeader
+          eyebrow="과거 흐름"
+          title="히스토리"
+          description="김프와 파생 심리, 평균 회귀 구간을 한 화면에서 읽기 위한 과거 데이터 페이지입니다."
+          backHref="/"
+        />
+      </DotAssemblyReveal>
 
-      <section className="dot-card p-5 sm:p-6">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">히스토리 읽는 법</h2>
-          <button
-            type="button"
-            onClick={() => setGuideExpanded((prev) => !prev)}
-            aria-expanded={guideExpanded}
-            className="inline-flex items-center gap-1 text-[10px] text-dot-muted hover:text-dot-accent transition font-mono"
-          >
-            <span>{guideExpanded ? '접기' : '펼치기'}</span>
-            <span
-              aria-hidden="true"
-              className="inline-block transition-transform duration-200"
-              style={{ transform: guideExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
-            >
-              ▾
-            </span>
-          </button>
-        </div>
-        <div
-          className="overflow-hidden transition-all duration-300 ease-out"
-          style={{
-            maxHeight: guideReady && guideExpanded ? '320px' : '0px',
-            opacity: guideReady && guideExpanded ? 1 : 0,
-          }}
-        >
-          <div className="pt-3 space-y-3">
-            <p className="text-xs text-dot-sub leading-relaxed">
+      <DotAssemblyReveal delay={70} duration={660}>
+        <GuideCard
+          title="히스토리 읽는 법"
+          storageKey={GUIDE_STORAGE_KEY}
+          maxHeight={320}
+          intro={(
+            <>
               이 페이지는 김치프리미엄, 펀딩비, 공포탐욕지수의 시간 흐름을 함께 보여줍니다.
               단순히 숫자를 나열하는 대신 과열 구간, 평균 회귀, 변동성 확대 여부를 한 번에 읽을 수 있도록 설계했습니다.
-            </p>
-            <div className="grid gap-2 sm:grid-cols-3">
-              <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-                <p className="text-[10px] text-dot-muted uppercase tracking-wider">김프</p>
-                <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">국내 수급이 해외 대비 얼마나 강한지 보여주는 국내 체감 지표입니다.</p>
-              </div>
-              <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-                <p className="text-[10px] text-dot-muted uppercase tracking-wider">펀딩비</p>
-                <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">파생 포지션 한쪽으로 쏠림이 강한지 판단하는 데 유용합니다.</p>
-              </div>
-              <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-                <p className="text-[10px] text-dot-muted uppercase tracking-wider">심리 지수</p>
-                <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">시장 심리와 국내 프리미엄이 얼마나 같이 움직이는지 비교할 수 있습니다.</p>
-              </div>
+            </>
+          )}
+        >
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+              <p className="text-[10px] text-dot-muted uppercase tracking-wider">김프</p>
+              <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">국내 수급이 해외 대비 얼마나 강한지 보여주는 국내 체감 지표입니다.</p>
+            </div>
+            <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+              <p className="text-[10px] text-dot-muted uppercase tracking-wider">펀딩비</p>
+              <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">파생 포지션 한쪽으로 쏠림이 강한지 판단하는 데 유용합니다.</p>
+            </div>
+            <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+              <p className="text-[10px] text-dot-muted uppercase tracking-wider">심리 지수</p>
+              <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">시장 심리와 국내 프리미엄이 얼마나 같이 움직이는지 비교할 수 있습니다.</p>
             </div>
           </div>
-        </div>
-      </section>
+        </GuideCard>
+      </DotAssemblyReveal>
 
       {/* 1. 기존 김프 히스토리 차트 */}
       <KimpChart data={chartData} />
@@ -167,9 +142,13 @@ export default function IndicatorsPage() {
       {/* 3. 김프 통계 요약 */}
       {stats && <KimpStatsCard stats={stats} period="30일" />}
 
-      {/* 6. 히트맵 캘린더 */}
-      {indicatorData && indicatorData.kimpHistory.length > 0 && (
-        <KimpCalendar data={indicatorData.kimpHistory} />
+      {/* 6. BTC 월간/분기 수익률 */}
+      {indicatorLoading ? (
+        <div className="dot-card p-6">
+          <p className="text-dot-muted text-sm text-center">비트코인 수익률 데이터 로딩 중...</p>
+        </div>
+      ) : (
+        <BtcReturnHeatmap data={indicatorData?.btcReturnsHistory ?? null} />
       )}
 
       {/* 1. 펀딩비 히스토리 차트 */}

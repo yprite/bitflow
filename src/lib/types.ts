@@ -181,10 +181,32 @@ export interface KimpStats {
   dataPoints: number;
 }
 
+export type BtcReturnsPeriod = 'monthly' | 'quarterly';
+
+export interface BtcReturnsRow {
+  label: string;
+  values: Array<number | null>;
+}
+
+export interface BtcReturnsSection {
+  period: BtcReturnsPeriod;
+  title: string;
+  columns: string[];
+  rows: BtcReturnsRow[];
+}
+
+export interface BtcReturnsHistory {
+  sourceUrl: string;
+  fetchedAt: string;
+  monthly: BtcReturnsSection;
+  quarterly: BtcReturnsSection;
+}
+
 export interface IndicatorsPageData {
   kimpHistory: ExtendedKimpHistoryPoint[];
   fundingRateHistory: FundingRateHistoryPoint[];
   fearGreedHistory: FearGreedHistoryPoint[];
+  btcReturnsHistory: BtcReturnsHistory | null;
 }
 
 // 차익거래 계산기
