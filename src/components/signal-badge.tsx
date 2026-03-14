@@ -187,14 +187,11 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
           <InsightBloom trigger={signal.level} dotCount={5} travelDistance={18} dotSize={2} color={color} />
         </div>
 
-        {/* Level name + score display */}
+        {/* Level name + score range */}
         <div className="flex items-center gap-1.5 mt-1">
+          <span className="text-[10px] font-mono text-dot-muted/50">점수</span>
           <span className="text-sm font-semibold" style={{ color }}>
             {signal.level}
-          </span>
-          <span className="text-[10px] font-mono text-dot-muted/50">점수</span>
-          <span className="text-[10px] font-mono text-dot-sub">
-            {signal.normalizedScore > 0 ? '+' : ''}{signal.normalizedScore}
           </span>
           <span className="text-[9px] text-dot-muted/40 font-mono">/ 100</span>
         </div>
