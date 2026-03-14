@@ -119,7 +119,7 @@ export default function IndicatorsPage() {
             </>
           )}
         >
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2">
             <div className="border border-dot-border/60 p-3 dot-grid-sparse">
               <p className="text-[10px] text-dot-muted uppercase tracking-wider">김프</p>
               <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">국내 수급이 해외 대비 얼마나 강한지 보여주는 국내 체감 지표입니다.</p>
@@ -131,6 +131,10 @@ export default function IndicatorsPage() {
             <div className="border border-dot-border/60 p-3 dot-grid-sparse">
               <p className="text-[10px] text-dot-muted uppercase tracking-wider">심리 지수</p>
               <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">시장 심리와 국내 프리미엄이 얼마나 같이 움직이는지 비교할 수 있습니다.</p>
+            </div>
+            <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+              <p className="text-[10px] text-dot-muted uppercase tracking-wider">월간/분기 수익률</p>
+              <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">비트코인의 월별·분기별 과거 수익률을 히트맵으로 보여줍니다. 계절성 패턴과 평균·중앙값을 비교해 현재 구간이 역사적으로 어떤 위치인지 가늠할 수 있습니다.</p>
             </div>
           </div>
         </GuideCard>
