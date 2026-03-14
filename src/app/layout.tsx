@@ -116,6 +116,9 @@ export default function RootLayout({
               <a href="/" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
                 홈
               </a>
+              <a href="/realtime" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
+                지표
+              </a>
               <a href="/indicators" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
                 히스토리
               </a>
