@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hasSupabaseServiceConfig, createServiceClient } from '@/lib/supabase';
 
+function normalizeSecret(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return value.trim().replace(/^['"]+|['"]+$/g, '') || null;
+}
+
 function isAuthorized(req: NextRequest): boolean {
-  const secret = process.env.ADMIN_SECRET;
-  if (!secret) return false;
-  return req.headers.get('authorization') === `Bearer ${secret}`;
+  const expected = normalizeSecret(process.env.ADMIN_SECRET);
+  const token = normalizeSecret(
+    req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+  );
+
+  if (!expected || !token) return false;
+  return token === expected;
 }
 
 export async function GET(req: NextRequest) {
