@@ -64,7 +64,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-3 sm:space-y-4">
-      <DotAssemblyReveal delay={0} duration={420} density="low">
+      <DotAssemblyReveal delay={0} duration={500} density="low">
         <div className="flex items-center justify-between">
           <p className="text-xs text-dot-muted font-mono">마지막 업데이트: {lastUpdated}</p>
           <button
@@ -77,22 +77,22 @@ export default function Dashboard() {
       </DotAssemblyReveal>
 
       {/* 시장 온도 */}
-      <DotAssemblyReveal delay={70} duration={620}>
+      <DotAssemblyReveal delay={70} duration={700}>
         <SignalBadge signal={data.signal} upbitPrice={data.kimp.upbitPrice} />
       </DotAssemblyReveal>
 
       {/* 시장 브리핑 — 인사이트 해석 레이어 */}
-      <DotAssemblyReveal delay={190} duration={640}>
+      <DotAssemblyReveal delay={190} duration={720}>
         <MarketBriefing data={data} />
       </DotAssemblyReveal>
 
       {/* 매크로 이벤트 캘린더 */}
-      <DotAssemblyReveal delay={320} duration={660}>
+      <DotAssemblyReveal delay={320} duration={740}>
         <EventStrip />
       </DotAssemblyReveal>
 
       {/* 지표 상세 페이지 링크 */}
-      <DotAssemblyReveal delay={460} duration={520} density="low">
+      <DotAssemblyReveal delay={460} duration={600} density="low">
         <a
           href="/realtime"
           className="dot-card p-4 flex items-center justify-between group hover:border-dot-accent/40 transition-colors"

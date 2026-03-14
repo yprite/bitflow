@@ -102,7 +102,7 @@ export default function RealtimePage() {
   return (
     <div className="space-y-3 sm:space-y-4">
       {/* Header */}
-      <DotAssemblyReveal delay={0} duration={420} density="low">
+      <DotAssemblyReveal delay={0} duration={500} density="low">
         <div className="flex items-center justify-between">
           <h1 className="text-sm font-semibold text-dot-sub uppercase tracking-wider">
             실시간 지표
@@ -123,7 +123,7 @@ export default function RealtimePage() {
       </DotAssemblyReveal>
 
       {/* Summary table with inline detail expansion */}
-      <DotAssemblyReveal delay={90} duration={620}>
+      <DotAssemblyReveal delay={90} duration={700}>
         <IndicatorTable
           factors={data.signal.factors}
           selectedIndex={selectedIndex}
