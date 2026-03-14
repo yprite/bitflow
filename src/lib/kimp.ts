@@ -1,4 +1,4 @@
-import { KimpData, FundingRateData, FearGreedData, UsdtPremiumData, BtcDominanceData, LongShortRatioData, OpenInterestData, LiquidationData, StablecoinMcapData, VolumeChangeData, CompositeSignal, SignalFactor, CoinPremium, MultiCoinKimpData, ArbitrageResult, FundingRateHistoryPoint, FearGreedHistoryPoint } from './types';
+import { KimpData, FundingRateData, FearGreedData, UsdtPremiumData, BtcDominanceData, LongShortRatioData, OpenInterestData, LiquidationData, StablecoinMcapData, VolumeChangeData, CompositeSignal, SignalFactor, CoinPremium, MultiCoinKimpData, ArbitrageResult, FundingRateHistoryPoint, FearGreedHistoryPoint, TrendDirection } from './types';
 
 interface OkxResponse<T> {
   code: string;
@@ -727,6 +727,24 @@ function getFactorDirection(factorScore: number): '과열' | '중립' | '침체'
   return '중립';
 }
 
+// 지표별 가중치: 시장 과열/침체 판단에 대한 영향력 차등
+const FACTOR_WEIGHTS = {
+  kimp: 1.5,        // 김프 - 한국 시장 고유 과열 지표로 중요
+  funding: 2.0,     // 펀딩비 - 레버리지 시장의 핵심 온도계
+  fearGreed: 1.5,   // 공포탐욕 - 시장 심리 대표 지표
+  usdt: 1.0,        // USDT 프리미엄 - 보조 자금 흐름 지표
+  dominance: 0.75,  // BTC 도미넌스 - 간접적 과열 지표
+  longShort: 1.5,   // 롱숏 비율 - 포지션 편중도
+  oi: 1.25,         // 미결제약정 - 레버리지 규모
+  liquidation: 1.0, // 청산비율 - 후행 지표
+  stablecoin: 0.75, // 스테이블코인 - 느린 자금 흐름
+  volume: 0.75,     // 거래량 - 확인 지표
+} as const;
+
+// 이전 점수를 저장하여 추세 계산에 사용
+let previousScore: number | null = null;
+let previousScoreTimestamp: number = 0;
+
 export function getCompositeSignal(
   kimchiPremium: number,
   fundingRate: number,
@@ -792,7 +810,7 @@ export function getCompositeSignal(
 
   // 청산 비율: 롱 청산 우세면 과열 후 조정
   let liqScore = 0;
-  if (liqRatio > 0.65) liqScore = 2;     // 롱 과밀 = 과열
+  if (liqRatio > 0.65) liqScore = 2;
   else if (liqRatio > 0.55) liqScore = 1;
   else if (liqRatio < 0.35) liqScore = -2;
   else if (liqRatio < 0.45) liqScore = -1;
@@ -811,45 +829,90 @@ export function getCompositeSignal(
   else if (volumeChangeRate < -50) volScore = -2;
   else if (volumeChangeRate < -20) volScore = -1;
 
-  const score = kimpScore + fundingScore + fgScore + usdtScore + domScore + lsScore
-    + oiScore + liqScore + stableScore + volScore;
-
-  const factors: SignalFactor[] = [
-    { label: '김프', value: `${kimchiPremium >= 0 ? '+' : ''}${kimchiPremium.toFixed(1)}%`, direction: getFactorDirection(kimpScore) },
-    { label: '펀딩비', value: `${(fundingRate * 100).toFixed(3)}%`, direction: getFactorDirection(fundingScore) },
-    { label: '공포탐욕', value: `${fearGreedValue}`, direction: getFactorDirection(fgScore) },
-    { label: 'USDT프리미엄', value: `${usdtPremium >= 0 ? '+' : ''}${usdtPremium.toFixed(2)}%`, direction: getFactorDirection(usdtScore) },
-    { label: 'BTC도미넌스', value: `${btcDominance.toFixed(1)}%`, direction: getFactorDirection(domScore) },
-    { label: '롱비율', value: `${longRatio.toFixed(1)}%`, direction: getFactorDirection(lsScore) },
-    { label: '미결제약정', value: `${oiChangeRate >= 0 ? '+' : ''}${oiChangeRate.toFixed(1)}%`, direction: getFactorDirection(oiScore) },
-    { label: '청산비율', value: `L${(liqRatio * 100).toFixed(0)}%`, direction: getFactorDirection(liqScore) },
-    { label: '스테이블', value: `${stablecoinChange >= 0 ? '+' : ''}${stablecoinChange.toFixed(2)}%`, direction: getFactorDirection(stableScore) },
-    { label: '거래량', value: `${volumeChangeRate >= 0 ? '+' : ''}${volumeChangeRate.toFixed(0)}%`, direction: getFactorDirection(volScore) },
+  // 가중 점수 계산
+  const rawScores = [kimpScore, fundingScore, fgScore, usdtScore, domScore, lsScore, oiScore, liqScore, stableScore, volScore];
+  const weights = [
+    FACTOR_WEIGHTS.kimp, FACTOR_WEIGHTS.funding, FACTOR_WEIGHTS.fearGreed,
+    FACTOR_WEIGHTS.usdt, FACTOR_WEIGHTS.dominance, FACTOR_WEIGHTS.longShort,
+    FACTOR_WEIGHTS.oi, FACTOR_WEIGHTS.liquidation, FACTOR_WEIGHTS.stablecoin,
+    FACTOR_WEIGHTS.volume,
   ];
 
-  // 10팩터 기준: ±8 이상이면 과열/침체
-  if (score >= 8) {
+  const weightedScore = rawScores.reduce((sum, s, i) => sum + s * weights[i], 0);
+  const maxPossibleScore = weights.reduce((sum, w) => sum + 2 * w, 0); // 각 지표 최대 ±2
+
+  // -100 ~ +100 정규화
+  const normalizedScore = Math.round((weightedScore / maxPossibleScore) * 100);
+
+  // 추세 계산: 이전 점수와 비교
+  const now = Date.now();
+  const scoreChange = previousScore !== null ? normalizedScore - previousScore : 0;
+  // 5분 이상 된 이전 점수는 무시
+  const validPrevious = previousScore !== null && (now - previousScoreTimestamp) < 5 * 60 * 1000;
+  const effectiveChange = validPrevious ? scoreChange : 0;
+
+  let trend: TrendDirection = '보합';
+  if (effectiveChange >= 15) trend = '급상승';
+  else if (effectiveChange >= 5) trend = '상승';
+  else if (effectiveChange <= -15) trend = '급하락';
+  else if (effectiveChange <= -5) trend = '하락';
+
+  // 현재 점수를 이전 점수로 저장
+  previousScore = normalizedScore;
+  previousScoreTimestamp = now;
+
+  const factors: SignalFactor[] = [
+    { label: '김프', value: `${kimchiPremium >= 0 ? '+' : ''}${kimchiPremium.toFixed(1)}%`, direction: getFactorDirection(kimpScore), weight: FACTOR_WEIGHTS.kimp, weightedScore: kimpScore * FACTOR_WEIGHTS.kimp },
+    { label: '펀딩비', value: `${(fundingRate * 100).toFixed(3)}%`, direction: getFactorDirection(fundingScore), weight: FACTOR_WEIGHTS.funding, weightedScore: fundingScore * FACTOR_WEIGHTS.funding },
+    { label: '공포탐욕', value: `${fearGreedValue}`, direction: getFactorDirection(fgScore), weight: FACTOR_WEIGHTS.fearGreed, weightedScore: fgScore * FACTOR_WEIGHTS.fearGreed },
+    { label: 'USDT프리미엄', value: `${usdtPremium >= 0 ? '+' : ''}${usdtPremium.toFixed(2)}%`, direction: getFactorDirection(usdtScore), weight: FACTOR_WEIGHTS.usdt, weightedScore: usdtScore * FACTOR_WEIGHTS.usdt },
+    { label: 'BTC도미넌스', value: `${btcDominance.toFixed(1)}%`, direction: getFactorDirection(domScore), weight: FACTOR_WEIGHTS.dominance, weightedScore: domScore * FACTOR_WEIGHTS.dominance },
+    { label: '롱비율', value: `${longRatio.toFixed(1)}%`, direction: getFactorDirection(lsScore), weight: FACTOR_WEIGHTS.longShort, weightedScore: lsScore * FACTOR_WEIGHTS.longShort },
+    { label: '미결제약정', value: `${oiChangeRate >= 0 ? '+' : ''}${oiChangeRate.toFixed(1)}%`, direction: getFactorDirection(oiScore), weight: FACTOR_WEIGHTS.oi, weightedScore: oiScore * FACTOR_WEIGHTS.oi },
+    { label: '청산비율', value: `L${(liqRatio * 100).toFixed(0)}%`, direction: getFactorDirection(liqScore), weight: FACTOR_WEIGHTS.liquidation, weightedScore: liqScore * FACTOR_WEIGHTS.liquidation },
+    { label: '스테이블', value: `${stablecoinChange >= 0 ? '+' : ''}${stablecoinChange.toFixed(2)}%`, direction: getFactorDirection(stableScore), weight: FACTOR_WEIGHTS.stablecoin, weightedScore: stableScore * FACTOR_WEIGHTS.stablecoin },
+    { label: '거래량', value: `${volumeChangeRate >= 0 ? '+' : ''}${volumeChangeRate.toFixed(0)}%`, direction: getFactorDirection(volScore), weight: FACTOR_WEIGHTS.volume, weightedScore: volScore * FACTOR_WEIGHTS.volume },
+  ];
+
+  // 가중치 기반으로 정렬: 영향력 큰 지표 먼저
+  factors.sort((a, b) => Math.abs(b.weightedScore) - Math.abs(a.weightedScore));
+
+  // 5단계 분류 (정규화 점수 기준)
+  const base = { score: weightedScore, normalizedScore, maxPossibleScore, factors, trend, scoreChange: effectiveChange };
+
+  if (normalizedScore >= 60) {
     return {
+      ...base,
+      level: '극과열',
+      color: 'text-red-500',
+      description: '거의 모든 지표가 극단적 과열을 나타냅니다. 고점 진입은 매우 위험하며, 포지션 축소를 강력히 권장합니다.',
+    };
+  } else if (normalizedScore >= 30) {
+    return {
+      ...base,
       level: '과열',
       color: 'text-red-400',
-      description: '다수 지표가 동시에 과열을 가리키고 있어요. 지금 진입하면 고점 물림 위험이 있습니다.',
-      score,
-      factors,
+      description: '다수 지표가 과열을 가리키고 있어요. 신규 진입보다는 기존 포지션 관리에 집중하세요.',
     };
-  } else if (score <= -8) {
+  } else if (normalizedScore <= -60) {
     return {
+      ...base,
+      level: '극침체',
+      color: 'text-blue-500',
+      description: '거의 모든 지표가 극단적 침체를 나타냅니다. 장기 투자 관점에서 분할 매수 적기일 수 있어요.',
+    };
+  } else if (normalizedScore <= -30) {
+    return {
+      ...base,
       level: '침체',
       color: 'text-blue-400',
       description: '다수 지표가 침체 신호입니다. 분할 매수를 고려해볼 타이밍이에요.',
-      score,
-      factors,
     };
   }
   return {
+    ...base,
     level: '중립',
     color: 'text-gray-400',
     description: '지표들의 방향이 엇갈려 뚜렷한 추세가 없습니다. 관망하며 변화를 지켜보세요.',
-    score,
-    factors,
   };
 }

@@ -27,13 +27,22 @@ export interface SignalFactor {
   label: string;
   value: string;
   direction: '과열' | '중립' | '침체';
+  weight: number;        // 가중치 (0.5 ~ 2.0)
+  weightedScore: number; // 가중 적용된 점수
 }
 
+export type SignalLevel = '극과열' | '과열' | '중립' | '침체' | '극침체';
+export type TrendDirection = '급상승' | '상승' | '보합' | '하락' | '급하락';
+
 export interface CompositeSignal {
-  level: '과열' | '중립' | '침체';
+  level: SignalLevel;
   color: string;
   description: string;
-  score: number;
+  score: number;           // 가중 점수 (raw sum)
+  normalizedScore: number; // 정규화 점수 (-100 ~ +100)
+  maxPossibleScore: number;
+  trend: TrendDirection;   // 추세 방향
+  scoreChange: number;     // 이전 대비 점수 변화량
   factors: SignalFactor[];
 }
 

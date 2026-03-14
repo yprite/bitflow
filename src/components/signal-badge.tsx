@@ -1,6 +1,6 @@
 'use client';
 
-import type { CompositeSignal, SignalFactor } from '@/lib/types';
+import type { CompositeSignal, SignalFactor, SignalLevel, TrendDirection } from '@/lib/types';
 import InsightBloom from './motion/indicators/InsightBloom';
 import SignalField from './motion/indicators/SignalField';
 import DotMorphTransition from './motion/transitions/DotMorphTransition';
@@ -10,10 +10,12 @@ interface SignalBadgeProps {
   signal: CompositeSignal;
 }
 
-function getColor(level: string): string {
+function getColor(level: SignalLevel): string {
   switch (level) {
+    case '극과열': return '#c62828';
     case '과열': return '#e53935';
     case '침체': return '#1e88e5';
+    case '극침체': return '#1565c0';
     default: return '#9ca3af';
   }
 }
@@ -34,25 +36,45 @@ function getFactorArrow(direction: string): string {
   }
 }
 
-function getLevelLabel(level: string): string {
-  switch (level) {
-    case '과열': return '과열';
-    case '침체': return '침체';
-    default: return '중립';
+function getTrendIcon(trend: TrendDirection): string {
+  switch (trend) {
+    case '급상승': return '⬆';
+    case '상승': return '↗';
+    case '하락': return '↘';
+    case '급하락': return '⬇';
+    default: return '→';
   }
 }
 
-function ScoreGauge({ score }: { score: number }) {
-  // score ranges from -20 to +20 (10 factors × ±2 each), map to 0-100%
-  const pct = Math.max(0, Math.min(100, ((score + 20) / 40) * 100));
-  const color = score >= 8 ? '#e53935' : score <= -8 ? '#1e88e5' : '#6b7280';
+function getTrendColor(trend: TrendDirection): string {
+  switch (trend) {
+    case '급상승': return '#c62828';
+    case '상승': return '#e53935';
+    case '하락': return '#1e88e5';
+    case '급하락': return '#1565c0';
+    default: return '#6b7280';
+  }
+}
+
+function getSignalFieldLevel(level: SignalLevel): '과열' | '중립' | '침체' {
+  if (level === '극과열' || level === '과열') return '과열';
+  if (level === '극침체' || level === '침체') return '침체';
+  return '중립';
+}
+
+function ScoreGauge({ score, level }: { score: number; level: SignalLevel }) {
+  // normalizedScore ranges from -100 to +100, map to 0-100%
+  const pct = Math.max(0, Math.min(100, ((score + 100) / 200) * 100));
+  const color = getColor(level);
 
   return (
     <div className="w-full mt-2 mb-1">
       <div className="relative h-1.5 rounded-full bg-dot-border/30 overflow-hidden">
-        {/* Zone markers */}
-        <div className="absolute left-[25%] top-0 bottom-0 w-px bg-dot-border/20" />
-        <div className="absolute left-[75%] top-0 bottom-0 w-px bg-dot-border/20" />
+        {/* 5-zone markers */}
+        <div className="absolute left-[20%] top-0 bottom-0 w-px bg-dot-border/20" />
+        <div className="absolute left-[35%] top-0 bottom-0 w-px bg-dot-border/20" />
+        <div className="absolute left-[65%] top-0 bottom-0 w-px bg-dot-border/20" />
+        <div className="absolute left-[80%] top-0 bottom-0 w-px bg-dot-border/20" />
         {/* Indicator dot */}
         <div
           className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-all duration-700 ease-out"
@@ -64,10 +86,25 @@ function ScoreGauge({ score }: { score: number }) {
         />
       </div>
       <div className="flex justify-between mt-1">
-        <span className="text-[9px] text-blue-400/60 font-mono">침체</span>
-        <span className="text-[9px] text-dot-muted/40 font-mono">중립</span>
-        <span className="text-[9px] text-red-400/60 font-mono">과열</span>
+        <span className="text-[8px] text-blue-500/60 font-mono">극침체</span>
+        <span className="text-[8px] text-blue-400/50 font-mono">침체</span>
+        <span className="text-[8px] text-dot-muted/40 font-mono">중립</span>
+        <span className="text-[8px] text-red-400/50 font-mono">과열</span>
+        <span className="text-[8px] text-red-500/60 font-mono">극과열</span>
       </div>
+    </div>
+  );
+}
+
+function WeightBar({ weight }: { weight: number }) {
+  // weight ranges from 0.5 to 2.0, map to bar width
+  const widthPct = Math.round((weight / 2.0) * 100);
+  return (
+    <div className="w-6 h-1 rounded-full bg-dot-border/20 overflow-hidden">
+      <div
+        className="h-full rounded-full bg-dot-muted/40"
+        style={{ width: `${widthPct}%` }}
+      />
     </div>
   );
 }
@@ -78,7 +115,10 @@ function FactorRow({ factor }: { factor: SignalFactor }) {
 
   return (
     <div className="flex items-center justify-between py-0.5">
-      <span className="text-[10px] text-dot-muted">{factor.label}</span>
+      <div className="flex items-center gap-1">
+        <span className="text-[10px] text-dot-muted">{factor.label}</span>
+        <WeightBar weight={factor.weight} />
+      </div>
       <div className="flex items-center gap-1.5">
         <span className="text-[10px] font-mono text-dot-sub">{factor.value}</span>
         <span className="text-[9px]" style={{ color }}>{arrow}</span>
@@ -87,25 +127,47 @@ function FactorRow({ factor }: { factor: SignalFactor }) {
   );
 }
 
+function TrendBadge({ trend, scoreChange }: { trend: TrendDirection; scoreChange: number }) {
+  const icon = getTrendIcon(trend);
+  const color = getTrendColor(trend);
+  const changeText = scoreChange > 0 ? `+${scoreChange}` : `${scoreChange}`;
+
+  if (trend === '보합' && scoreChange === 0) return null;
+
+  return (
+    <div
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono"
+      style={{ backgroundColor: `${color}15`, color }}
+    >
+      <span>{icon}</span>
+      <span>{trend}</span>
+      {scoreChange !== 0 && <span className="opacity-70">({changeText})</span>}
+    </div>
+  );
+}
+
 export default function SignalBadge({ signal }: SignalBadgeProps) {
   const color = getColor(signal.level);
-  const levelLabel = getLevelLabel(signal.level);
+  const fieldLevel = getSignalFieldLevel(signal.level);
 
   return (
     <div className="dot-card p-4 sm:p-5 relative overflow-hidden">
       {/* Animated signal intensity field */}
-      <SignalField level={signal.level} width={240} height={120} />
+      <SignalField level={fieldLevel} width={240} height={120} />
 
       <div className="dot-card-inner">
         <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider mb-1 flex items-center gap-1.5">
           <LivePulse size={4} color={color} />
           시장 온도
         </h2>
-        <p className="text-[10px] text-dot-muted/60 mb-3">10개 지표 종합</p>
+        <div className="flex items-center gap-2 mb-3">
+          <p className="text-[10px] text-dot-muted/60">10개 지표 가중 종합</p>
+          <TrendBadge trend={signal.trend} scoreChange={signal.scoreChange} />
+        </div>
 
         <div className="relative">
           <DotMorphTransition
-            text={levelLabel}
+            text={signal.level}
             fontScale={5}
             mode="dissolve"
             morphDuration={600}
@@ -114,7 +176,16 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
           <InsightBloom trigger={signal.level} dotCount={5} travelDistance={18} dotSize={2} color={color} />
         </div>
 
-        <ScoreGauge score={signal.score} />
+        {/* Normalized score display */}
+        <div className="flex items-center gap-1.5 mt-1">
+          <span className="text-[10px] font-mono text-dot-muted/50">점수</span>
+          <span className="text-sm font-mono font-semibold" style={{ color }}>
+            {signal.normalizedScore > 0 ? '+' : ''}{signal.normalizedScore}
+          </span>
+          <span className="text-[9px] text-dot-muted/40 font-mono">/ 100</span>
+        </div>
+
+        <ScoreGauge score={signal.normalizedScore} level={signal.level} />
 
         {/* Factor breakdown */}
         <div className="mt-2 pt-2 border-t border-dot-border/20 space-y-0.5">
