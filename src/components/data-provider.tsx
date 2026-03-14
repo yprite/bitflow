@@ -16,6 +16,9 @@ interface DataContextType {
   chartData: KimpHistoryPoint[];
   fundingRange: DayRange | null;
   fearGreedRange: DayRange | null;
+  usdtPremiumRange: DayRange | null;
+  btcDominanceRange: DayRange | null;
+  longShortRange: DayRange | null;
   error: string | null;
   loading: boolean;
   lastUpdated: string;
@@ -39,6 +42,9 @@ export default function DataProvider({ children }: { children: ReactNode }) {
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const [fundingRange, setFundingRange] = useState<DayRange | null>(null);
   const [fearGreedRange, setFearGreedRange] = useState<DayRange | null>(null);
+  const [usdtPremiumRange, setUsdtPremiumRange] = useState<DayRange | null>(null);
+  const [btcDominanceRange, setBtcDominanceRange] = useState<DayRange | null>(null);
+  const [longShortRange, setLongShortRange] = useState<DayRange | null>(null);
 
   const fetchData = async () => {
     try {
@@ -73,6 +79,27 @@ export default function DataProvider({ children }: { children: ReactNode }) {
         return { min: Math.min(prev.min, fg), max: Math.max(prev.max, fg), current: fg };
       });
 
+      // Track daily range for USDT premium
+      const up = json.usdtPremium.premium;
+      setUsdtPremiumRange((prev) => {
+        if (!prev) return { min: up, max: up, current: up };
+        return { min: Math.min(prev.min, up), max: Math.max(prev.max, up), current: up };
+      });
+
+      // Track daily range for BTC dominance
+      const dom = json.btcDominance.dominance;
+      setBtcDominanceRange((prev) => {
+        if (!prev) return { min: dom, max: dom, current: dom };
+        return { min: Math.min(prev.min, dom), max: Math.max(prev.max, dom), current: dom };
+      });
+
+      // Track daily range for long/short ratio
+      const ls = json.longShortRatio.longShortRatio;
+      setLongShortRange((prev) => {
+        if (!prev) return { min: ls, max: ls, current: ls };
+        return { min: Math.min(prev.min, ls), max: Math.max(prev.max, ls), current: ls };
+      });
+
       setSessionHistory((prev) => {
         if (json.history.length > 0) {
           return prev;
@@ -99,7 +126,7 @@ export default function DataProvider({ children }: { children: ReactNode }) {
   const chartData = data && data.history.length > 0 ? data.history : sessionHistory;
 
   return (
-    <DataContext.Provider value={{ data, multiCoinData, sessionHistory, chartData, fundingRange, fearGreedRange, error, loading, lastUpdated, fetchData }}>
+    <DataContext.Provider value={{ data, multiCoinData, sessionHistory, chartData, fundingRange, fearGreedRange, usdtPremiumRange, btcDominanceRange, longShortRange, error, loading, lastUpdated, fetchData }}>
       {children}
     </DataContext.Provider>
   );

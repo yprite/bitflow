@@ -43,10 +43,34 @@ export interface AlertUser {
   active: boolean;
 }
 
+export interface UsdtPremiumData {
+  usdtKrwPrice: number;
+  actualUsdKrw: number;
+  premium: number;
+  timestamp: string;
+}
+
+export interface BtcDominanceData {
+  dominance: number;
+  totalMarketCap: number;
+  btcMarketCap: number;
+  timestamp: string;
+}
+
+export interface LongShortRatioData {
+  longRatio: number;
+  shortRatio: number;
+  longShortRatio: number;
+  timestamp: string;
+}
+
 export interface DashboardData {
   kimp: KimpData;
   fundingRate: FundingRateData;
   fearGreed: FearGreedData;
+  usdtPremium: UsdtPremiumData;
+  btcDominance: BtcDominanceData;
+  longShortRatio: LongShortRatioData;
   signal: CompositeSignal;
   avg30d: number | null;
   history: KimpHistoryPoint[];

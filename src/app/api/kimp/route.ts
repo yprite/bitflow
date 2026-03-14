@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getKimpData, fetchFundingRate, fetchFearGreed, getCompositeSignal } from '@/lib/kimp';
+import { getKimpData, fetchFundingRate, fetchFearGreed, fetchUsdtPremium, fetchBtcDominance, fetchLongShortRatio, getCompositeSignal } from '@/lib/kimp';
 import { loadKimpHistorySnapshot } from '@/lib/kimp-history';
 import type { DashboardData } from '@/lib/types';
 
@@ -7,10 +7,13 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const [kimpResult, fundingRateResult, fearGreedResult] = await Promise.allSettled([
+    const [kimpResult, fundingRateResult, fearGreedResult, usdtPremiumResult, btcDominanceResult, longShortResult] = await Promise.allSettled([
       getKimpData(),
       fetchFundingRate(),
       fetchFearGreed(),
+      fetchUsdtPremium(),
+      fetchBtcDominance(),
+      fetchLongShortRatio(),
     ]);
 
     if (kimpResult.status !== 'fulfilled') {
@@ -33,17 +36,32 @@ export async function GET() {
           classification: 'Neutral',
           timestamp: new Date().toISOString(),
         };
+    const usdtPremium = usdtPremiumResult.status === 'fulfilled'
+      ? usdtPremiumResult.value
+      : { usdtKrwPrice: 0, actualUsdKrw: 0, premium: 0, timestamp: new Date().toISOString() };
+    const btcDominance = btcDominanceResult.status === 'fulfilled'
+      ? btcDominanceResult.value
+      : { dominance: 0, totalMarketCap: 0, btcMarketCap: 0, timestamp: new Date().toISOString() };
+    const longShortRatio = longShortResult.status === 'fulfilled'
+      ? longShortResult.value
+      : { longRatio: 50, shortRatio: 50, longShortRatio: 1, timestamp: new Date().toISOString() };
 
     const signal = getCompositeSignal(
       kimp.kimchiPremium,
       fundingRate.fundingRate,
-      fearGreed.value
+      fearGreed.value,
+      usdtPremium.premium,
+      btcDominance.dominance,
+      longShortRatio.longRatio,
     );
 
     const data: DashboardData = {
       kimp,
       fundingRate,
       fearGreed,
+      usdtPremium,
+      btcDominance,
+      longShortRatio,
       signal,
       avg30d,
       history,

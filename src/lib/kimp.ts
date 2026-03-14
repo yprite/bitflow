@@ -1,4 +1,4 @@
-import { KimpData, FundingRateData, FearGreedData, CompositeSignal, SignalFactor, CoinPremium, MultiCoinKimpData, ArbitrageResult, FundingRateHistoryPoint, FearGreedHistoryPoint } from './types';
+import { KimpData, FundingRateData, FearGreedData, UsdtPremiumData, BtcDominanceData, LongShortRatioData, CompositeSignal, SignalFactor, CoinPremium, MultiCoinKimpData, ArbitrageResult, FundingRateHistoryPoint, FearGreedHistoryPoint } from './types';
 
 interface OkxResponse<T> {
   code: string;
@@ -473,6 +473,110 @@ export function calculateArbitrage(
   };
 }
 
+// USDT 프리미엄 (Upbit USDT/KRW vs 실제 환율)
+export async function fetchUsdtPremium(usdKrw?: number): Promise<UsdtPremiumData> {
+  try {
+    const [usdtRes, actualRate] = await Promise.all([
+      fetch('https://api.upbit.com/v1/ticker?markets=KRW-USDT', {
+        next: { revalidate: 15 },
+        headers: { 'User-Agent': 'bitflow/1.0' },
+      }),
+      usdKrw ? Promise.resolve(usdKrw) : fetchUsdKrw(),
+    ]);
+
+    if (!usdtRes.ok) throw new Error(`Upbit USDT API error: ${usdtRes.status}`);
+    const usdtData = await usdtRes.json();
+    const usdtKrwPrice = usdtData[0].trade_price;
+
+    const premium = ((usdtKrwPrice / actualRate) - 1) * 100;
+
+    return {
+      usdtKrwPrice,
+      actualUsdKrw: actualRate,
+      premium,
+      timestamp: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('USDT premium fetch failed:', error);
+    return {
+      usdtKrwPrice: 0,
+      actualUsdKrw: 0,
+      premium: 0,
+      timestamp: new Date().toISOString(),
+    };
+  }
+}
+
+// BTC 도미넌스 (CoinGecko /global)
+export async function fetchBtcDominance(): Promise<BtcDominanceData> {
+  try {
+    const res = await fetch('https://api.coingecko.com/api/v3/global', {
+      next: { revalidate: 300 },
+      headers: { 'User-Agent': 'bitflow/1.0' },
+    });
+
+    if (!res.ok) throw new Error(`CoinGecko global API error: ${res.status}`);
+    const json = await res.json();
+    const data = json.data;
+
+    return {
+      dominance: data.market_cap_percentage?.btc ?? 0,
+      totalMarketCap: data.total_market_cap?.usd ?? 0,
+      btcMarketCap: (data.total_market_cap?.usd ?? 0) * ((data.market_cap_percentage?.btc ?? 0) / 100),
+      timestamp: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('BTC dominance fetch failed:', error);
+    return {
+      dominance: 0,
+      totalMarketCap: 0,
+      btcMarketCap: 0,
+      timestamp: new Date().toISOString(),
+    };
+  }
+}
+
+// 롱숏 비율 (OKX)
+export async function fetchLongShortRatio(): Promise<LongShortRatioData> {
+  try {
+    const res = await fetch(
+      'https://www.okx.com/api/v5/rubik/stat/contracts/long-short-account-ratio?instId=BTC&period=1H',
+      {
+        next: { revalidate: 300 },
+        headers: { 'User-Agent': 'bitflow/1.0' },
+      }
+    );
+
+    if (!res.ok) throw new Error(`OKX long/short API error: ${res.status}`);
+
+    const data = await res.json() as OkxResponse<[string, string, string]>;
+
+    if (data.code !== '0' || !data.data || data.data.length === 0) {
+      throw new Error('OKX long/short API returned no data');
+    }
+
+    // data.data[0] = [timestamp, longRatio, shortRatio]
+    const [ts, longStr, shortStr] = data.data[0];
+    const longRatio = Number(longStr);
+    const shortRatio = Number(shortStr);
+
+    return {
+      longRatio: longRatio * 100,
+      shortRatio: shortRatio * 100,
+      longShortRatio: shortRatio > 0 ? longRatio / shortRatio : 1,
+      timestamp: new Date(Number(ts)).toISOString(),
+    };
+  } catch (error) {
+    console.error('Long/short ratio fetch failed:', error);
+    return {
+      longRatio: 50,
+      shortRatio: 50,
+      longShortRatio: 1,
+      timestamp: new Date().toISOString(),
+    };
+  }
+}
+
 function getFactorDirection(factorScore: number): '과열' | '중립' | '침체' {
   if (factorScore > 0) return '과열';
   if (factorScore < 0) return '침체';
@@ -482,7 +586,10 @@ function getFactorDirection(factorScore: number): '과열' | '중립' | '침체'
 export function getCompositeSignal(
   kimchiPremium: number,
   fundingRate: number,
-  fearGreedValue: number
+  fearGreedValue: number,
+  usdtPremium: number = 0,
+  btcDominance: number = 0,
+  longRatio: number = 50,
 ): CompositeSignal {
   // 김프 점수: 높으면 과열
   let kimpScore = 0;
@@ -505,27 +612,54 @@ export function getCompositeSignal(
   else if (fearGreedValue < 25) fgScore = -2;
   else if (fearGreedValue < 45) fgScore = -1;
 
-  const score = kimpScore + fundingScore + fgScore;
+  // USDT 프리미엄 점수: 높으면 과열 (자금 유입 압력)
+  let usdtScore = 0;
+  if (usdtPremium > 1.5) usdtScore = 2;
+  else if (usdtPremium > 0.5) usdtScore = 1;
+  else if (usdtPremium < -0.5) usdtScore = -2;
+  else if (usdtPremium < 0) usdtScore = -1;
+
+  // BTC 도미넌스 점수: 낮으면 과열 (알트시즌 = 과열 신호)
+  let domScore = 0;
+  if (btcDominance > 0) {
+    if (btcDominance < 52) domScore = 2;
+    else if (btcDominance < 55) domScore = 1;
+    else if (btcDominance > 62) domScore = -2;
+    else if (btcDominance > 58) domScore = -1;
+  }
+
+  // 롱숏 비율 점수: 롱 과밀이면 과열
+  let lsScore = 0;
+  if (longRatio > 65) lsScore = 2;
+  else if (longRatio > 55) lsScore = 1;
+  else if (longRatio < 35) lsScore = -2;
+  else if (longRatio < 45) lsScore = -1;
+
+  const score = kimpScore + fundingScore + fgScore + usdtScore + domScore + lsScore;
 
   const factors: SignalFactor[] = [
     { label: '김프', value: `${kimchiPremium >= 0 ? '+' : ''}${kimchiPremium.toFixed(1)}%`, direction: getFactorDirection(kimpScore) },
     { label: '펀딩비', value: `${(fundingRate * 100).toFixed(3)}%`, direction: getFactorDirection(fundingScore) },
     { label: '공포탐욕', value: `${fearGreedValue}`, direction: getFactorDirection(fgScore) },
+    { label: 'USDT프리미엄', value: `${usdtPremium >= 0 ? '+' : ''}${usdtPremium.toFixed(2)}%`, direction: getFactorDirection(usdtScore) },
+    { label: 'BTC도미넌스', value: `${btcDominance.toFixed(1)}%`, direction: getFactorDirection(domScore) },
+    { label: '롱비율', value: `${longRatio.toFixed(1)}%`, direction: getFactorDirection(lsScore) },
   ];
 
-  if (score >= 3) {
+  // 6팩터 기준: ±5 이상이면 과열/침체 (기존 3팩터 대비 비례 확대)
+  if (score >= 5) {
     return {
       level: '과열',
       color: 'text-red-400',
-      description: '3개 지표가 동시에 과열을 가리키고 있어요. 지금 진입하면 고점 물림 위험이 있습니다.',
+      description: '다수 지표가 동시에 과열을 가리키고 있어요. 지금 진입하면 고점 물림 위험이 있습니다.',
       score,
       factors,
     };
-  } else if (score <= -3) {
+  } else if (score <= -5) {
     return {
       level: '침체',
       color: 'text-blue-400',
-      description: '3개 지표 모두 침체 신호입니다. 분할 매수를 고려해볼 타이밍이에요.',
+      description: '다수 지표가 침체 신호입니다. 분할 매수를 고려해볼 타이밍이에요.',
       score,
       factors,
     };

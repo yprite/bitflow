@@ -3,12 +3,19 @@
 import KimpCard from './kimp-card';
 import FundingRateCard from './funding-rate-card';
 import FearGreedCard from './fear-greed-card';
+import UsdtPremiumCard from './usdt-premium-card';
+import BtcDominanceCard from './btc-dominance-card';
+import LongShortCard from './long-short-card';
 import SignalBadge from './signal-badge';
 import OrbitalSilence from './motion/storytelling/OrbitalSilence';
 import { useData } from './data-provider';
 
 export default function Dashboard() {
-  const { data, error, loading, lastUpdated, fetchData, fundingRange, fearGreedRange } = useData();
+  const {
+    data, error, loading, lastUpdated, fetchData,
+    fundingRange, fearGreedRange,
+    usdtPremiumRange, btcDominanceRange, longShortRange,
+  } = useData();
 
   if (loading) {
     return (
@@ -48,9 +55,12 @@ export default function Dashboard() {
 
       <KimpCard kimp={data.kimp} avg30d={data.avg30d} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <FundingRateCard data={data.fundingRate} dayRange={fundingRange} />
         <FearGreedCard data={data.fearGreed} dayRange={fearGreedRange} />
+        <UsdtPremiumCard data={data.usdtPremium} dayRange={usdtPremiumRange} />
+        <BtcDominanceCard data={data.btcDominance} dayRange={btcDominanceRange} />
+        <LongShortCard data={data.longShortRatio} dayRange={longShortRange} />
         <SignalBadge signal={data.signal} />
       </div>
     </div>
