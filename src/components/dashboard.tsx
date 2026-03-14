@@ -2,6 +2,8 @@
 
 import SignalBadge from './signal-badge';
 import SignalFactors from './signal-factors';
+import MarketBriefing from './market-briefing';
+import EventStrip from './event-strip';
 import OrbitalSilence from './motion/storytelling/OrbitalSilence';
 import { useData } from './data-provider';
 
@@ -49,13 +51,23 @@ export default function Dashboard() {
         <SignalBadge signal={data.signal} />
       </div>
 
-      {/* 팩터 분석 */}
+      {/* 시장 브리핑 — 인사이트 해석 레이어 */}
       <div className="dot-entrance" style={{ '--entrance-delay': '120ms' } as React.CSSProperties}>
+        <MarketBriefing data={data} />
+      </div>
+
+      {/* 팩터 분석 */}
+      <div className="dot-entrance" style={{ '--entrance-delay': '160ms' } as React.CSSProperties}>
         <SignalFactors signal={data.signal} />
       </div>
 
+      {/* 매크로 이벤트 캘린더 */}
+      <div className="dot-entrance" style={{ '--entrance-delay': '200ms' } as React.CSSProperties}>
+        <EventStrip />
+      </div>
+
       {/* 지표 상세 페이지 링크 */}
-      <div className="dot-entrance" style={{ '--entrance-delay': '160ms' } as React.CSSProperties}>
+      <div className="dot-entrance" style={{ '--entrance-delay': '240ms' } as React.CSSProperties}>
         <a
           href="/realtime"
           className="dot-card p-4 flex items-center justify-between group hover:border-dot-accent/40 transition-colors"
