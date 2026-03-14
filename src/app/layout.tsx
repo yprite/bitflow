@@ -35,7 +35,7 @@ export default function RootLayout({
                 홈
               </a>
               <a href="/indicators" className="text-dot-sub hover:text-dot-accent transition font-medium">
-                지표
+                히스토리
               </a>
               <a href="/tools" className="text-dot-sub hover:text-dot-accent transition font-medium">
                 도구
