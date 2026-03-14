@@ -16,6 +16,8 @@ import type {
   ExtendedKimpHistoryPoint,
 } from '@/lib/types';
 
+const GUIDE_STORAGE_KEY = 'bitflow:indicators-guide-seen';
+
 function computeStats(data: ExtendedKimpHistoryPoint[]): KimpStats | null {
   if (data.length < 2) return null;
   const values = data.map((d) => d.value);
@@ -41,6 +43,8 @@ export default function IndicatorsPage() {
   const { data, chartData, error, loading, fetchData } = useData();
   const [indicatorData, setIndicatorData] = useState<IndicatorsPageData | null>(null);
   const [indicatorLoading, setIndicatorLoading] = useState(true);
+  const [guideExpanded, setGuideExpanded] = useState(false);
+  const [guideReady, setGuideReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,6 +62,16 @@ export default function IndicatorsPage() {
     }
     loadIndicators();
     return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const hasSeenGuide = window.localStorage.getItem(GUIDE_STORAGE_KEY) === '1';
+    setGuideExpanded(!hasSeenGuide);
+    setGuideReady(true);
+
+    if (!hasSeenGuide) {
+      window.localStorage.setItem(GUIDE_STORAGE_KEY, '1');
+    }
   }, []);
 
   const stats = useMemo(() => {
@@ -98,24 +112,51 @@ export default function IndicatorsPage() {
         <h1 className="text-sm font-semibold text-dot-sub uppercase tracking-wider">지표</h1>
       </div>
 
-      <section className="dot-card p-5 sm:p-6 space-y-3">
-        <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">히스토리 읽는 법</h2>
-        <p className="text-xs text-dot-sub leading-relaxed">
-          이 페이지는 김치프리미엄, 펀딩비, 공포탐욕지수의 시간 흐름을 함께 보여줍니다.
-          단순히 숫자를 나열하는 대신 과열 구간, 평균 회귀, 변동성 확대 여부를 한 번에 읽을 수 있도록 설계했습니다.
-        </p>
-        <div className="grid gap-2 sm:grid-cols-3">
-          <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-            <p className="text-[10px] text-dot-muted uppercase tracking-wider">김프</p>
-            <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">국내 수급이 해외 대비 얼마나 강한지 보여주는 국내 체감 지표입니다.</p>
-          </div>
-          <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-            <p className="text-[10px] text-dot-muted uppercase tracking-wider">펀딩비</p>
-            <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">파생 포지션 한쪽으로 쏠림이 강한지 판단하는 데 유용합니다.</p>
-          </div>
-          <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-            <p className="text-[10px] text-dot-muted uppercase tracking-wider">심리 지수</p>
-            <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">시장 심리와 국내 프리미엄이 얼마나 같이 움직이는지 비교할 수 있습니다.</p>
+      <section className="dot-card p-5 sm:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">히스토리 읽는 법</h2>
+          <button
+            type="button"
+            onClick={() => setGuideExpanded((prev) => !prev)}
+            aria-expanded={guideExpanded}
+            className="inline-flex items-center gap-1 text-[10px] text-dot-muted hover:text-dot-accent transition font-mono"
+          >
+            <span>{guideExpanded ? '접기' : '펼치기'}</span>
+            <span
+              aria-hidden="true"
+              className="inline-block transition-transform duration-200"
+              style={{ transform: guideExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            >
+              ▾
+            </span>
+          </button>
+        </div>
+        <div
+          className="overflow-hidden transition-all duration-300 ease-out"
+          style={{
+            maxHeight: guideReady && guideExpanded ? '320px' : '0px',
+            opacity: guideReady && guideExpanded ? 1 : 0,
+          }}
+        >
+          <div className="pt-3 space-y-3">
+            <p className="text-xs text-dot-sub leading-relaxed">
+              이 페이지는 김치프리미엄, 펀딩비, 공포탐욕지수의 시간 흐름을 함께 보여줍니다.
+              단순히 숫자를 나열하는 대신 과열 구간, 평균 회귀, 변동성 확대 여부를 한 번에 읽을 수 있도록 설계했습니다.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+                <p className="text-[10px] text-dot-muted uppercase tracking-wider">김프</p>
+                <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">국내 수급이 해외 대비 얼마나 강한지 보여주는 국내 체감 지표입니다.</p>
+              </div>
+              <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+                <p className="text-[10px] text-dot-muted uppercase tracking-wider">펀딩비</p>
+                <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">파생 포지션 한쪽으로 쏠림이 강한지 판단하는 데 유용합니다.</p>
+              </div>
+              <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+                <p className="text-[10px] text-dot-muted uppercase tracking-wider">심리 지수</p>
+                <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">시장 심리와 국내 프리미엄이 얼마나 같이 움직이는지 비교할 수 있습니다.</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
