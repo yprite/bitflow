@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import KimpCard from '@/components/kimp-card';
 import FundingRateCard from '@/components/funding-rate-card';
 import FearGreedCard from '@/components/fear-greed-card';
@@ -11,18 +12,14 @@ import LiquidationCard from '@/components/liquidation-card';
 import StablecoinCard from '@/components/stablecoin-card';
 import StrategyBtcCard from '@/components/strategy-btc-card';
 import VolumeChangeCard from '@/components/volume-change-card';
-import IndicatorCarousel from '@/components/indicator-carousel';
+import IndicatorTable from '@/components/indicator-table';
 import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
 import { useData } from '@/components/data-provider';
 
-const CAROUSEL_LABELS = [
-  '김프', '펀딩비', '공포탐욕', 'USDT', '도미넌스',
-  '롱숏', 'OI', '청산', '스테이블', '거래량', 'MSTR',
-];
-
 export default function RealtimePage() {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const {
-    data, error, loading, fetchData,
+    data, error, loading, lastUpdated, fetchData,
     fundingRange, fearGreedRange,
     usdtPremiumRange, btcDominanceRange, longShortRange,
     oiRange, liqRange, stableRange, volumeRange, strategyRange,
@@ -52,30 +49,71 @@ export default function RealtimePage() {
     );
   }
 
+  const handleSelect = (index: number) => {
+    setSelectedIndex(prev => prev === index ? null : index);
+  };
+
+  const renderDetailCard = () => {
+    switch (selectedIndex) {
+      case 0: return <KimpCard kimp={data.kimp} avg30d={data.avg30d} />;
+      case 1: return <FundingRateCard data={data.fundingRate} dayRange={fundingRange} />;
+      case 2: return <FearGreedCard data={data.fearGreed} dayRange={fearGreedRange} />;
+      case 3: return <UsdtPremiumCard data={data.usdtPremium} dayRange={usdtPremiumRange} />;
+      case 4: return <BtcDominanceCard data={data.btcDominance} dayRange={btcDominanceRange} />;
+      case 5: return <LongShortCard data={data.longShortRatio} dayRange={longShortRange} />;
+      case 6: return <OpenInterestCard data={data.openInterest} dayRange={oiRange} />;
+      case 7: return <LiquidationCard data={data.liquidation} dayRange={liqRange} />;
+      case 8: return <StablecoinCard data={data.stablecoinMcap} dayRange={stableRange} />;
+      case 9: return <VolumeChangeCard data={data.volumeChange} dayRange={volumeRange} />;
+      case 10: return <StrategyBtcCard data={data.strategyBtc} dayRange={strategyRange} />;
+      default: return null;
+    }
+  };
+
   return (
     <div className="space-y-3 sm:space-y-4">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="dot-entrance flex items-center justify-between" style={{ '--entrance-delay': '0ms' } as React.CSSProperties}>
         <h1 className="text-sm font-semibold text-dot-sub uppercase tracking-wider">
           실시간 지표
         </h1>
-        <a href="/" className="text-xs text-dot-muted hover:text-dot-accent transition font-mono">
-          ← 홈
-        </a>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-dot-muted font-mono hidden sm:inline">{lastUpdated}</span>
+          <button
+            onClick={fetchData}
+            className="text-xs text-dot-muted hover:text-dot-accent transition font-mono"
+          >
+            [ 새로고침 ]
+          </button>
+          <a href="/" className="text-xs text-dot-muted hover:text-dot-accent transition font-mono">
+            ← 홈
+          </a>
+        </div>
       </div>
 
-      <IndicatorCarousel labels={CAROUSEL_LABELS}>
-        <KimpCard kimp={data.kimp} avg30d={data.avg30d} />
-        <FundingRateCard data={data.fundingRate} dayRange={fundingRange} />
-        <FearGreedCard data={data.fearGreed} dayRange={fearGreedRange} />
-        <UsdtPremiumCard data={data.usdtPremium} dayRange={usdtPremiumRange} />
-        <BtcDominanceCard data={data.btcDominance} dayRange={btcDominanceRange} />
-        <LongShortCard data={data.longShortRatio} dayRange={longShortRange} />
-        <OpenInterestCard data={data.openInterest} dayRange={oiRange} />
-        <LiquidationCard data={data.liquidation} dayRange={liqRange} />
-        <StablecoinCard data={data.stablecoinMcap} dayRange={stableRange} />
-        <VolumeChangeCard data={data.volumeChange} dayRange={volumeRange} />
-        <StrategyBtcCard data={data.strategyBtc} dayRange={strategyRange} />
-      </IndicatorCarousel>
+      {/* Summary table */}
+      <div className="dot-entrance" style={{ '--entrance-delay': '60ms' } as React.CSSProperties}>
+        <IndicatorTable
+          factors={data.signal.factors}
+          selectedIndex={selectedIndex}
+          onSelect={handleSelect}
+        />
+      </div>
+
+      {/* Detail card */}
+      {selectedIndex !== null && (
+        <div key={selectedIndex} className="dot-entrance" style={{ '--entrance-delay': '0ms' } as React.CSSProperties}>
+          <div className="flex justify-end mb-1">
+            <button
+              onClick={() => setSelectedIndex(null)}
+              className="text-[10px] text-dot-muted hover:text-dot-accent transition font-mono"
+            >
+              [ 닫기 ]
+            </button>
+          </div>
+          {renderDetailCard()}
+        </div>
+      )}
     </div>
   );
 }
