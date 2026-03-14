@@ -213,7 +213,7 @@ export default function SignalField({
   return (
     <canvas
       ref={canvasRef}
-      className="absolute top-0 right-0 pointer-events-none"
+      className="absolute top-0 right-0 z-0 pointer-events-none"
       aria-hidden="true"
     />
   );

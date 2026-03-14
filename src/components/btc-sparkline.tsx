@@ -15,6 +15,7 @@ interface PricePoint {
 
 export default function BtcSparkline({ level }: BtcSparklineProps) {
   const [points, setPoints] = useState<PricePoint[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
   const uid = useId().replace(/:/g, '');
 
   useEffect(() => {
@@ -24,6 +25,21 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
         if (Array.isArray(data) && data.length >= 2) setPoints(data);
       })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 639px)');
+    const update = () => setIsMobile(media.matches);
+
+    update();
+
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', update);
+      return () => media.removeEventListener('change', update);
+    }
+
+    media.addListener(update);
+    return () => media.removeListener(update);
   }, []);
 
   if (points.length < 2) return null;
@@ -37,8 +53,13 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
   const W = 400;
   const H = 100;
   const padY = 8;
-  const blurEdgeX = W * 0.26;
-  const blendWidth = 22;
+  const blurEdgeX = W * (isMobile ? 0.16 : 0.26);
+  const blendWidth = isMobile ? 16 : 22;
+  const fillTopOpacity = isMobile ? 0.12 : 0.06;
+  const blurStdDeviation = isMobile ? 1.0 : 1.5;
+  const blurGroupOpacity = isMobile ? 0.88 : 0.72;
+  const lineOpacity = isMobile ? 0.2 : 0.1;
+  const strokeWidth = isMobile ? 1.8 : 1.5;
   const fillId = `btc-spark-fill-${uid}`;
   const blurId = `btc-spark-blur-${uid}`;
   const sharpMaskId = `btc-spark-sharp-mask-${uid}`;
@@ -62,8 +83,11 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
 
   return (
     <div
-      className="absolute top-0 right-0 pointer-events-none overflow-hidden"
-      style={{ width: '58%', height: '58%' }}
+      className="absolute top-0 right-0 z-[1] pointer-events-none overflow-hidden"
+      style={{
+        width: isMobile ? '78%' : '58%',
+        height: isMobile ? '70%' : '58%',
+      }}
       aria-hidden="true"
     >
       <svg
@@ -73,11 +97,11 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
       >
         <defs>
           <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.06" />
+            <stop offset="0%" stopColor={color} stopOpacity={fillTopOpacity} />
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
           <filter id={blurId} x="-10%" y="-10%" width="120%" height="120%">
-            <feGaussianBlur stdDeviation="1.5" />
+            <feGaussianBlur stdDeviation={blurStdDeviation} />
           </filter>
           <linearGradient id={sharpFadeId} x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="white" stopOpacity="0" />
@@ -89,16 +113,16 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
             <rect x="0" y="0" width={W} height={H} fill={`url(#${sharpFadeId})`} />
           </mask>
         </defs>
-        <g filter={`url(#${blurId})`} opacity="0.72">
+        <g filter={`url(#${blurId})`} opacity={blurGroupOpacity}>
           <path d={areaPath} fill={`url(#${fillId})`} />
           <path
             d={linePath}
             fill="none"
             stroke={color}
-            strokeWidth="1.5"
+            strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity="0.10"
+            opacity={lineOpacity}
           />
         </g>
         <g mask={`url(#${sharpMaskId})`}>
@@ -107,10 +131,10 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
             d={linePath}
             fill="none"
             stroke={color}
-            strokeWidth="1.5"
+            strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity="0.10"
+            opacity={lineOpacity}
           />
         </g>
       </svg>
