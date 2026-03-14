@@ -37,8 +37,8 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
   const W = 400;
   const H = 100;
   const padY = 8;
-  const blurEdgeX = W * 0.42;
-  const blendWidth = 34;
+  const blurEdgeX = W * 0.26;
+  const blendWidth = 22;
   const fillId = `btc-spark-fill-${uid}`;
   const blurId = `btc-spark-blur-${uid}`;
   const sharpMaskId = `btc-spark-sharp-mask-${uid}`;
@@ -77,7 +77,7 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
           <filter id={blurId} x="-10%" y="-10%" width="120%" height="120%">
-            <feGaussianBlur stdDeviation="2.6" />
+            <feGaussianBlur stdDeviation="1.5" />
           </filter>
           <linearGradient id={sharpFadeId} x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="white" stopOpacity="0" />
@@ -89,7 +89,7 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
             <rect x="0" y="0" width={W} height={H} fill={`url(#${sharpFadeId})`} />
           </mask>
         </defs>
-        <g filter={`url(#${blurId})`} opacity="0.85">
+        <g filter={`url(#${blurId})`} opacity="0.72">
           <path d={areaPath} fill={`url(#${fillId})`} />
           <path
             d={linePath}

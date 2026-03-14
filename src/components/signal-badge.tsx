@@ -194,7 +194,7 @@ export default function SignalBadge({ signal, upbitPrice }: SignalBadgeProps) {
 
       <div className="dot-card-inner">
         {upbitPrice ? (
-          <div className="absolute top-0 right-0 text-right px-2 py-1 rounded-sm border border-white/40 bg-white/65 backdrop-blur-[1px] pointer-events-none">
+          <div className="absolute top-0 right-0 text-right px-2 py-1 rounded-sm border border-white/30 bg-transparent pointer-events-none">
             <p className="text-[8px] sm:text-[9px] font-mono uppercase tracking-wider text-dot-muted/75">
               업비트 BTC
             </p>
