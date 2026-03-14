@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import type { SignalFactor } from '@/lib/types';
 import LivePulse from './motion/indicators/LivePulse';
 
@@ -39,6 +39,17 @@ interface IndicatorTableProps {
 
 export default function IndicatorTable({ factors, selectedIndex, onSelect, renderDetail }: IndicatorTableProps) {
   const factorMap = new Map(factors.map(f => [f.label, f]));
+
+  // Keep content rendered during close animation
+  const [visibleIndex, setVisibleIndex] = useState<number | null>(null);
+  useEffect(() => {
+    if (selectedIndex !== null) {
+      setVisibleIndex(selectedIndex);
+    } else {
+      const timer = setTimeout(() => setVisibleIndex(null), 350);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedIndex]);
 
   const overheated = factors.filter(f => f.direction === '과열').length;
   const cooled = factors.filter(f => f.direction === '침체').length;
@@ -115,17 +126,17 @@ export default function IndicatorTable({ factors, selectedIndex, onSelect, rende
                   </div>
                 </button>
 
-                {/* Inline detail panel — expands below the tapped row */}
-                {renderDetail && (
+                {/* Inline detail panel — smooth grid expand/collapse */}
+                {renderDetail && visibleIndex === i && (
                   <div
-                    className="overflow-hidden transition-all ease-out"
+                    className="grid transition-[grid-template-rows,opacity] ease-out"
                     style={{
-                      maxHeight: isSelected ? '800px' : '0px',
+                      gridTemplateRows: isSelected ? '1fr' : '0fr',
                       opacity: isSelected ? 1 : 0,
-                      transitionDuration: isSelected ? '0.4s' : '0.2s',
+                      transitionDuration: isSelected ? '0.35s' : '0.25s',
                     }}
                   >
-                    {isSelected && (
+                    <div className="overflow-hidden">
                       <div className="pt-2 pb-3">
                         <div className="flex justify-end mb-1">
                           <button
@@ -137,7 +148,7 @@ export default function IndicatorTable({ factors, selectedIndex, onSelect, rende
                         </div>
                         {renderDetail(i)}
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>
