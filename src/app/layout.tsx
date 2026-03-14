@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import AmbientBackground from '@/components/motion/ambient/AmbientBackground';
 import AnimatedLogo from '@/components/motion/brand/AnimatedLogo';
 import DataProvider from '@/components/data-provider';
+import EventTracker from '@/components/event-tracker';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -46,6 +47,7 @@ export default function RootLayout({
           </nav>
         </header>
         <main className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 relative z-10">
+          <EventTracker />
           <DataProvider>
             {children}
           </DataProvider>
