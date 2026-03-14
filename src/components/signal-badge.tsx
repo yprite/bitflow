@@ -48,6 +48,22 @@ function getSignalFieldLevel(level: SignalLevel): '과열' | '중립' | '침체'
   return '중립';
 }
 
+function getFactorColor(direction: string): string {
+  switch (direction) {
+    case '과열': return '#e53935';
+    case '침체': return '#1e88e5';
+    default: return '#6b7280';
+  }
+}
+
+function getFactorArrow(direction: string): string {
+  switch (direction) {
+    case '과열': return '▲';
+    case '침체': return '▼';
+    default: return '—';
+  }
+}
+
 function ScoreGauge({ score, level }: { score: number; level: SignalLevel }) {
   const pct = Math.max(0, Math.min(100, ((score + 100) / 200) * 100));
   const color = getSignalColor(level);
@@ -98,9 +114,77 @@ function TrendBadge({ trend, scoreChange }: { trend: TrendDirection; scoreChange
   );
 }
 
+function WeightBar({ weight }: { weight: number }) {
+  const widthPct = Math.round((weight / 2.0) * 100);
+  return (
+    <div className="w-6 h-1 rounded-full bg-dot-border/20 overflow-hidden">
+      <div
+        className="h-full rounded-full bg-dot-muted/40"
+        style={{ width: `${widthPct}%` }}
+      />
+    </div>
+  );
+}
+
+function FactorRow({ factor, isKeyDriver }: { factor: SignalFactor; isKeyDriver?: boolean }) {
+  const color = getFactorColor(factor.direction);
+  const arrow = getFactorArrow(factor.direction);
+
+  return (
+    <div
+      className={`flex items-center justify-between py-0.5 px-1 -mx-1 rounded-sm transition-colors ${
+        isKeyDriver ? 'bg-dot-accent/[0.04]' : ''
+      }`}
+    >
+      <div className="flex items-center gap-1">
+        {isKeyDriver && (
+          <span className="w-1 h-1 rounded-full bg-dot-accent/60 flex-shrink-0" />
+        )}
+        <span className={`text-[10px] ${isKeyDriver ? 'text-dot-text font-medium' : 'text-dot-muted'}`}>
+          {factor.label}
+        </span>
+        <WeightBar weight={factor.weight} />
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className={`text-[10px] font-mono ${isKeyDriver ? 'text-dot-text font-semibold' : 'text-dot-sub'}`}>
+          {factor.value}
+        </span>
+        <span className="text-[9px]" style={{ color }}>{arrow}</span>
+      </div>
+    </div>
+  );
+}
+
+function FactorSummaryStrip({ factors }: { factors: SignalFactor[] }) {
+  const overheated = factors.filter((f) => f.direction === '과열').length;
+  const cooled = factors.filter((f) => f.direction === '침체').length;
+  const neutral = factors.length - overheated - cooled;
+
+  return (
+    <div className="flex items-center gap-2">
+      {overheated > 0 && (
+        <span className="text-[10px] font-mono text-dot-red">{overheated} 과열</span>
+      )}
+      {neutral > 0 && (
+        <span className="text-[10px] font-mono text-dot-muted">{neutral} 중립</span>
+      )}
+      {cooled > 0 && (
+        <span className="text-[10px] font-mono text-dot-blue">{cooled} 침체</span>
+      )}
+    </div>
+  );
+}
+
 export default function SignalBadge({ signal }: SignalBadgeProps) {
+  const [expanded, setExpanded] = useState(false);
   const color = getSignalColor(signal.level);
   const fieldLevel = getSignalFieldLevel(signal.level);
+
+  const keyDriverIdx = signal.factors.reduce(
+    (maxIdx, f, i, arr) =>
+      Math.abs(f.weightedScore) > Math.abs(arr[maxIdx].weightedScore) ? i : maxIdx,
+    0
+  );
 
   return (
     <div className="dot-card p-4 sm:p-5 relative overflow-hidden">
@@ -141,6 +225,54 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
         <p className="dot-insight" style={{ borderTopStyle: 'none', paddingTop: 0, marginTop: '8px' }}>
           {signal.description}
         </p>
+
+        {/* Disclosure toggle */}
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full mt-3 pt-2.5 border-t border-dashed border-dot-border/20 flex items-center justify-between group"
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-dot-muted group-hover:text-dot-accent transition">
+              {expanded ? '팩터 분석 접기' : '팩터 분석 보기'}
+            </span>
+            <FactorSummaryStrip factors={signal.factors} />
+          </div>
+          <span
+            className="text-[10px] text-dot-muted group-hover:text-dot-accent transition font-mono inline-block"
+            style={{
+              transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.25s ease',
+            }}
+          >
+            ▾
+          </span>
+        </button>
+
+        {/* Expandable factor panel */}
+        <div
+          className="overflow-hidden transition-all ease-out"
+          style={{
+            maxHeight: expanded ? '400px' : '0px',
+            opacity: expanded ? 1 : 0,
+            transitionDuration: expanded ? '0.35s' : '0.2s',
+          }}
+        >
+          <div className="pt-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px] font-mono px-1 py-px bg-dot-accent/[0.06] text-dot-sub rounded-sm">
+                핵심: {signal.factors[keyDriverIdx]?.label}
+              </span>
+              <span className="text-xs font-mono font-semibold" style={{ color }}>
+                {signal.normalizedScore > 0 ? '+' : ''}{signal.normalizedScore}°
+              </span>
+            </div>
+            <div className="space-y-0.5">
+              {signal.factors.map((f, i) => (
+                <FactorRow key={f.label} factor={f} isKeyDriver={i === keyDriverIdx} />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
