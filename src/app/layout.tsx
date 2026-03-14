@@ -145,12 +145,6 @@ export default function RootLayout({
         </main>
         <footer className="dot-border-t mt-12 relative z-10 dot-grid-sparse">
           <div className="max-w-3xl mx-auto px-4 py-8 text-center space-y-2">
-            <p className="text-[11px] text-dot-muted font-mono tracking-wide">
-              {SITE_NAME} — 데이터 기반 시장 인사이트
-            </p>
-            <p className="text-[10px] text-dot-muted/60">
-              실시간 데이터는 업비트, 글로벌 시세 API, alternative.me에서 제공됩니다.
-            </p>
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-dot-sub">
               <a href="/about" className="hover:text-dot-accent transition">서비스 소개</a>
               <a href="/contact" className="hover:text-dot-accent transition">문의</a>
