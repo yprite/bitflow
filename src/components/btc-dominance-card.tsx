@@ -20,6 +20,14 @@ function getDominanceLabel(dom: number): string {
   return '균형';
 }
 
+function getInsight(dom: number): string {
+  if (dom >= 62) return '비트 강세 — 알트코인 약세 예상';
+  if (dom >= 58) return '비트 우위 — 안전자산 선호 구간';
+  if (dom >= 55) return '균형 — 방향성 주시';
+  if (dom >= 52) return '알트 강세 — 자금 분산 시작';
+  return '알트시즌 신호 — 알트코인 주목';
+}
+
 export default function BtcDominanceCard({ data, dayRange }: BtcDominanceCardProps) {
   // Gauge: more dots = more dominance (higher = BTC heavier)
   const dotCount = Math.min(Math.round((data.dominance / 100) * 8), 8);
@@ -53,6 +61,7 @@ export default function BtcDominanceCard({ data, dayRange }: BtcDominanceCardPro
         {dayRange && dayRange.min !== dayRange.max && (
           <DayRangeSlider range={dayRange} decimals={1} suffix="%" />
         )}
+        <p className="dot-insight">{getInsight(data.dominance)}</p>
       </div>
     </div>
   );

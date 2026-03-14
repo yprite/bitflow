@@ -12,6 +12,15 @@ interface FundingRateCardProps {
   dayRange?: DayRange | null;
 }
 
+function getInsight(rate: number): string {
+  const r = rate * 100;
+  if (r > 0.1) return '과도한 롱 포지션 — 하락 조정 가능성 주의';
+  if (r > 0.01) return '롱 우세 — 상승세 지속 기대';
+  if (r > -0.01) return '균형 상태 — 방향성 탐색 중';
+  if (r > -0.1) return '숏 우세 — 하락 압력 존재';
+  return '과도한 숏 포지션 — 숏스퀴즈 가능성';
+}
+
 export default function FundingRateCard({ data, dayRange }: FundingRateCardProps) {
   const isPositive = data.fundingRate >= 0;
   const nextTime = new Date(data.nextFundingTime).toLocaleString('ko-KR', {
@@ -51,6 +60,7 @@ export default function FundingRateCard({ data, dayRange }: FundingRateCardProps
         {dayRange && dayRange.min !== dayRange.max && (
           <DayRangeSlider range={dayRange} decimals={4} suffix="%" />
         )}
+        <p className="dot-insight">{getInsight(data.fundingRate)}</p>
       </div>
     </div>
   );

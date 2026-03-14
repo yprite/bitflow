@@ -12,6 +12,14 @@ interface VolumeChangeCardProps {
   dayRange?: DayRange | null;
 }
 
+function getInsight(changeRate: number): string {
+  if (changeRate > 50) return '거래량 폭증 — 강한 추세 진행 중';
+  if (changeRate > 15) return '거래량 증가 — 모멘텀 강화';
+  if (changeRate > -15) return '거래량 보통 — 관망세';
+  if (changeRate > -50) return '거래량 감소 — 시장 관심 저하';
+  return '거래량 급감 — 시장 침체 신호';
+}
+
 export default function VolumeChangeCard({ data, dayRange }: VolumeChangeCardProps) {
   const dotCount = Math.min(Math.round(Math.abs(data.changeRate) / 15), 8);
   const isPositive = data.changeRate >= 0;
@@ -45,6 +53,7 @@ export default function VolumeChangeCard({ data, dayRange }: VolumeChangeCardPro
         {dayRange && dayRange.min !== dayRange.max && (
           <DayRangeSlider range={dayRange} decimals={1} suffix="%" />
         )}
+        <p className="dot-insight">{getInsight(data.changeRate)}</p>
       </div>
     </div>
   );

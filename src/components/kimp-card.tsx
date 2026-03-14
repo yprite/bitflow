@@ -13,6 +13,15 @@ interface KimpCardProps {
   avg30d: number | null;
 }
 
+function getInsight(premium: number): string {
+  if (premium > 5) return '프리미엄 5% 돌파 — 과열 경고, 차익거래 적극 검토';
+  if (premium > 3) return '프리미엄 3% 이상 — 차익거래 기회 구간';
+  if (premium > 1) return '소폭 프리미엄 — 시장 관망 구간';
+  if (premium > -1) return '내외 가격 균형 — 프리미엄 거의 없음';
+  if (premium > -3) return '역프 발생 — 해외 매수 후 국내 매도 유리';
+  return '역프 심화 — 해외 자금 유입 활발';
+}
+
 export default function KimpCard({ kimp, avg30d }: KimpCardProps) {
   const reducedMotion = useReducedMotion();
   const isPositive = kimp.kimchiPremium >= 0;
@@ -120,6 +129,7 @@ export default function KimpCard({ kimp, avg30d }: KimpCardProps) {
             </DotValueRefresh>
           </div>
         </div>
+        <p className="dot-insight">{getInsight(kimp.kimchiPremium)}</p>
       </div>
     </div>
   );

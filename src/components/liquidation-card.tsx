@@ -58,6 +58,14 @@ function formatUsd(value: number): string {
   return `$${value.toFixed(0)}`;
 }
 
+function getInsight(ratio: number): string {
+  if (ratio > 0.7) return '롱 청산 압도적 — 하방 리스크 경고';
+  if (ratio > 0.55) return '롱 청산 우세 — 하락 시 연쇄 청산 주의';
+  if (ratio > 0.45) return '청산 균형 — 변동성 낮음';
+  if (ratio > 0.3) return '숏 청산 우세 — 상승 시 숏스퀴즈 가능';
+  return '숏 청산 압도적 — 상방 스퀴즈 경고';
+}
+
 export default function LiquidationCard({ data, dayRange }: LiquidationCardProps) {
   return (
     <div className="dot-card p-4 sm:p-5">
@@ -80,6 +88,7 @@ export default function LiquidationCard({ data, dayRange }: LiquidationCardProps
         {dayRange && dayRange.min !== dayRange.max && (
           <DayRangeSlider range={dayRange} decimals={2} />
         )}
+        <p className="dot-insight">{getInsight(data.ratio)}</p>
       </div>
     </div>
   );

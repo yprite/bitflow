@@ -19,6 +19,14 @@ function formatUsd(value: number): string {
   return `$${value.toFixed(0)}`;
 }
 
+function getInsight(change: number): string {
+  if (change > 2) return '스테이블 대규모 유입 — 매수 대기 자금 증가';
+  if (change > 0.5) return '스테이블 유입 — 시장 긍정적';
+  if (change > -0.5) return '스테이블 안정 — 자금 흐름 변동 없음';
+  if (change > -2) return '스테이블 유출 — 현금화 진행 중';
+  return '스테이블 대규모 유출 — 시장 이탈 경고';
+}
+
 export default function StablecoinCard({ data, dayRange }: StablecoinCardProps) {
   const dotCount = Math.min(Math.round(Math.abs(data.change24h) * 4), 8);
   const isPositive = data.change24h >= 0;
@@ -52,6 +60,7 @@ export default function StablecoinCard({ data, dayRange }: StablecoinCardProps) 
         {dayRange && dayRange.min !== dayRange.max && (
           <DayRangeSlider range={dayRange} decimals={2} suffix="%" />
         )}
+        <p className="dot-insight">{getInsight(data.change24h)}</p>
       </div>
     </div>
   );

@@ -56,6 +56,14 @@ function LongShortBar({ longPct, shortPct }: { longPct: number; shortPct: number
   );
 }
 
+function getInsight(ratio: number): string {
+  if (ratio > 2) return '극단적 롱 편향 — 조정 위험 높음';
+  if (ratio > 1.3) return '롱 우세 — 상승 기대감 반영';
+  if (ratio > 0.7) return '균형 — 방향성 탐색 중';
+  if (ratio > 0.5) return '숏 우세 — 하락 경계';
+  return '극단적 숏 편향 — 반등 가능성';
+}
+
 export default function LongShortCard({ data, dayRange }: LongShortCardProps) {
   return (
     <div className="dot-card p-4 sm:p-5">
@@ -77,6 +85,7 @@ export default function LongShortCard({ data, dayRange }: LongShortCardProps) {
         {dayRange && dayRange.min !== dayRange.max && (
           <DayRangeSlider range={dayRange} decimals={2} />
         )}
+        <p className="dot-insight">{getInsight(data.longShortRatio)}</p>
       </div>
     </div>
   );

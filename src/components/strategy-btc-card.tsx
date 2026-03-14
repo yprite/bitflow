@@ -18,6 +18,13 @@ function formatUsdBillions(value: number): string {
   return `$${value.toFixed(0)}`;
 }
 
+function getInsight(changeRate: number, holdingsChange: number): string {
+  if (changeRate > 5) return 'MSTR 대규모 매입 — 기관 강세 신호';
+  if (holdingsChange > 0) return 'MSTR 매입 지속 — 기관 축적 진행 중';
+  if (holdingsChange === 0) return 'MSTR 변동 없음 — 기관 관망';
+  return 'MSTR 보유량 감소 — 기관 매도 가능성 주시';
+}
+
 export default function StrategyBtcCard({ data, dayRange }: StrategyBtcCardProps) {
   const isPositive = data.changeRate >= 0;
   const dotCount = data.holdingsChange === 0
@@ -56,6 +63,7 @@ export default function StrategyBtcCard({ data, dayRange }: StrategyBtcCardProps
         {dayRange && dayRange.min !== dayRange.max && (
           <DayRangeSlider range={dayRange} decimals={2} suffix="%" />
         )}
+        <p className="dot-insight">{getInsight(data.changeRate, data.holdingsChange)}</p>
       </div>
     </div>
   );

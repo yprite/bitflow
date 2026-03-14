@@ -90,10 +90,15 @@ function BarChart({ data, labelKey, valueKey, maxBars = 10 }: {
             <span className="w-28 truncate text-dot-sub font-mono" title={String(d[labelKey])}>
               {String(d[labelKey])}
             </span>
-            <div className="flex-1 h-4 bg-gray-100 relative">
+            <div className="flex-1 h-4 bg-gray-100 relative overflow-hidden">
               <div
-                className="absolute inset-y-0 left-0 bg-dot-accent/80"
-                style={{ width: `${pct}%` }}
+                className="absolute inset-y-0 left-0 transition-all duration-500 ease-out"
+                style={{
+                  width: `${pct}%`,
+                  backgroundImage: 'radial-gradient(circle, #1a1a1a 1px, transparent 1px)',
+                  backgroundSize: '4px 4px',
+                  opacity: 0.6,
+                }}
               />
             </div>
             <span className="w-12 text-right font-mono text-dot-accent font-semibold">
@@ -131,8 +136,14 @@ function DailyChart({ data }: { data: DailyPageview[] }) {
                 {d.day.slice(5)}: {d.pageviews}PV / {d.unique_sessions}세션
               </div>
               <div
-                className="bg-dot-accent/70 w-full min-w-[3px]"
-                style={{ height: `${pvH}%`, maxWidth: `${barW}%` }}
+                className="w-full min-w-[3px] transition-all duration-300"
+                style={{
+                  height: `${pvH}%`,
+                  maxWidth: `${barW}%`,
+                  backgroundImage: 'radial-gradient(circle, #1a1a1a 1.2px, transparent 1.2px)',
+                  backgroundSize: '4px 4px',
+                  opacity: 0.55,
+                }}
               />
             </div>
           );
@@ -213,8 +224,8 @@ export default function AdminPage() {
   if (!authed) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="dot-card p-6 w-full max-w-xs space-y-4">
-          <h1 className="text-sm font-semibold text-dot-accent uppercase tracking-wider text-center">
+        <div className="dot-card p-6 w-full max-w-xs space-y-4 dot-entrance dot-grid-sparse">
+          <h1 className="text-xs font-semibold text-dot-accent uppercase tracking-wider text-center">
             Admin
           </h1>
           {error && <p className="text-dot-red text-xs text-center">{error}</p>}
@@ -224,11 +235,11 @@ export default function AdminPage() {
             onChange={(e) => setSecret(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
             placeholder="관리자 비밀키"
-            className="w-full border-2 border-dot-border px-3 py-2 text-sm focus:border-dot-accent outline-none font-mono"
+            className="w-full border border-dot-border px-3 py-2 text-xs focus:border-dot-accent outline-none font-mono bg-white"
           />
           <button
             onClick={handleLogin}
-            className="w-full bg-dot-accent text-white py-2 text-sm font-semibold hover:bg-dot-accent/90 transition"
+            className="w-full bg-dot-accent text-white py-2 text-xs font-semibold hover:bg-dot-accent/90 transition font-mono uppercase tracking-wider"
           >
             로그인
           </button>
@@ -277,19 +288,19 @@ export default function AdminPage() {
       {/* Summary cards */}
       {totals && (
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <div className="dot-card p-3 text-center">
+          <div className="dot-card p-3 text-center dot-entrance" style={{ '--entrance-delay': '0ms' } as React.CSSProperties}>
             <p className="text-[10px] text-dot-muted uppercase tracking-wider">총 페이지뷰</p>
             <p className="text-xl sm:text-2xl font-bold text-dot-accent font-mono">
               {totals.total_pageviews.toLocaleString()}
             </p>
           </div>
-          <div className="dot-card p-3 text-center">
+          <div className="dot-card p-3 text-center dot-entrance" style={{ '--entrance-delay': '60ms' } as React.CSSProperties}>
             <p className="text-[10px] text-dot-muted uppercase tracking-wider">고유 세션</p>
             <p className="text-xl sm:text-2xl font-bold text-dot-accent font-mono">
               {totals.unique_sessions.toLocaleString()}
             </p>
           </div>
-          <div className="dot-card p-3 text-center">
+          <div className="dot-card p-3 text-center dot-entrance" style={{ '--entrance-delay': '120ms' } as React.CSSProperties}>
             <p className="text-[10px] text-dot-muted uppercase tracking-wider">총 이벤트</p>
             <p className="text-xl sm:text-2xl font-bold text-dot-accent font-mono">
               {totals.total_events.toLocaleString()}
@@ -363,7 +374,7 @@ export default function AdminPage() {
               </thead>
               <tbody>
                 {data.recentSessions.slice(0, 20).map((s, i) => (
-                  <tr key={i} className="border-t border-gray-100">
+                  <tr key={i} className="border-t border-dot-border/20 hover:bg-dot-accent/[0.02] transition-colors">
                     <td className="py-1 font-mono text-dot-muted">
                       {new Date(s.created_at).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit' })}
                     </td>

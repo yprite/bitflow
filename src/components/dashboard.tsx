@@ -55,7 +55,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-3 sm:space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="dot-entrance flex items-center justify-between" style={{ '--entrance-delay': '0ms' } as React.CSSProperties}>
         <p className="text-xs text-dot-muted font-mono">마지막 업데이트: {lastUpdated}</p>
         <button
           onClick={fetchData}
@@ -65,23 +65,27 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Fixed: 시장 온도 (10-factor signal) */}
-      <SignalBadge signal={data.signal} />
+      {/* Fixed: 시장 온도 (11-factor signal) */}
+      <div className="dot-entrance" style={{ '--entrance-delay': '80ms' } as React.CSSProperties}>
+        <SignalBadge signal={data.signal} />
+      </div>
 
       {/* Carousel: 개별 지표 상세 */}
-      <IndicatorCarousel labels={CAROUSEL_LABELS}>
-        <KimpCard kimp={data.kimp} avg30d={data.avg30d} />
-        <FundingRateCard data={data.fundingRate} dayRange={fundingRange} />
-        <FearGreedCard data={data.fearGreed} dayRange={fearGreedRange} />
-        <UsdtPremiumCard data={data.usdtPremium} dayRange={usdtPremiumRange} />
-        <BtcDominanceCard data={data.btcDominance} dayRange={btcDominanceRange} />
-        <LongShortCard data={data.longShortRatio} dayRange={longShortRange} />
-        <OpenInterestCard data={data.openInterest} dayRange={oiRange} />
-        <LiquidationCard data={data.liquidation} dayRange={liqRange} />
-        <StablecoinCard data={data.stablecoinMcap} dayRange={stableRange} />
-        <VolumeChangeCard data={data.volumeChange} dayRange={volumeRange} />
-        <StrategyBtcCard data={data.strategyBtc} dayRange={strategyRange} />
-      </IndicatorCarousel>
+      <div className="dot-entrance" style={{ '--entrance-delay': '160ms' } as React.CSSProperties}>
+        <IndicatorCarousel labels={CAROUSEL_LABELS}>
+          <KimpCard kimp={data.kimp} avg30d={data.avg30d} />
+          <FundingRateCard data={data.fundingRate} dayRange={fundingRange} />
+          <FearGreedCard data={data.fearGreed} dayRange={fearGreedRange} />
+          <UsdtPremiumCard data={data.usdtPremium} dayRange={usdtPremiumRange} />
+          <BtcDominanceCard data={data.btcDominance} dayRange={btcDominanceRange} />
+          <LongShortCard data={data.longShortRatio} dayRange={longShortRange} />
+          <OpenInterestCard data={data.openInterest} dayRange={oiRange} />
+          <LiquidationCard data={data.liquidation} dayRange={liqRange} />
+          <StablecoinCard data={data.stablecoinMcap} dayRange={stableRange} />
+          <VolumeChangeCard data={data.volumeChange} dayRange={volumeRange} />
+          <StrategyBtcCard data={data.strategyBtc} dayRange={strategyRange} />
+        </IndicatorCarousel>
+      </div>
     </div>
   );
 }

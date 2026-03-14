@@ -112,17 +112,17 @@ export default function RootLayout({
                 비트코인 기상청
               </span>
             </a>
-            <div className="flex gap-4 sm:gap-6 text-sm">
-              <a href="/" className="text-dot-sub hover:text-dot-accent transition font-medium">
+            <div className="flex gap-4 sm:gap-6 text-xs sm:text-sm">
+              <a href="/" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
                 홈
               </a>
-              <a href="/indicators" className="text-dot-sub hover:text-dot-accent transition font-medium">
+              <a href="/indicators" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
                 히스토리
               </a>
-              <a href="/tools" className="text-dot-sub hover:text-dot-accent transition font-medium">
+              <a href="/tools" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
                 도구
               </a>
-              <a href="/alert" className="text-dot-sub hover:text-dot-accent transition font-medium">
+              <a href="/alert" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
                 알림
               </a>
             </div>
@@ -134,9 +134,14 @@ export default function RootLayout({
             {children}
           </DataProvider>
         </main>
-        <footer className="dot-border-t mt-12 relative z-10">
-          <div className="max-w-3xl mx-auto px-4 py-6 text-center text-xs text-dot-muted">
-            실시간 데이터는 업비트, 글로벌 시세 API, alternative.me에서 제공됩니다.
+        <footer className="dot-border-t mt-12 relative z-10 dot-grid-sparse">
+          <div className="max-w-3xl mx-auto px-4 py-8 text-center space-y-2">
+            <p className="text-[11px] text-dot-muted font-mono tracking-wide">
+              비트코인 기상청 — 데이터 기반 시장 인사이트
+            </p>
+            <p className="text-[10px] text-dot-muted/60">
+              실시간 데이터는 업비트, 글로벌 시세 API, alternative.me에서 제공됩니다.
+            </p>
           </div>
         </footer>
       </body>

@@ -109,18 +109,29 @@ function WeightBar({ weight }: { weight: number }) {
   );
 }
 
-function FactorRow({ factor }: { factor: SignalFactor }) {
+function FactorRow({ factor, isKeyDriver }: { factor: SignalFactor; isKeyDriver?: boolean }) {
   const color = getFactorColor(factor.direction);
   const arrow = getFactorArrow(factor.direction);
 
   return (
-    <div className="flex items-center justify-between py-0.5">
+    <div
+      className={`flex items-center justify-between py-0.5 px-1 -mx-1 rounded-sm transition-colors ${
+        isKeyDriver ? 'bg-dot-accent/[0.04]' : ''
+      }`}
+    >
       <div className="flex items-center gap-1">
-        <span className="text-[10px] text-dot-muted">{factor.label}</span>
+        {isKeyDriver && (
+          <span className="w-1 h-1 rounded-full bg-dot-accent/60 flex-shrink-0" />
+        )}
+        <span className={`text-[10px] ${isKeyDriver ? 'text-dot-text font-medium' : 'text-dot-muted'}`}>
+          {factor.label}
+        </span>
         <WeightBar weight={factor.weight} />
       </div>
       <div className="flex items-center gap-1.5">
-        <span className="text-[10px] font-mono text-dot-sub">{factor.value}</span>
+        <span className={`text-[10px] font-mono ${isKeyDriver ? 'text-dot-text font-semibold' : 'text-dot-sub'}`}>
+          {factor.value}
+        </span>
         <span className="text-[9px]" style={{ color }}>{arrow}</span>
       </div>
     </div>
@@ -188,13 +199,32 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
         <ScoreGauge score={signal.normalizedScore} level={signal.level} />
 
         {/* Factor breakdown */}
-        <div className="mt-2 pt-2 border-t border-dot-border/20 space-y-0.5">
-          {signal.factors.map((f) => (
-            <FactorRow key={f.label} factor={f} />
-          ))}
-        </div>
+        {(() => {
+          const keyDriverIdx = signal.factors.reduce(
+            (maxIdx, f, i, arr) =>
+              Math.abs(f.weightedScore) > Math.abs(arr[maxIdx].weightedScore) ? i : maxIdx,
+            0
+          );
+          return (
+            <div className="mt-2 pt-2 border-t border-dot-border/20">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-[9px] text-dot-muted uppercase tracking-wider">팩터 분석</span>
+                <span className="text-[9px] font-mono px-1 py-px bg-dot-accent/[0.06] text-dot-sub rounded-sm">
+                  핵심: {signal.factors[keyDriverIdx]?.label}
+                </span>
+              </div>
+              <div className="space-y-0.5">
+                {signal.factors.map((f, i) => (
+                  <FactorRow key={f.label} factor={f} isKeyDriver={i === keyDriverIdx} />
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
-        <p className="text-[11px] text-dot-muted mt-2.5 leading-relaxed">{signal.description}</p>
+        <p className="dot-insight" style={{ borderTopStyle: 'none', paddingTop: 0, marginTop: '8px' }}>
+          {signal.description}
+        </p>
       </div>
     </div>
   );

@@ -59,6 +59,12 @@ body.dot-vignette::before {
 /* Dot card style */
 .dot-card {
   @apply bg-white border border-gray-200 relative overflow-hidden;
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+.dot-card:hover {
+  border-color: #b0b0b0;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.05);
 }
 
 .dot-card-inner {
@@ -125,6 +131,49 @@ body.dot-vignette::before {
   50% { transform: scale(1.12); opacity: 1; }
 }
 
+/* ── Entrance animation ── */
+
+@keyframes dotReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dot-entrance {
+  animation: dotReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--entrance-delay, 0ms);
+}
+
+/* ── Card insight line ── */
+
+.dot-insight {
+  @apply text-[11px] leading-relaxed mt-3 pt-2.5 font-mono;
+  border-top: 1px dashed rgba(0,0,0,0.08);
+  color: #78716c;
+  letter-spacing: 0.01em;
+}
+
+.dot-insight::before {
+  content: '→ ';
+  opacity: 0.4;
+}
+
+/* ── Data freshness pulse ── */
+
+@keyframes freshPulse {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: inset 0 0 0 1px rgba(0,200,83,0.12); }
+}
+
+.dot-fresh {
+  animation: freshPulse 0.8s ease-out;
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .live-pulse {
@@ -133,5 +182,9 @@ body.dot-vignette::before {
   }
   .dot-breathe {
     animation: none;
+  }
+  .dot-entrance {
+    animation: none;
+    opacity: 1;
   }
 }

@@ -17,6 +17,14 @@ function formatBtc(value: number): string {
   return value.toFixed(0);
 }
 
+function getInsight(changeRate: number): string {
+  if (changeRate > 20) return 'OI 급증 — 레버리지 과열 경고';
+  if (changeRate > 5) return 'OI 증가 — 신규 포지션 유입';
+  if (changeRate > -5) return 'OI 안정 — 포지션 변동 적음';
+  if (changeRate > -20) return 'OI 감소 — 포지션 정리 진행 중';
+  return 'OI 급감 — 대규모 청산 발생 가능';
+}
+
 export default function OpenInterestCard({ data, dayRange }: OpenInterestCardProps) {
   const dotCount = Math.min(Math.round(Math.abs(data.changeRate) / 5), 8);
 
@@ -50,6 +58,7 @@ export default function OpenInterestCard({ data, dayRange }: OpenInterestCardPro
         {dayRange && dayRange.min !== dayRange.max && (
           <DayRangeSlider range={dayRange} decimals={0} suffix=" BTC" />
         )}
+        <p className="dot-insight">{getInsight(data.changeRate)}</p>
       </div>
     </div>
   );

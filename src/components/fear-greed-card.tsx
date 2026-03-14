@@ -29,6 +29,14 @@ const CLASSIFICATION_KR: Record<string, string> = {
   'Extreme Greed': '극도의 탐욕',
 };
 
+function getInsight(value: number): string {
+  if (value >= 75) return '극도의 탐욕 — 과매수 경고, 리스크 관리 필요';
+  if (value >= 55) return '탐욕 구간 — 상승 모멘텀 유지 중';
+  if (value >= 45) return '중립 — 시장 방향성 탐색 중';
+  if (value >= 25) return '공포 구간 — 역발상 매수 기회 탐색';
+  return '극도의 공포 — 바닥 신호, 역발상 매수 구간';
+}
+
 export default function FearGreedCard({ data, dayRange }: FearGreedCardProps) {
   const color = getColor(data.value);
   const label = CLASSIFICATION_KR[data.classification] || data.classification;
@@ -72,6 +80,7 @@ export default function FearGreedCard({ data, dayRange }: FearGreedCardProps) {
         {dayRange && dayRange.min !== dayRange.max && (
           <DayRangeSlider range={dayRange} decimals={0} />
         )}
+        <p className="dot-insight">{getInsight(data.value)}</p>
       </div>
     </div>
   );
