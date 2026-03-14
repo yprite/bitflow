@@ -178,7 +178,7 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
 
         <div className="relative">
           <DotMorphTransition
-            text={`${signal.normalizedScore > 0 ? '+' : ''}${signal.normalizedScore}`}
+            text={`${signal.normalizedScore > 0 ? '+' : ''}${signal.normalizedScore}°`}
             fontScale={5}
             mode="dissolve"
             morphDuration={600}
