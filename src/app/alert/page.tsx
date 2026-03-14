@@ -1,3 +1,5 @@
+import AlertBotCta from '@/components/alert-bot-cta';
+
 export default function AlertPage() {
   return (
     <div className="space-y-6">
@@ -9,6 +11,9 @@ export default function AlertPage() {
           <p className="text-xs text-dot-sub leading-relaxed">
             김치프리미엄이 설정한 임계값을 넘으면 텔레그램으로 즉시 알림을 받을 수 있습니다.
           </p>
+          <div className="mt-4">
+            <AlertBotCta />
+          </div>
         </div>
       </div>
 

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { CoinPremium, MultiCoinKimpData, ArbitrageResult } from '@/lib/types';
 import { calculateArbitrage } from '@/lib/kimp';
+import { trackEvent } from '@/lib/event-tracker';
 import DotKPIValue from './motion/typography/DotKPIValue';
 import DotValueRefresh, { refreshStyle, residueStyle } from './motion/transitions/DotValueRefresh';
 import { useFieldTransition } from './motion/transitions/useFieldTransition';
@@ -62,6 +63,7 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
   const [coinSymbol, setCoinSymbol] = useState(selectedCoin?.symbol || 'BTC');
   const [amountInput, setAmountInput] = useState('10000000');
   const [direction, setDirection] = useState<'buy-kr-sell-global' | 'buy-global-sell-kr'>('buy-global-sell-kr');
+  const trackedEngagement = useRef(false);
   const reducedMotion = useReducedMotion();
 
   const coin = data.coins.find(c => c.symbol === coinSymbol);
@@ -88,6 +90,17 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
     scaleStrength: 0.01,
   });
 
+  const trackEngagement = (action: string, metadata?: Record<string, unknown>) => {
+    if (trackedEngagement.current) return;
+    trackedEngagement.current = true;
+    trackEvent('arbitrage_calculator_engaged', '/tools', {
+      action,
+      coin: coinSymbol,
+      direction,
+      ...metadata,
+    });
+  };
+
   return (
     <div className="dot-card p-4 sm:p-6">
       <div className="dot-card-inner">
@@ -102,7 +115,10 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
             <label className="text-xs text-dot-muted block mb-1 font-mono">코인</label>
             <select
               value={coinSymbol}
-              onChange={e => setCoinSymbol(e.target.value)}
+              onChange={e => {
+                setCoinSymbol(e.target.value);
+                trackEngagement('coin_select', { coin: e.target.value });
+              }}
               className="w-full bg-white border-2 border-dot-border px-3 py-2 text-sm text-dot-text font-mono focus:outline-none focus:border-dot-accent"
             >
               {data.coins.map(c => (
@@ -118,14 +134,23 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
             <input
               type="text"
               value={Number(amountInput).toLocaleString()}
-              onChange={e => setAmountInput(e.target.value.replace(/[^0-9]/g, ''))}
+              onChange={e => {
+                const nextValue = e.target.value.replace(/[^0-9]/g, '');
+                setAmountInput(nextValue);
+                if (nextValue) {
+                  trackEngagement('amount_input');
+                }
+              }}
               className="w-full bg-white border-2 border-dot-border px-3 py-2 text-sm text-dot-text font-mono focus:outline-none focus:border-dot-accent"
             />
             <div className="flex gap-1 mt-1">
               {PRESET_AMOUNTS.map(a => (
                 <button
                   key={a}
-                  onClick={() => setAmountInput(String(a))}
+                  onClick={() => {
+                    setAmountInput(String(a));
+                    trackEngagement('preset_amount', { amount: a });
+                  }}
                   className="text-[10px] px-1.5 py-0.5 border border-dot-border text-dot-muted hover:text-dot-accent hover:border-dot-accent transition font-mono"
                 >
                   {(a / 10000).toFixed(0)}만
@@ -138,7 +163,10 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
             <label className="text-xs text-dot-muted block mb-1 font-mono">거래 방향</label>
             <div className="flex flex-col gap-1">
               <button
-                onClick={() => setDirection('buy-global-sell-kr')}
+                onClick={() => {
+                  setDirection('buy-global-sell-kr');
+                  trackEngagement('direction_change', { direction: 'buy-global-sell-kr' });
+                }}
                 className={`text-xs px-3 py-1.5 font-mono border-2 transition-all duration-300 ${
                   direction === 'buy-global-sell-kr'
                     ? 'border-dot-red text-dot-red bg-red-50'
@@ -149,7 +177,10 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
                 {recommendedDirection === 'buy-global-sell-kr' && ' ★'}
               </button>
               <button
-                onClick={() => setDirection('buy-kr-sell-global')}
+                onClick={() => {
+                  setDirection('buy-kr-sell-global');
+                  trackEngagement('direction_change', { direction: 'buy-kr-sell-global' });
+                }}
                 className={`text-xs px-3 py-1.5 font-mono border-2 transition-all duration-300 ${
                   direction === 'buy-kr-sell-global'
                     ? 'border-dot-blue text-dot-blue bg-blue-50'

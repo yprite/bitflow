@@ -33,6 +33,9 @@ export async function GET(req: NextRequest) {
   // Run all queries in parallel
   const [
     dailyPageviews,
+    growthOverview,
+    landingPageBreakdown,
+    acquisitionBreakdown,
     pageBreakdown,
     referrerBreakdown,
     deviceBreakdown,
@@ -45,25 +48,34 @@ export async function GET(req: NextRequest) {
     // 1. Daily pageview counts
     supabase.rpc('get_daily_pageviews', { since_date: since }).then((r) => r.data || []),
 
-    // 2. Page breakdown
+    // 2. Session-level growth overview
+    supabase.rpc('get_growth_overview', { since_date: since }).then((r) => r.data?.[0] || null),
+
+    // 3. Landing page performance
+    supabase.rpc('get_landing_page_breakdown', { since_date: since }).then((r) => r.data || []),
+
+    // 4. Acquisition channel performance
+    supabase.rpc('get_acquisition_breakdown', { since_date: since }).then((r) => r.data || []),
+
+    // 5. Page breakdown
     supabase.rpc('get_page_breakdown', { since_date: since }).then((r) => r.data || []),
 
-    // 3. Top referrers
+    // 6. Top referrers
     supabase.rpc('get_referrer_breakdown', { since_date: since }).then((r) => r.data || []),
 
-    // 4. Device breakdown
+    // 7. Device breakdown
     supabase.rpc('get_device_breakdown', { since_date: since }).then((r) => r.data || []),
 
-    // 5. Browser breakdown
+    // 8. Browser breakdown
     supabase.rpc('get_browser_breakdown', { since_date: since }).then((r) => r.data || []),
 
-    // 6. Feature usage (non-pageview events)
+    // 9. Feature usage (non-pageview events)
     supabase.rpc('get_feature_usage', { since_date: since }).then((r) => r.data || []),
 
-    // 7. UTM source breakdown
+    // 10. UTM source breakdown
     supabase.rpc('get_utm_breakdown', { since_date: since }).then((r) => r.data || []),
 
-    // 8. Recent unique sessions (last 24h)
+    // 11. Recent unique sessions (last 24h)
     supabase
       .from('events')
       .select('session_id, page, device_type, browser, created_at')
@@ -73,7 +85,7 @@ export async function GET(req: NextRequest) {
       .limit(100)
       .then((r) => r.data || []),
 
-    // 9. Total counts
+    // 12. Total counts
     supabase.rpc('get_event_totals', { since_date: since }).then((r) => r.data?.[0] || null),
   ]);
 
@@ -81,6 +93,9 @@ export async function GET(req: NextRequest) {
     period: { days, since },
     totals: totalCounts,
     dailyPageviews,
+    growthOverview,
+    landingPageBreakdown,
+    acquisitionBreakdown,
     pageBreakdown,
     referrerBreakdown,
     deviceBreakdown,
