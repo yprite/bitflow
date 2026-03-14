@@ -14,6 +14,7 @@ import StrategyBtcCard from '@/components/strategy-btc-card';
 import VolumeChangeCard from '@/components/volume-change-card';
 import IndicatorTable from '@/components/indicator-table';
 import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
+import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import { useData } from '@/components/data-provider';
 
 export default function RealtimePage() {
@@ -101,46 +102,50 @@ export default function RealtimePage() {
   return (
     <div className="space-y-3 sm:space-y-4">
       {/* Header */}
-      <div className="dot-entrance flex items-center justify-between" style={{ '--entrance-delay': '0ms' } as React.CSSProperties}>
-        <h1 className="text-sm font-semibold text-dot-sub uppercase tracking-wider">
-          실시간 지표
-        </h1>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-dot-muted font-mono hidden sm:inline">{lastUpdated}</span>
-          <button
-            onClick={fetchData}
-            className="text-xs text-dot-muted hover:text-dot-accent transition font-mono"
-          >
-            [ 새로고침 ]
-          </button>
-          <a href="/" className="text-xs text-dot-muted hover:text-dot-accent transition font-mono">
-            ← 홈
-          </a>
+      <DotAssemblyReveal delay={0} duration={420} density="low">
+        <div className="flex items-center justify-between">
+          <h1 className="text-sm font-semibold text-dot-sub uppercase tracking-wider">
+            실시간 지표
+          </h1>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-dot-muted font-mono hidden sm:inline">{lastUpdated}</span>
+            <button
+              onClick={fetchData}
+              className="text-xs text-dot-muted hover:text-dot-accent transition font-mono"
+            >
+              [ 새로고침 ]
+            </button>
+            <a href="/" className="text-xs text-dot-muted hover:text-dot-accent transition font-mono">
+              ← 홈
+            </a>
+          </div>
         </div>
-      </div>
+      </DotAssemblyReveal>
 
       {/* Summary table */}
-      <div className="dot-entrance" style={{ '--entrance-delay': '60ms' } as React.CSSProperties}>
+      <DotAssemblyReveal delay={90} duration={620}>
         <IndicatorTable
           factors={data.signal.factors}
           selectedIndex={selectedIndex}
           onSelect={handleSelect}
         />
-      </div>
+      </DotAssemblyReveal>
 
       {/* Detail card */}
       {selectedIndex !== null && (
-        <div key={selectedIndex} className="dot-entrance" style={{ '--entrance-delay': '0ms' } as React.CSSProperties}>
-          <div className="flex justify-end mb-1">
-            <button
-              onClick={() => setSelectedIndex(null)}
-              className="text-[10px] text-dot-muted hover:text-dot-accent transition font-mono"
-            >
-              [ 닫기 ]
-            </button>
+        <DotAssemblyReveal key={selectedIndex} delay={0} duration={520}>
+          <div>
+            <div className="flex justify-end mb-1">
+              <button
+                onClick={() => setSelectedIndex(null)}
+                className="text-[10px] text-dot-muted hover:text-dot-accent transition font-mono"
+              >
+                [ 닫기 ]
+              </button>
+            </div>
+            {renderDetailCard()}
           </div>
-          {renderDetailCard()}
-        </div>
+        </DotAssemblyReveal>
       )}
     </div>
   );
