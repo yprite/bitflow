@@ -22,7 +22,7 @@ export default function AlertPage() {
           <ol className="list-none text-dot-text space-y-2.5 text-sm ml-7">
             <li className="flex items-start gap-2">
               <span className="text-dot-muted text-[10px] mt-0.5 font-mono">01</span>
-              <span>텔레그램에서 <code className="text-dot-green bg-emerald-50 px-1.5 py-0.5 border border-emerald-200 font-mono text-xs">@KimchiPremiumBot</code>을 검색합니다.</span>
+              <span>텔레그램에서 <code className="text-dot-green bg-emerald-50 px-1.5 py-0.5 border border-emerald-200 font-mono text-xs">@btcfloww_bot</code>을 검색합니다.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-dot-muted text-[10px] mt-0.5 font-mono">02</span>
