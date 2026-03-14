@@ -12,6 +12,7 @@ import StablecoinCard from './stablecoin-card';
 import StrategyBtcCard from './strategy-btc-card';
 import VolumeChangeCard from './volume-change-card';
 import SignalBadge from './signal-badge';
+import SignalFactors from './signal-factors';
 import IndicatorCarousel from './indicator-carousel';
 import OrbitalSilence from './motion/storytelling/OrbitalSilence';
 import { useData } from './data-provider';
@@ -65,13 +66,18 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Fixed: 시장 온도 (11-factor signal) */}
+      {/* 시장 온도 — 온도만 표시 */}
       <div className="dot-entrance" style={{ '--entrance-delay': '80ms' } as React.CSSProperties}>
         <SignalBadge signal={data.signal} />
       </div>
 
+      {/* 팩터 분석 — 별도 카드 */}
+      <div className="dot-entrance" style={{ '--entrance-delay': '120ms' } as React.CSSProperties}>
+        <SignalFactors signal={data.signal} />
+      </div>
+
       {/* Carousel: 개별 지표 상세 */}
-      <div className="dot-entrance" style={{ '--entrance-delay': '160ms' } as React.CSSProperties}>
+      <div className="dot-entrance" style={{ '--entrance-delay': '200ms' } as React.CSSProperties}>
         <IndicatorCarousel labels={CAROUSEL_LABELS}>
           <KimpCard kimp={data.kimp} avg30d={data.avg30d} />
           <FundingRateCard data={data.fundingRate} dayRange={fundingRange} />

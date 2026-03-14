@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { CompositeSignal, SignalFactor, SignalLevel, TrendDirection } from '@/lib/types';
 import InsightBloom from './motion/indicators/InsightBloom';
 import SignalField from './motion/indicators/SignalField';
@@ -10,29 +11,13 @@ interface SignalBadgeProps {
   signal: CompositeSignal;
 }
 
-function getColor(level: SignalLevel): string {
+export function getSignalColor(level: SignalLevel): string {
   switch (level) {
     case '극과열': return '#c62828';
     case '과열': return '#e53935';
     case '침체': return '#1e88e5';
     case '극침체': return '#1565c0';
     default: return '#9ca3af';
-  }
-}
-
-function getFactorColor(direction: string): string {
-  switch (direction) {
-    case '과열': return '#e53935';
-    case '침체': return '#1e88e5';
-    default: return '#6b7280';
-  }
-}
-
-function getFactorArrow(direction: string): string {
-  switch (direction) {
-    case '과열': return '▲';
-    case '침체': return '▼';
-    default: return '—';
   }
 }
 
@@ -63,19 +48,16 @@ function getSignalFieldLevel(level: SignalLevel): '과열' | '중립' | '침체'
 }
 
 function ScoreGauge({ score, level }: { score: number; level: SignalLevel }) {
-  // normalizedScore ranges from -100 to +100, map to 0-100%
   const pct = Math.max(0, Math.min(100, ((score + 100) / 200) * 100));
-  const color = getColor(level);
+  const color = getSignalColor(level);
 
   return (
     <div className="w-full mt-2 mb-1">
       <div className="relative h-1.5 rounded-full bg-dot-border/30 overflow-hidden">
-        {/* 5-zone markers */}
         <div className="absolute left-[20%] top-0 bottom-0 w-px bg-dot-border/20" />
         <div className="absolute left-[35%] top-0 bottom-0 w-px bg-dot-border/20" />
         <div className="absolute left-[65%] top-0 bottom-0 w-px bg-dot-border/20" />
         <div className="absolute left-[80%] top-0 bottom-0 w-px bg-dot-border/20" />
-        {/* Indicator dot */}
         <div
           className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-all duration-700 ease-out"
           style={{
@@ -91,48 +73,6 @@ function ScoreGauge({ score, level }: { score: number; level: SignalLevel }) {
         <span className="text-[8px] text-dot-muted/40 font-mono">중립</span>
         <span className="text-[8px] text-red-400/50 font-mono">과열</span>
         <span className="text-[8px] text-red-500/60 font-mono">극과열</span>
-      </div>
-    </div>
-  );
-}
-
-function WeightBar({ weight }: { weight: number }) {
-  // weight ranges from 0.5 to 2.0, map to bar width
-  const widthPct = Math.round((weight / 2.0) * 100);
-  return (
-    <div className="w-6 h-1 rounded-full bg-dot-border/20 overflow-hidden">
-      <div
-        className="h-full rounded-full bg-dot-muted/40"
-        style={{ width: `${widthPct}%` }}
-      />
-    </div>
-  );
-}
-
-function FactorRow({ factor, isKeyDriver }: { factor: SignalFactor; isKeyDriver?: boolean }) {
-  const color = getFactorColor(factor.direction);
-  const arrow = getFactorArrow(factor.direction);
-
-  return (
-    <div
-      className={`flex items-center justify-between py-0.5 px-1 -mx-1 rounded-sm transition-colors ${
-        isKeyDriver ? 'bg-dot-accent/[0.04]' : ''
-      }`}
-    >
-      <div className="flex items-center gap-1">
-        {isKeyDriver && (
-          <span className="w-1 h-1 rounded-full bg-dot-accent/60 flex-shrink-0" />
-        )}
-        <span className={`text-[10px] ${isKeyDriver ? 'text-dot-text font-medium' : 'text-dot-muted'}`}>
-          {factor.label}
-        </span>
-        <WeightBar weight={factor.weight} />
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className={`text-[10px] font-mono ${isKeyDriver ? 'text-dot-text font-semibold' : 'text-dot-sub'}`}>
-          {factor.value}
-        </span>
-        <span className="text-[9px]" style={{ color }}>{arrow}</span>
       </div>
     </div>
   );
@@ -158,12 +98,11 @@ function TrendBadge({ trend, scoreChange }: { trend: TrendDirection; scoreChange
 }
 
 export default function SignalBadge({ signal }: SignalBadgeProps) {
-  const color = getColor(signal.level);
+  const color = getSignalColor(signal.level);
   const fieldLevel = getSignalFieldLevel(signal.level);
 
   return (
     <div className="dot-card p-4 sm:p-5 relative overflow-hidden">
-      {/* Animated signal intensity field */}
       <SignalField level={fieldLevel} width={240} height={120} />
 
       <div className="dot-card-inner">
@@ -187,7 +126,6 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
           <InsightBloom trigger={signal.level} dotCount={5} travelDistance={18} dotSize={2} color={color} />
         </div>
 
-        {/* Level name + score range */}
         <div className="flex items-center gap-1.5 mt-1">
           <span className="text-[10px] font-mono text-dot-muted/50">점수</span>
           <span className="text-sm font-semibold" style={{ color }}>
@@ -197,30 +135,6 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
         </div>
 
         <ScoreGauge score={signal.normalizedScore} level={signal.level} />
-
-        {/* Factor breakdown */}
-        {(() => {
-          const keyDriverIdx = signal.factors.reduce(
-            (maxIdx, f, i, arr) =>
-              Math.abs(f.weightedScore) > Math.abs(arr[maxIdx].weightedScore) ? i : maxIdx,
-            0
-          );
-          return (
-            <div className="mt-2 pt-2 border-t border-dot-border/20">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-[9px] text-dot-muted uppercase tracking-wider">팩터 분석</span>
-                <span className="text-[9px] font-mono px-1 py-px bg-dot-accent/[0.06] text-dot-sub rounded-sm">
-                  핵심: {signal.factors[keyDriverIdx]?.label}
-                </span>
-              </div>
-              <div className="space-y-0.5">
-                {signal.factors.map((f, i) => (
-                  <FactorRow key={f.label} factor={f} isKeyDriver={i === keyDriverIdx} />
-                ))}
-              </div>
-            </div>
-          );
-        })()}
 
         <p className="dot-insight" style={{ borderTopStyle: 'none', paddingTop: 0, marginTop: '8px' }}>
           {signal.description}
