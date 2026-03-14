@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { fetchFundingRateHistory, fetchFearGreedHistory, fetchMultiCoinKimp } from '@/lib/kimp';
+import { fetchFundingRateHistory, fetchFearGreedHistory } from '@/lib/kimp';
 import { loadExtendedKimpHistory } from '@/lib/kimp-history';
 import type { IndicatorsPageData } from '@/lib/types';
 
@@ -7,12 +7,11 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const [kimpHistory, fundingRateHistory, fearGreedHistory, multiCoinData] =
+    const [kimpHistory, fundingRateHistory, fearGreedHistory] =
       await Promise.allSettled([
         loadExtendedKimpHistory(30),
         fetchFundingRateHistory(100),
         fetchFearGreedHistory(30),
-        fetchMultiCoinKimp(),
       ]);
 
     const data: IndicatorsPageData = {
@@ -22,10 +21,6 @@ export async function GET() {
         fundingRateHistory.status === 'fulfilled' ? fundingRateHistory.value : [],
       fearGreedHistory:
         fearGreedHistory.status === 'fulfilled' ? fearGreedHistory.value : [],
-      multiCoin:
-        multiCoinData.status === 'fulfilled' ? multiCoinData.value.coins : [],
-      usdKrw:
-        multiCoinData.status === 'fulfilled' ? multiCoinData.value.usdKrw : 0,
     };
 
     return NextResponse.json(data);

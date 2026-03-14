@@ -185,8 +185,6 @@ export interface IndicatorsPageData {
   kimpHistory: ExtendedKimpHistoryPoint[];
   fundingRateHistory: FundingRateHistoryPoint[];
   fearGreedHistory: FearGreedHistoryPoint[];
-  multiCoin: CoinPremium[];
-  usdKrw: number;
 }
 
 // 차익거래 계산기

@@ -7,7 +7,6 @@ import { useData } from '@/components/data-provider';
 import FundingRateHistoryChart from '@/components/indicators/funding-rate-history-chart';
 import FearGreedHistoryChart from '@/components/indicators/fear-greed-history-chart';
 import KimpStatsCard from '@/components/indicators/kimp-stats-card';
-import MultiCoinComparisonChart from '@/components/indicators/multi-coin-comparison-chart';
 import ExchangeRateChart from '@/components/indicators/exchange-rate-chart';
 import KimpCalendar from '@/components/indicators/kimp-calendar';
 import KimpCorrelationChart from '@/components/indicators/kimp-correlation-chart';
@@ -123,13 +122,10 @@ export default function IndicatorsPage() {
             {/* 2. 공포탐욕지수 히스토리 차트 */}
             <FearGreedHistoryChart data={indicatorData.fearGreedHistory} />
 
-            {/* 4. 멀티코인 김프 비교 차트 */}
-            <MultiCoinComparisonChart coins={indicatorData.multiCoin} />
-
-            {/* 5. 환율 추이 차트 */}
+            {/* 4. 환율 추이 차트 */}
             <ExchangeRateChart data={indicatorData.kimpHistory} />
 
-            {/* 7. 김프-펀딩비 상관관계 */}
+            {/* 5. 김프-펀딩비 상관관계 */}
             <KimpCorrelationChart
               kimpData={indicatorData.kimpHistory}
               fundingData={indicatorData.fundingRateHistory}
