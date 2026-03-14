@@ -15,7 +15,7 @@
  * elements render as static final states.
  */
 
-import { DOT_COLOR } from '../core/constants';
+import { DOT_COLOR, PULSE_DURATION } from '../core/constants';
 import { valueNoise, clamp, smoothstep } from '../core/dot-math';
 
 // ─── Shared types ───
@@ -392,6 +392,105 @@ export function UncertaintyHaze({
           opacity={d.o}
         />
       ))}
+    </g>
+  );
+}
+
+// ─── 6. Live Edge Pulse ───
+// Heartbeat-like animation at the newest data point. Concentric
+// ripple rings expand outward while the core dot pulses, and the
+// trailing line segments breathe with a subtle glow — giving the
+// feeling that the chart is alive and data is actively flowing.
+
+export interface LiveEdgePulseConfig {
+  /** How many trailing points get the line glow. Default 3 */
+  trailLength?: number;
+  /** Max ripple radius. Default 8 */
+  rippleRadius?: number;
+  /** Ripple cycle duration in seconds. Default 2 */
+  rippleDuration?: number;
+}
+
+export function LiveEdgePulse({
+  points,
+  config = {},
+  chartHeight = 120,
+  reducedMotion = false,
+}: {
+  points: ChartPoint[];
+  config?: LiveEdgePulseConfig;
+  chartHeight?: number;
+  reducedMotion?: boolean;
+}) {
+  const { trailLength = 3, rippleRadius = 8, rippleDuration = 2 } = config;
+  if (points.length === 0) return null;
+
+  const newest = points[points.length - 1];
+  const trailPoints = points.slice(-trailLength);
+  const dur = `${rippleDuration}s`;
+  const durCore = `${rippleDuration * 0.75}s`;
+
+  if (reducedMotion) {
+    return (
+      <g aria-hidden="true">
+        <circle cx={newest.x} cy={newest.y} r={2.5} fill={DOT_COLOR} opacity={0.18} />
+      </g>
+    );
+  }
+
+  return (
+    <g aria-hidden="true">
+      {/* Trailing line glow — last segments breathe */}
+      {trailPoints.length >= 2 && (
+        <polyline
+          points={trailPoints.map(p => `${p.x},${p.y}`).join(' ')}
+          fill="none"
+          stroke={DOT_COLOR}
+          strokeWidth={2}
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+          opacity={0.06}
+        >
+          <animate attributeName="opacity" values="0.06;0.14;0.06" dur={dur} repeatCount="indefinite" />
+          <animate attributeName="stroke-width" values="2;3;2" dur={dur} repeatCount="indefinite" />
+        </polyline>
+      )}
+
+      {/* Ripple ring 1 */}
+      <circle
+        cx={newest.x}
+        cy={newest.y}
+        r={1}
+        fill="none"
+        stroke={DOT_COLOR}
+        strokeWidth={0.4}
+        vectorEffect="non-scaling-stroke"
+        opacity={0}
+      >
+        <animate attributeName="r" values={`1;${rippleRadius}`} dur={dur} repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.15;0" dur={dur} repeatCount="indefinite" />
+      </circle>
+
+      {/* Ripple ring 2 (staggered) */}
+      <circle
+        cx={newest.x}
+        cy={newest.y}
+        r={1}
+        fill="none"
+        stroke={DOT_COLOR}
+        strokeWidth={0.3}
+        vectorEffect="non-scaling-stroke"
+        opacity={0}
+      >
+        <animate attributeName="r" values={`1;${rippleRadius}`} dur={dur} begin={`${rippleDuration * 0.4}s`} repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.12;0" dur={dur} begin={`${rippleDuration * 0.4}s`} repeatCount="indefinite" />
+      </circle>
+
+      {/* Core heartbeat dot */}
+      <circle cx={newest.x} cy={newest.y} r={1.8} fill={DOT_COLOR} opacity={0.25}>
+        <animate attributeName="r" values="1.8;2.8;1.8" dur={durCore} repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.25;0.1;0.25" dur={durCore} repeatCount="indefinite" />
+      </circle>
     </g>
   );
 }

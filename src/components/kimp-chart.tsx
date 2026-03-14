@@ -12,6 +12,7 @@ import {
   PressureField,
   DataAfterglow,
   UncertaintyHaze,
+  LiveEdgePulse,
   type ChartPoint,
   type ThresholdFieldConfig,
 } from './motion/chart/chart-overlays';
@@ -215,6 +216,13 @@ export default function KimpChart({ data }: KimpChartProps) {
               <DataAfterglow
                 points={chartPoints}
                 config={{ trailLength: 4, haloRadius: 3.5 }}
+                reducedMotion={reducedMotion}
+              />
+
+              {/* Heartbeat pulse on live edge */}
+              <LiveEdgePulse
+                points={chartPoints}
+                config={{ trailLength: 4, rippleRadius: 7 }}
                 reducedMotion={reducedMotion}
               />
             </svg>

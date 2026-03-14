@@ -8,6 +8,7 @@ import {
   ThresholdField,
   DataAfterglow,
   UncertaintyHaze,
+  LiveEdgePulse,
   type ChartPoint,
   type ThresholdFieldConfig,
 } from '@/components/motion/chart/chart-overlays';
@@ -91,6 +92,11 @@ export default function FearGreedHistoryChart({ data }: Props) {
       <DataAfterglow
         points={chartPoints}
         config={{ trailLength: 2, haloRadius: 3 }}
+        reducedMotion={reducedMotion}
+      />
+      <LiveEdgePulse
+        points={chartPoints}
+        config={{ trailLength: 3, rippleRadius: 6 }}
         reducedMotion={reducedMotion}
       />
     </>

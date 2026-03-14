@@ -8,6 +8,7 @@ import {
   ThresholdField,
   PressureField,
   DataAfterglow,
+  LiveEdgePulse,
   type ChartPoint,
   type ThresholdFieldConfig,
 } from '@/components/motion/chart/chart-overlays';
@@ -92,11 +93,18 @@ export default function FundingRateHistoryChart({ data }: Props) {
   );
 
   const overlays = (
-    <DataAfterglow
-      points={chartPoints}
-      config={{ trailLength: 3, haloRadius: 3 }}
-      reducedMotion={reducedMotion}
-    />
+    <>
+      <DataAfterglow
+        points={chartPoints}
+        config={{ trailLength: 3, haloRadius: 3 }}
+        reducedMotion={reducedMotion}
+      />
+      <LiveEdgePulse
+        points={chartPoints}
+        config={{ trailLength: 3, rippleRadius: 6 }}
+        reducedMotion={reducedMotion}
+      />
+    </>
   );
 
   return (

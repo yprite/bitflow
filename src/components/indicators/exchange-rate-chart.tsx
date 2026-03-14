@@ -8,6 +8,7 @@ import {
   PressureField,
   DataAfterglow,
   UncertaintyHaze,
+  LiveEdgePulse,
   type ChartPoint,
 } from '@/components/motion/chart/chart-overlays';
 
@@ -66,6 +67,11 @@ export default function ExchangeRateChart({ data }: Props) {
       <DataAfterglow
         points={chartPoints}
         config={{ trailLength: 3, haloRadius: 3 }}
+        reducedMotion={reducedMotion}
+      />
+      <LiveEdgePulse
+        points={chartPoints}
+        config={{ trailLength: 3, rippleRadius: 6 }}
         reducedMotion={reducedMotion}
       />
     </>
