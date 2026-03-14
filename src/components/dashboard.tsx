@@ -6,18 +6,26 @@ import FearGreedCard from './fear-greed-card';
 import UsdtPremiumCard from './usdt-premium-card';
 import BtcDominanceCard from './btc-dominance-card';
 import LongShortCard from './long-short-card';
+import OpenInterestCard from './open-interest-card';
+import LiquidationCard from './liquidation-card';
+import StablecoinCard from './stablecoin-card';
+import VolumeChangeCard from './volume-change-card';
 import SignalBadge from './signal-badge';
 import IndicatorCarousel from './indicator-carousel';
 import OrbitalSilence from './motion/storytelling/OrbitalSilence';
 import { useData } from './data-provider';
 
-const CAROUSEL_LABELS = ['김프', '펀딩비', '공포탐욕', 'USDT', '도미넌스', '롱숏'];
+const CAROUSEL_LABELS = [
+  '김프', '펀딩비', '공포탐욕', 'USDT', '도미넌스',
+  '롱숏', 'OI', '청산', '스테이블', '거래량',
+];
 
 export default function Dashboard() {
   const {
     data, error, loading, lastUpdated, fetchData,
     fundingRange, fearGreedRange,
     usdtPremiumRange, btcDominanceRange, longShortRange,
+    oiRange, liqRange, stableRange, volumeRange,
   } = useData();
 
   if (loading) {
@@ -56,7 +64,7 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Fixed: 시장 온도 (6-factor signal) */}
+      {/* Fixed: 시장 온도 (10-factor signal) */}
       <SignalBadge signal={data.signal} />
 
       {/* Carousel: 개별 지표 상세 */}
@@ -67,6 +75,10 @@ export default function Dashboard() {
         <UsdtPremiumCard data={data.usdtPremium} dayRange={usdtPremiumRange} />
         <BtcDominanceCard data={data.btcDominance} dayRange={btcDominanceRange} />
         <LongShortCard data={data.longShortRatio} dayRange={longShortRange} />
+        <OpenInterestCard data={data.openInterest} dayRange={oiRange} />
+        <LiquidationCard data={data.liquidation} dayRange={liqRange} />
+        <StablecoinCard data={data.stablecoinMcap} dayRange={stableRange} />
+        <VolumeChangeCard data={data.volumeChange} dayRange={volumeRange} />
       </IndicatorCarousel>
     </div>
   );

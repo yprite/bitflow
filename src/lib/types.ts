@@ -64,6 +64,34 @@ export interface LongShortRatioData {
   timestamp: string;
 }
 
+export interface OpenInterestData {
+  oi: number;
+  oiUsd: number;
+  changeRate: number;   // 24h OI 변화율 (%)
+  timestamp: string;
+}
+
+export interface LiquidationData {
+  longLiqUsd: number;
+  shortLiqUsd: number;
+  totalLiqUsd: number;
+  ratio: number;         // long/total (0~1)
+  timestamp: string;
+}
+
+export interface StablecoinMcapData {
+  totalMcap: number;
+  change24h: number;     // 24h 변화율 (%)
+  timestamp: string;
+}
+
+export interface VolumeChangeData {
+  volume24h: number;
+  volumeAvg7d: number;
+  changeRate: number;    // (24h / 7d avg - 1) * 100
+  timestamp: string;
+}
+
 export interface DashboardData {
   kimp: KimpData;
   fundingRate: FundingRateData;
@@ -71,6 +99,10 @@ export interface DashboardData {
   usdtPremium: UsdtPremiumData;
   btcDominance: BtcDominanceData;
   longShortRatio: LongShortRatioData;
+  openInterest: OpenInterestData;
+  liquidation: LiquidationData;
+  stablecoinMcap: StablecoinMcapData;
+  volumeChange: VolumeChangeData;
   signal: CompositeSignal;
   avg30d: number | null;
   history: KimpHistoryPoint[];

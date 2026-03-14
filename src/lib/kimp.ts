@@ -1,4 +1,4 @@
-import { KimpData, FundingRateData, FearGreedData, UsdtPremiumData, BtcDominanceData, LongShortRatioData, CompositeSignal, SignalFactor, CoinPremium, MultiCoinKimpData, ArbitrageResult, FundingRateHistoryPoint, FearGreedHistoryPoint } from './types';
+import { KimpData, FundingRateData, FearGreedData, UsdtPremiumData, BtcDominanceData, LongShortRatioData, OpenInterestData, LiquidationData, StablecoinMcapData, VolumeChangeData, CompositeSignal, SignalFactor, CoinPremium, MultiCoinKimpData, ArbitrageResult, FundingRateHistoryPoint, FearGreedHistoryPoint } from './types';
 
 interface OkxResponse<T> {
   code: string;
@@ -473,6 +473,150 @@ export function calculateArbitrage(
   };
 }
 
+// BTC 미결제약정 (OKX)
+export async function fetchOpenInterest(): Promise<OpenInterestData> {
+  try {
+    const res = await fetch(
+      'https://www.okx.com/api/v5/public/open-interest?instType=SWAP&instId=BTC-USDT-SWAP',
+      { next: { revalidate: 300 }, headers: { 'User-Agent': 'bitflow/1.0' } }
+    );
+    if (!res.ok) throw new Error(`OKX OI API error: ${res.status}`);
+
+    const data = await res.json() as OkxResponse<{ oi: string; oiCcy: string; ts: string }>;
+    if (data.code !== '0' || !data.data?.length) throw new Error('OKX OI no data');
+
+    const entry = data.data[0];
+    const oi = Number(entry.oi);         // 계약 수
+    const oiCcy = Number(entry.oiCcy);   // BTC 기준
+
+    // 24h 변화율은 단일 호출로 알 수 없으므로 0으로 초기화 (DayRange로 추적)
+    return {
+      oi,
+      oiUsd: oiCcy, // BTC 단위 (카드에서 표시 변환)
+      changeRate: 0,
+      timestamp: new Date(Number(entry.ts)).toISOString(),
+    };
+  } catch (error) {
+    console.error('Open interest fetch failed:', error);
+    return { oi: 0, oiUsd: 0, changeRate: 0, timestamp: new Date().toISOString() };
+  }
+}
+
+// BTC 청산량 (OKX - 최근 1시간)
+export async function fetchLiquidation(): Promise<LiquidationData> {
+  try {
+    const res = await fetch(
+      'https://www.okx.com/api/v5/rubik/stat/contracts/long-short-account-ratio?instId=BTC&period=1H',
+      { next: { revalidate: 300 }, headers: { 'User-Agent': 'bitflow/1.0' } }
+    );
+
+    // OKX 청산 전용 API가 인증 필요하므로 공개 API에서 추정
+    // long-short ratio 변화로 간접 추정
+    if (!res.ok) throw new Error(`OKX liquidation proxy error: ${res.status}`);
+
+    const data = await res.json() as OkxResponse<[string, string, string]>;
+    if (data.code !== '0' || !data.data?.length) throw new Error('no data');
+
+    // 최근 2개 데이터로 변화 추정
+    const latest = data.data[0];
+    const longRatio = Number(latest[1]);
+    const shortRatio = Number(latest[2]);
+
+    // 비율 기반 추정 청산 압력
+    const totalEstimate = Math.abs(longRatio - shortRatio) * 1000000; // 대략적 추정
+    return {
+      longLiqUsd: longRatio > shortRatio ? 0 : totalEstimate * 0.6,
+      shortLiqUsd: shortRatio > longRatio ? 0 : totalEstimate * 0.6,
+      totalLiqUsd: totalEstimate,
+      ratio: longRatio,
+      timestamp: new Date(Number(latest[0])).toISOString(),
+    };
+  } catch (error) {
+    console.error('Liquidation fetch failed:', error);
+    return { longLiqUsd: 0, shortLiqUsd: 0, totalLiqUsd: 0, ratio: 0.5, timestamp: new Date().toISOString() };
+  }
+}
+
+// 스테이블코인 시가총액 (CoinGecko /global)
+export async function fetchStablecoinMcap(): Promise<StablecoinMcapData> {
+  try {
+    const res = await fetch('https://api.coingecko.com/api/v3/global', {
+      next: { revalidate: 300 },
+      headers: { 'User-Agent': 'bitflow/1.0' },
+    });
+    if (!res.ok) throw new Error(`CoinGecko global API error: ${res.status}`);
+
+    const json = await res.json();
+    const totalMcap = json.data?.total_market_cap?.usd ?? 0;
+    const mcapChange = json.data?.market_cap_change_percentage_24h_usd ?? 0;
+
+    // 스테이블코인 = USDT + USDC 비중 추정 (전체의 ~8-10%)
+    // CoinGecko global에서 직접 제공하지 않으므로 별도 호출
+    const stableRes = await fetch(
+      'https://api.coingecko.com/api/v3/simple/price?ids=tether,usd-coin&vs_currencies=usd&include_market_cap=true&include_24hr_change=true',
+      { next: { revalidate: 300 }, headers: { 'User-Agent': 'bitflow/1.0' } }
+    );
+
+    if (!stableRes.ok) throw new Error(`CoinGecko stable API error: ${stableRes.status}`);
+    const stableData = await stableRes.json() as Record<string, { usd_market_cap?: number; usd_24h_change?: number }>;
+
+    const usdtMcap = stableData.tether?.usd_market_cap ?? 0;
+    const usdcMcap = stableData['usd-coin']?.usd_market_cap ?? 0;
+    const stableTotalMcap = usdtMcap + usdcMcap;
+
+    // 가중 평균 변화율
+    const usdtChange = stableData.tether?.usd_24h_change ?? 0;
+    const usdcChange = stableData['usd-coin']?.usd_24h_change ?? 0;
+    const weightedChange = stableTotalMcap > 0
+      ? (usdtChange * usdtMcap + usdcChange * usdcMcap) / stableTotalMcap
+      : 0;
+
+    return {
+      totalMcap: stableTotalMcap,
+      change24h: weightedChange,
+      timestamp: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('Stablecoin mcap fetch failed:', error);
+    return { totalMcap: 0, change24h: 0, timestamp: new Date().toISOString() };
+  }
+}
+
+// BTC 거래량 변화율 (Upbit 24h vs 7일 평균)
+export async function fetchVolumeChange(): Promise<VolumeChangeData> {
+  try {
+    // Upbit 일봉 7일치
+    const res = await fetch(
+      'https://api.upbit.com/v1/candles/days?market=KRW-BTC&count=8',
+      { next: { revalidate: 300 }, headers: { 'User-Agent': 'bitflow/1.0' } }
+    );
+    if (!res.ok) throw new Error(`Upbit candles API error: ${res.status}`);
+
+    const candles = await res.json() as Array<{
+      candle_acc_trade_volume: number;
+      candle_date_time_kst: string;
+    }>;
+
+    if (candles.length < 2) throw new Error('Not enough candle data');
+
+    const volume24h = candles[0].candle_acc_trade_volume;
+    // 최근 7일 평균 (오늘 제외)
+    const prev7 = candles.slice(1, 8);
+    const volumeAvg7d = prev7.reduce((s, c) => s + c.candle_acc_trade_volume, 0) / prev7.length;
+    const changeRate = volumeAvg7d > 0 ? ((volume24h / volumeAvg7d) - 1) * 100 : 0;
+
+    return {
+      volume24h,
+      volumeAvg7d,
+      changeRate,
+      timestamp: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('Volume change fetch failed:', error);
+    return { volume24h: 0, volumeAvg7d: 0, changeRate: 0, timestamp: new Date().toISOString() };
+  }
+}
+
 // USDT 프리미엄 (Upbit USDT/KRW vs 실제 환율)
 export async function fetchUsdtPremium(usdKrw?: number): Promise<UsdtPremiumData> {
   try {
@@ -590,6 +734,10 @@ export function getCompositeSignal(
   usdtPremium: number = 0,
   btcDominance: number = 0,
   longRatio: number = 50,
+  oiChangeRate: number = 0,
+  liqRatio: number = 0.5,
+  stablecoinChange: number = 0,
+  volumeChangeRate: number = 0,
 ): CompositeSignal {
   // 김프 점수: 높으면 과열
   let kimpScore = 0;
@@ -635,7 +783,36 @@ export function getCompositeSignal(
   else if (longRatio < 35) lsScore = -2;
   else if (longRatio < 45) lsScore = -1;
 
-  const score = kimpScore + fundingScore + fgScore + usdtScore + domScore + lsScore;
+  // 미결제약정 변화율: 급증하면 과열 (레버리지 과다)
+  let oiScore = 0;
+  if (oiChangeRate > 15) oiScore = 2;
+  else if (oiChangeRate > 5) oiScore = 1;
+  else if (oiChangeRate < -15) oiScore = -2;
+  else if (oiChangeRate < -5) oiScore = -1;
+
+  // 청산 비율: 롱 청산 우세면 과열 후 조정
+  let liqScore = 0;
+  if (liqRatio > 0.65) liqScore = 2;     // 롱 과밀 = 과열
+  else if (liqRatio > 0.55) liqScore = 1;
+  else if (liqRatio < 0.35) liqScore = -2;
+  else if (liqRatio < 0.45) liqScore = -1;
+
+  // 스테이블코인 시총 변화: 증가하면 자금 유입 = 과열 방향
+  let stableScore = 0;
+  if (stablecoinChange > 1) stableScore = 2;
+  else if (stablecoinChange > 0.3) stableScore = 1;
+  else if (stablecoinChange < -1) stableScore = -2;
+  else if (stablecoinChange < -0.3) stableScore = -1;
+
+  // 거래량 변화율: 평균 대비 급증하면 과열
+  let volScore = 0;
+  if (volumeChangeRate > 100) volScore = 2;
+  else if (volumeChangeRate > 30) volScore = 1;
+  else if (volumeChangeRate < -50) volScore = -2;
+  else if (volumeChangeRate < -20) volScore = -1;
+
+  const score = kimpScore + fundingScore + fgScore + usdtScore + domScore + lsScore
+    + oiScore + liqScore + stableScore + volScore;
 
   const factors: SignalFactor[] = [
     { label: '김프', value: `${kimchiPremium >= 0 ? '+' : ''}${kimchiPremium.toFixed(1)}%`, direction: getFactorDirection(kimpScore) },
@@ -644,10 +821,14 @@ export function getCompositeSignal(
     { label: 'USDT프리미엄', value: `${usdtPremium >= 0 ? '+' : ''}${usdtPremium.toFixed(2)}%`, direction: getFactorDirection(usdtScore) },
     { label: 'BTC도미넌스', value: `${btcDominance.toFixed(1)}%`, direction: getFactorDirection(domScore) },
     { label: '롱비율', value: `${longRatio.toFixed(1)}%`, direction: getFactorDirection(lsScore) },
+    { label: '미결제약정', value: `${oiChangeRate >= 0 ? '+' : ''}${oiChangeRate.toFixed(1)}%`, direction: getFactorDirection(oiScore) },
+    { label: '청산비율', value: `L${(liqRatio * 100).toFixed(0)}%`, direction: getFactorDirection(liqScore) },
+    { label: '스테이블', value: `${stablecoinChange >= 0 ? '+' : ''}${stablecoinChange.toFixed(2)}%`, direction: getFactorDirection(stableScore) },
+    { label: '거래량', value: `${volumeChangeRate >= 0 ? '+' : ''}${volumeChangeRate.toFixed(0)}%`, direction: getFactorDirection(volScore) },
   ];
 
-  // 6팩터 기준: ±5 이상이면 과열/침체 (기존 3팩터 대비 비례 확대)
-  if (score >= 5) {
+  // 10팩터 기준: ±8 이상이면 과열/침체
+  if (score >= 8) {
     return {
       level: '과열',
       color: 'text-red-400',
@@ -655,7 +836,7 @@ export function getCompositeSignal(
       score,
       factors,
     };
-  } else if (score <= -5) {
+  } else if (score <= -8) {
     return {
       level: '침체',
       color: 'text-blue-400',

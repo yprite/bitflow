@@ -43,9 +43,9 @@ function getLevelLabel(level: string): string {
 }
 
 function ScoreGauge({ score }: { score: number }) {
-  // score ranges from -12 to +12 (6 factors × ±2 each), map to 0-100%
-  const pct = Math.max(0, Math.min(100, ((score + 12) / 24) * 100));
-  const color = score >= 5 ? '#e53935' : score <= -5 ? '#1e88e5' : '#6b7280';
+  // score ranges from -20 to +20 (10 factors × ±2 each), map to 0-100%
+  const pct = Math.max(0, Math.min(100, ((score + 20) / 40) * 100));
+  const color = score >= 8 ? '#e53935' : score <= -8 ? '#1e88e5' : '#6b7280';
 
   return (
     <div className="w-full mt-2 mb-1">
@@ -101,7 +101,7 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
           <LivePulse size={4} color={color} />
           시장 온도
         </h2>
-        <p className="text-[10px] text-dot-muted/60 mb-3">6개 지표 종합</p>
+        <p className="text-[10px] text-dot-muted/60 mb-3">10개 지표 종합</p>
 
         <div className="relative">
           <DotMorphTransition
