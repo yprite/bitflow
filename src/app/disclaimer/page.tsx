@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import PageHeader from '@/components/page-header';
 
 export const metadata: Metadata = {
   title: '면책 및 이용안내',
@@ -16,14 +17,17 @@ const riskNotes = [
 export default function DisclaimerPage() {
   return (
     <div className="space-y-5">
-      <section className="dot-card p-5 sm:p-6 space-y-3">
-        <p className="text-[10px] font-mono uppercase tracking-[0.24em] text-dot-muted">Disclaimer</p>
-        <h1 className="text-base sm:text-lg font-semibold text-dot-accent tracking-tight">면책 및 이용안내</h1>
-        <p className="text-sm text-dot-sub leading-relaxed">
-          비트코인 기상청은 한국 투자자가 시장을 빠르게 읽을 수 있도록 돕는 관측 도구입니다.
-          사이트의 지표와 브리핑은 참고 정보이며, 실제 투자 판단과 결과에 대한 책임은 사용자에게 있습니다.
-        </p>
-      </section>
+      <PageHeader
+        variant="card"
+        eyebrow="면책 안내"
+        title="면책 및 이용안내"
+        description={(
+          <>
+            비트코인 기상청은 한국 투자자가 시장을 빠르게 읽을 수 있도록 돕는 관측 도구입니다.
+            사이트의 지표와 브리핑은 참고 정보이며, 실제 투자 판단과 결과에 대한 책임은 사용자에게 있습니다.
+          </>
+        )}
+      />
 
       <section className="dot-card p-5 sm:p-6 space-y-3">
         <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">이용 전 확인사항</h2>

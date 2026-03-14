@@ -84,12 +84,11 @@ function EventRow({
   const badgeClass = TYPE_BADGE_CLASSES[event.type] || TYPE_BADGE_CLASSES.other;
   const label = TYPE_LABELS[event.type] || '기타';
   const tag = TYPE_TAGS[event.type] || '';
-  const isToday = event.daysUntil === 0;
+    const isToday = event.daysUntil === 0;
 
   return (
     <div
-      className={`dot-entrance flex items-center gap-3 py-2.5 ${index > 0 ? 'border-t border-dashed border-gray-200' : ''}`}
-      style={{ '--entrance-delay': `${(index + 1) * 60}ms` } as React.CSSProperties}
+      className={`flex items-center gap-3 py-2.5 ${index > 0 ? 'border-t border-dashed border-gray-200' : ''}`}
     >
       {/* Color indicator dot */}
       <span
@@ -147,10 +146,7 @@ export default function EventStrip() {
     <div className="dot-card p-4 sm:p-5">
       <div className="dot-card-inner">
         {/* Header */}
-        <div
-          className="dot-entrance flex items-center justify-between mb-3"
-          style={{ '--entrance-delay': '0ms' } as React.CSSProperties}
-        >
+        <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-semibold text-dot-sub uppercase tracking-wider flex items-center gap-1.5">
             <LivePulse size={4} color={nextColor} />
             매크로 이벤트 캘린더

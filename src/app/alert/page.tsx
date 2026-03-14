@@ -1,92 +1,96 @@
 import AlertBotCta from '@/components/alert-bot-cta';
+import GuideCard from '@/components/guide-card';
+import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
+import PageHeader from '@/components/page-header';
+
+const GUIDE_STORAGE_KEY = 'bitflow:alert-guide-seen';
+
+const setupSteps = [
+  {
+    title: '봇 추가',
+    body: '텔레그램에서 @btcfloww_bot을 검색한 뒤 /start로 대화를 시작합니다.',
+  },
+  {
+    title: '임계값 설정',
+    body: '/alert 3.0 같은 명령으로 원하는 김프 기준을 등록합니다.',
+  },
+  {
+    title: '상태 확인',
+    body: '/status로 현재 알림 상태를 확인하고, /alert off로 언제든 끌 수 있습니다.',
+  },
+];
+
+const primaryCommands = [
+  { command: '/alert 3.0', description: '김프가 3.0% 이상이면 알림을 받습니다.' },
+  { command: '/alert 5.0', description: '김프가 5.0% 이상이면 알림을 받습니다.' },
+  { command: '/alert off', description: '알림을 해제합니다.' },
+];
+
+const utilityCommands = [
+  { command: '/kimp', description: '현재 김프를 즉시 조회합니다.' },
+  { command: '/status', description: '내 알림 설정 현황을 확인합니다.' },
+];
 
 export default function AlertPage() {
   return (
-    <div className="space-y-6">
-      <div className="dot-entrance" style={{ '--entrance-delay': '0ms' } as React.CSSProperties}>
-        <div className="dot-card p-5 sm:p-6 dot-grid-sparse">
-          <h1 className="text-sm font-semibold text-dot-accent uppercase tracking-wider mb-2">
-            텔레그램 알림 설정
-          </h1>
-          <p className="text-xs text-dot-sub leading-relaxed">
-            김치프리미엄이 설정한 임계값을 넘으면 텔레그램으로 즉시 알림을 받을 수 있습니다.
-          </p>
-          <div className="mt-4">
-            <AlertBotCta />
-          </div>
-        </div>
-      </div>
+    <div className="space-y-3 sm:space-y-5">
+      <DotAssemblyReveal delay={0} duration={520} density="low">
+        <PageHeader
+          variant="card"
+          eyebrow="텔레그램 알림"
+          title="알림"
+          description="김치프리미엄이 설정한 임계값을 넘으면 텔레그램으로 즉시 알림을 받을 수 있습니다."
+          backHref="/"
+          action={<AlertBotCta />}
+        />
+      </DotAssemblyReveal>
 
-      {/* 봇 연동 안내 */}
-      <div className="dot-entrance" style={{ '--entrance-delay': '80ms' } as React.CSSProperties}>
-        <section className="dot-card p-5 sm:p-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <span className="w-5 h-5 flex items-center justify-center text-[10px] font-mono font-bold bg-dot-accent text-white rounded-sm">1</span>
-            <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">봇 추가하기</h2>
+      <DotAssemblyReveal delay={80} duration={680}>
+        <GuideCard
+          title="알림 시작 가이드"
+          storageKey={GUIDE_STORAGE_KEY}
+          maxHeight={520}
+          intro="봇 검색부터 임계값 설정, 현재 상태 확인까지 한 카드에서 빠르게 확인할 수 있습니다."
+        >
+          <div className="grid gap-2 sm:grid-cols-3">
+            {setupSteps.map((step, index) => (
+              <div key={step.title} className="border border-dot-border/60 p-3 dot-grid-sparse">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 flex items-center justify-center text-[10px] font-mono font-bold bg-dot-accent text-white rounded-sm">
+                    {index + 1}
+                  </span>
+                  <p className="text-[10px] text-dot-muted uppercase tracking-wider">{step.title}</p>
+                </div>
+                <p className="text-[11px] text-dot-sub mt-2 leading-relaxed">{step.body}</p>
+              </div>
+            ))}
           </div>
-          <ol className="list-none text-dot-text space-y-2.5 text-sm ml-7">
-            <li className="flex items-start gap-2">
-              <span className="text-dot-muted text-[10px] mt-0.5 font-mono">01</span>
-              <span>텔레그램에서 <code className="text-dot-green bg-emerald-50 px-1.5 py-0.5 border border-emerald-200 font-mono text-xs">@btcfloww_bot</code>을 검색합니다.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-dot-muted text-[10px] mt-0.5 font-mono">02</span>
-              <span><code className="text-dot-green bg-emerald-50 px-1.5 py-0.5 border border-emerald-200 font-mono text-xs">/start</code>를 입력해 봇을 시작합니다.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-dot-muted text-[10px] mt-0.5 font-mono">03</span>
-              <span>봇이 사용법을 안내해줍니다.</span>
-            </li>
-          </ol>
-        </section>
-      </div>
+        </GuideCard>
+      </DotAssemblyReveal>
 
-      {/* 알림 설정 방법 */}
-      <div className="dot-entrance" style={{ '--entrance-delay': '160ms' } as React.CSSProperties}>
+      <DotAssemblyReveal delay={170} duration={700}>
         <section className="dot-card p-5 sm:p-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <span className="w-5 h-5 flex items-center justify-center text-[10px] font-mono font-bold bg-dot-accent text-white rounded-sm">2</span>
-            <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">알림 설정하기</h2>
+          <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">주요 명령어</h2>
+          <div className="space-y-2">
+            {primaryCommands.map((item) => (
+              <div key={item.command} className="flex items-start gap-3 p-3 border border-dot-border/60 dot-grid-sparse hover:border-dot-muted transition-colors">
+                <code className="text-dot-green shrink-0 font-mono font-medium text-xs">{item.command}</code>
+                <span className="text-dot-sub text-xs">{item.description}</span>
+              </div>
+            ))}
           </div>
-          <div className="space-y-2 text-sm ml-7">
-            <div className="flex items-start gap-3 p-3 border border-dot-border/60 dot-grid-sparse hover:border-dot-muted transition-colors">
-              <code className="text-dot-green shrink-0 font-mono font-medium text-xs">/alert 3.0</code>
-              <span className="text-dot-sub text-xs">김프가 3.0% 이상이면 알림을 받습니다.</span>
-            </div>
-            <div className="flex items-start gap-3 p-3 border border-dot-border/60 dot-grid-sparse hover:border-dot-muted transition-colors">
-              <code className="text-dot-green shrink-0 font-mono font-medium text-xs">/alert 5.0</code>
-              <span className="text-dot-sub text-xs">김프가 5.0% 이상이면 알림을 받습니다.</span>
-            </div>
-            <div className="flex items-start gap-3 p-3 border border-dot-border/60 dot-grid-sparse hover:border-dot-muted transition-colors">
-              <code className="text-dot-green shrink-0 font-mono font-medium text-xs">/alert off</code>
-              <span className="text-dot-sub text-xs">알림을 해제합니다.</span>
-            </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {utilityCommands.map((item) => (
+              <div key={item.command} className="flex items-start gap-3 p-3 border border-dot-border/60 dot-grid-sparse hover:border-dot-muted transition-colors">
+                <code className="text-dot-green shrink-0 font-mono font-medium text-xs">{item.command}</code>
+                <span className="text-dot-sub text-xs">{item.description}</span>
+              </div>
+            ))}
           </div>
         </section>
-      </div>
+      </DotAssemblyReveal>
 
-      {/* 기타 명령어 */}
-      <div className="dot-entrance" style={{ '--entrance-delay': '240ms' } as React.CSSProperties}>
-        <section className="dot-card p-5 sm:p-6 space-y-4">
-          <div className="flex items-center gap-2">
-            <span className="w-5 h-5 flex items-center justify-center text-[10px] font-mono font-bold bg-dot-accent text-white rounded-sm">3</span>
-            <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">기타 명령어</h2>
-          </div>
-          <div className="space-y-2 text-sm ml-7">
-            <div className="flex items-start gap-3 p-3 border border-dot-border/60 dot-grid-sparse hover:border-dot-muted transition-colors">
-              <code className="text-dot-green shrink-0 font-mono font-medium text-xs">/kimp</code>
-              <span className="text-dot-sub text-xs">현재 김프를 즉시 조회합니다.</span>
-            </div>
-            <div className="flex items-start gap-3 p-3 border border-dot-border/60 dot-grid-sparse hover:border-dot-muted transition-colors">
-              <code className="text-dot-green shrink-0 font-mono font-medium text-xs">/status</code>
-              <span className="text-dot-sub text-xs">내 알림 설정 현황을 확인합니다.</span>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* 알림 동작 설명 */}
-      <div className="dot-entrance" style={{ '--entrance-delay': '320ms' } as React.CSSProperties}>
+      <DotAssemblyReveal delay={270} duration={640} density="low">
         <section className="dot-card p-5 sm:p-6 space-y-3">
           <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">알림은 어떻게 동작하나요?</h2>
           <ul className="space-y-1.5 text-xs text-dot-sub ml-1">
@@ -104,7 +108,7 @@ export default function AlertPage() {
             </li>
           </ul>
         </section>
-      </div>
+      </DotAssemblyReveal>
     </div>
   );
 }

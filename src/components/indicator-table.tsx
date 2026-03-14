@@ -92,10 +92,9 @@ export default function IndicatorTable({ factors, selectedIndex, onSelect, rende
                 {/* Row button */}
                 <button
                   onClick={() => onSelect(i)}
-                  className={`dot-entrance w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-sm transition-colors ${
+                  className={`w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-sm transition-colors ${
                     i > 0 && !isSelected ? 'border-t border-dashed border-dot-border/15' : ''
                   } ${isSelected ? 'bg-dot-accent/[0.06]' : 'hover:bg-dot-border/[0.06]'}`}
-                  style={{ '--entrance-delay': `${i * 30}ms` } as React.CSSProperties}
                 >
                   <div className="flex items-center gap-2">
                     <span

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import PageHeader from '@/components/page-header';
 import { SITE_CONTACT_URL, SITE_NAME, SITE_REPO_URL } from '@/lib/site';
 
 export const metadata: Metadata = {
@@ -31,14 +32,17 @@ const coverage = [
 export default function AboutPage() {
   return (
     <div className="space-y-5">
-      <section className="dot-card p-5 sm:p-6 space-y-3">
-        <p className="text-[10px] font-mono uppercase tracking-[0.24em] text-dot-muted">About</p>
-        <h1 className="text-base sm:text-lg font-semibold text-dot-accent tracking-tight">{SITE_NAME}</h1>
-        <p className="text-sm text-dot-sub leading-relaxed">
-          비트코인 기상청은 한국 시장 기준으로 비트코인과 암호화폐의 체감 온도를 읽기 쉽게 정리한 데이터 사이트입니다.
-          글로벌 차트가 놓치기 쉬운 국내 프리미엄, 원화 체감 가격, 심리 과열 신호를 함께 보여주는 것이 목표입니다.
-        </p>
-      </section>
+      <PageHeader
+        variant="card"
+        eyebrow="서비스 소개"
+        title={SITE_NAME}
+        description={(
+          <>
+            비트코인 기상청은 한국 시장 기준으로 비트코인과 암호화폐의 체감 온도를 읽기 쉽게 정리한 데이터 사이트입니다.
+            글로벌 차트가 놓치기 쉬운 국내 프리미엄, 원화 체감 가격, 심리 과열 신호를 함께 보여주는 것이 목표입니다.
+          </>
+        )}
+      />
 
       <section className="dot-card p-5 sm:p-6 space-y-4">
         <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">운영 원칙</h2>

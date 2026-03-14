@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import SignalBadge from './signal-badge';
 import MarketBriefing from './market-briefing';
@@ -10,7 +11,7 @@ import { useData } from './data-provider';
 
 export default function Dashboard() {
   const { data, error, loading, lastUpdated, fetchData } = useData();
-  const [phase, setPhase] = useState<'loading' | 'exiting' | 'ready'>('loading');
+  const [phase, setPhase] = useState<'loading' | 'exiting' | 'ready'>(() => (loading ? 'loading' : 'ready'));
 
   useEffect(() => {
     if (loading) return;
@@ -93,7 +94,7 @@ export default function Dashboard() {
 
       {/* 지표 상세 페이지 링크 */}
       <DotAssemblyReveal delay={460} duration={600} density="low">
-        <a
+        <Link
           href="/realtime"
           className="dot-card p-4 flex items-center justify-between group hover:border-dot-accent/40 transition-colors"
         >
@@ -102,7 +103,7 @@ export default function Dashboard() {
             <p className="text-[10px] text-dot-muted/60 mt-0.5">11개 개별 지표 상세 보기</p>
           </div>
           <span className="text-dot-muted group-hover:text-dot-accent transition text-sm font-mono">→</span>
-        </a>
+        </Link>
       </DotAssemblyReveal>
     </div>
   );

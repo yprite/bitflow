@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import PageHeader from '@/components/page-header';
 import { SITE_CONTACT_URL, SITE_REPO_URL } from '@/lib/site';
 
 export const metadata: Metadata = {
@@ -31,14 +32,17 @@ const channels = [
 export default function ContactPage() {
   return (
     <div className="space-y-5">
-      <section className="dot-card p-5 sm:p-6 space-y-3">
-        <p className="text-[10px] font-mono uppercase tracking-[0.24em] text-dot-muted">Contact</p>
-        <h1 className="text-base sm:text-lg font-semibold text-dot-accent tracking-tight">문의 및 제보</h1>
-        <p className="text-sm text-dot-sub leading-relaxed">
-          현재 가장 빠른 공식 문의 채널은 GitHub Issues입니다.
-          데이터 오류, 기능 요청, 사이트 운영 관련 문의는 아래 채널을 이용해주세요.
-        </p>
-      </section>
+      <PageHeader
+        variant="card"
+        eyebrow="문의"
+        title="문의 및 제보"
+        description={(
+          <>
+            현재 가장 빠른 공식 문의 채널은 GitHub Issues입니다.
+            데이터 오류, 기능 요청, 사이트 운영 관련 문의는 아래 채널을 이용해주세요.
+          </>
+        )}
+      />
 
       <section className="grid gap-3 sm:grid-cols-3">
         {channels.map((channel) => (

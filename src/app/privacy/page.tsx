@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import PageHeader from '@/components/page-header';
 
 export const metadata: Metadata = {
   title: '개인정보처리방침',
@@ -11,17 +12,20 @@ const lastUpdated = '2026-03-14';
 export default function PrivacyPage() {
   return (
     <div className="space-y-5">
-      <section className="dot-card p-5 sm:p-6 space-y-3">
-        <p className="text-[10px] font-mono uppercase tracking-[0.24em] text-dot-muted">Privacy</p>
-        <h1 className="text-base sm:text-lg font-semibold text-dot-accent tracking-tight">개인정보처리방침</h1>
-        <p className="text-xs text-dot-sub leading-relaxed">
-          최종 업데이트: {lastUpdated}
-        </p>
-        <p className="text-sm text-dot-sub leading-relaxed">
-          비트코인 기상청은 서비스 품질 개선과 기본 통계 분석을 위해 최소한의 접속 정보를 수집합니다.
-          회원가입 기반 서비스가 아니므로 이름, 주민등록번호 같은 민감한 개인정보를 요구하지 않습니다.
-        </p>
-      </section>
+      <PageHeader
+        variant="card"
+        eyebrow="개인정보"
+        title="개인정보처리방침"
+        description={(
+          <>
+            <p className="text-xs text-dot-sub leading-relaxed">최종 업데이트: {lastUpdated}</p>
+            <p>
+              비트코인 기상청은 서비스 품질 개선과 기본 통계 분석을 위해 최소한의 접속 정보를 수집합니다.
+              회원가입 기반 서비스가 아니므로 이름, 주민등록번호 같은 민감한 개인정보를 요구하지 않습니다.
+            </p>
+          </>
+        )}
+      />
 
       <section className="dot-card p-5 sm:p-6 space-y-3">
         <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">수집하는 정보</h2>

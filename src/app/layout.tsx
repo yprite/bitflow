@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import AmbientBackground from '@/components/motion/ambient/AmbientBackground';
 import AnimatedLogo from '@/components/motion/brand/AnimatedLogo';
 import DataProvider from '@/components/data-provider';
@@ -112,28 +113,28 @@ export default function RootLayout({
         <AmbientBackground />
         <header className="dot-border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
           <nav className="max-w-3xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
-            <a href="/" className="text-lg font-bold text-dot-accent tracking-tight">
+            <Link href="/" className="text-lg font-bold text-dot-accent tracking-tight">
               <span className="inline-flex items-center gap-2">
                 <AnimatedLogo size={24} className="opacity-80" />
                 {SITE_NAME}
               </span>
-            </a>
+            </Link>
             <div className="flex gap-4 sm:gap-6 text-xs sm:text-sm">
-              <a href="/" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
+              <Link href="/" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
                 홈
-              </a>
-              <a href="/realtime" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
-                지표
-              </a>
-              <a href="/indicators" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
+              </Link>
+              <Link href="/realtime" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
+                실시간
+              </Link>
+              <Link href="/indicators" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
                 히스토리
-              </a>
-              <a href="/tools" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
+              </Link>
+              <Link href="/tools" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
                 도구
-              </a>
-              <a href="/alert" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
+              </Link>
+              <Link href="/alert" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
                 알림
-              </a>
+              </Link>
             </div>
           </nav>
         </header>
@@ -146,10 +147,10 @@ export default function RootLayout({
         <footer className="dot-border-t mt-12 relative z-10 dot-grid-sparse">
           <div className="max-w-3xl mx-auto px-4 py-8 text-center space-y-2">
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-dot-sub">
-              <a href="/about" className="hover:text-dot-accent transition">서비스 소개</a>
-              <a href="/contact" className="hover:text-dot-accent transition">문의</a>
-              <a href="/privacy" className="hover:text-dot-accent transition">개인정보처리방침</a>
-              <a href="/disclaimer" className="hover:text-dot-accent transition">면책 및 이용안내</a>
+              <Link href="/about" className="hover:text-dot-accent transition">서비스 소개</Link>
+              <Link href="/contact" className="hover:text-dot-accent transition">문의</Link>
+              <Link href="/privacy" className="hover:text-dot-accent transition">개인정보처리방침</Link>
+              <Link href="/disclaimer" className="hover:text-dot-accent transition">면책 및 이용안내</Link>
             </div>
             <p className="text-[10px] text-dot-muted/60">
               본 사이트의 정보는 투자 자문이 아니며, 모든 투자 판단과 책임은 사용자에게 있습니다.

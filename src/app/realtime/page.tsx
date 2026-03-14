@@ -15,6 +15,7 @@ import VolumeChangeCard from '@/components/volume-change-card';
 import IndicatorTable from '@/components/indicator-table';
 import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
+import PageHeader from '@/components/page-header';
 import { useData } from '@/components/data-provider';
 
 export default function RealtimePage() {
@@ -26,7 +27,7 @@ export default function RealtimePage() {
     oiRange, liqRange, stableRange, volumeRange, strategyRange,
   } = useData();
 
-  const [phase, setPhase] = useState<'loading' | 'exiting' | 'ready'>('loading');
+  const [phase, setPhase] = useState<'loading' | 'exiting' | 'ready'>(() => (loading ? 'loading' : 'ready'));
 
   useEffect(() => {
     if (loading) return;
@@ -103,23 +104,22 @@ export default function RealtimePage() {
     <div className="space-y-3 sm:space-y-4">
       {/* Header */}
       <DotAssemblyReveal delay={0} duration={500} density="low">
-        <div className="flex items-center justify-between">
-          <h1 className="text-sm font-semibold text-dot-sub uppercase tracking-wider">
-            실시간 지표
-          </h1>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-dot-muted font-mono hidden sm:inline">{lastUpdated}</span>
-            <button
-              onClick={fetchData}
-              className="text-xs text-dot-muted hover:text-dot-accent transition font-mono"
-            >
-              [ 새로고침 ]
-            </button>
-            <a href="/" className="text-xs text-dot-muted hover:text-dot-accent transition font-mono">
-              ← 홈
-            </a>
-          </div>
-        </div>
+        <PageHeader
+          eyebrow="시장 스냅샷"
+          title="실시간 지표"
+          backHref="/"
+          action={(
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-dot-muted font-mono hidden sm:inline">{lastUpdated}</span>
+              <button
+                onClick={fetchData}
+                className="text-xs text-dot-muted hover:text-dot-accent transition font-mono"
+              >
+                [ 새로고침 ]
+              </button>
+            </div>
+          )}
+        />
       </DotAssemblyReveal>
 
       {/* Summary table with inline detail expansion */}

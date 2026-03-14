@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 
 interface PageHeaderProps {
   title: string;
@@ -33,9 +34,9 @@ export default function PageHeader({
     return (
       <section className="dot-card p-5 sm:p-6 space-y-3">
         {backHref ? (
-          <a href={backHref} className="inline-flex text-dot-muted hover:text-dot-accent transition text-sm font-mono">
+          <Link href={backHref} className="inline-flex text-dot-muted hover:text-dot-accent transition text-sm font-mono">
             ← {backLabel}
-          </a>
+          </Link>
         ) : null}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-2">
@@ -57,9 +58,9 @@ export default function PageHeader({
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex items-start gap-3">
         {backHref ? (
-          <a href={backHref} className="text-dot-muted hover:text-dot-accent transition text-sm font-mono">
+          <Link href={backHref} className="text-dot-muted hover:text-dot-accent transition text-sm font-mono">
             ← {backLabel}
-          </a>
+          </Link>
         ) : null}
         <div className="space-y-1">
           <Eyebrow>{headerEyebrow}</Eyebrow>
