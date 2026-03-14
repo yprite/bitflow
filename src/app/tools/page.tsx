@@ -1,15 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PremiumHeatmap from '@/components/premium-heatmap';
 import ArbitrageCalculator from '@/components/arbitrage-calculator';
 import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
 import { useData } from '@/components/data-provider';
 import type { CoinPremium } from '@/lib/types';
 
+const GUIDE_STORAGE_KEY = 'bitflow:tools-guide-seen';
+
 export default function ToolsPage() {
   const { multiCoinData, error, loading, fetchData } = useData();
   const [selectedCoin, setSelectedCoin] = useState<CoinPremium | null>(null);
+  const [guideExpanded, setGuideExpanded] = useState(false);
+  const [guideReady, setGuideReady] = useState(false);
+
+  useEffect(() => {
+    const hasSeenGuide = window.localStorage.getItem(GUIDE_STORAGE_KEY) === '1';
+    setGuideExpanded(!hasSeenGuide);
+    setGuideReady(true);
+
+    if (!hasSeenGuide) {
+      window.localStorage.setItem(GUIDE_STORAGE_KEY, '1');
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -42,20 +56,47 @@ export default function ToolsPage() {
         <h1 className="text-sm font-semibold text-dot-sub uppercase tracking-wider">도구</h1>
       </div>
 
-      <section className="dot-card p-5 sm:p-6 space-y-3">
-        <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">도구 안내</h2>
-        <p className="text-xs text-dot-sub leading-relaxed">
-          히트맵은 멀티코인 김프의 상대적인 과열 구간을 빠르게 찾기 위한 화면이고,
-          계산기는 실제 진입 전에 수수료와 프리미엄 차이를 감안한 기대 수익률을 가늠하기 위한 보조 도구입니다.
-        </p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-            <p className="text-[10px] text-dot-muted uppercase tracking-wider">히트맵</p>
-            <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">코인별 김프를 한눈에 비교하고, 거래대금 또는 시가총액 순으로 정렬해 상대적인 괴리를 찾을 수 있습니다.</p>
-          </div>
-          <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-            <p className="text-[10px] text-dot-muted uppercase tracking-wider">계산기</p>
-            <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">표시 수익률은 참고치입니다. 실제 체결 슬리피지, 송금 지연, 세금과 출금 제한은 별도로 반영해야 합니다.</p>
+      <section className="dot-card p-5 sm:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">도구 안내</h2>
+          <button
+            type="button"
+            onClick={() => setGuideExpanded((prev) => !prev)}
+            aria-expanded={guideExpanded}
+            className="inline-flex items-center gap-1 text-[10px] text-dot-muted hover:text-dot-accent transition font-mono"
+          >
+            <span>{guideExpanded ? '접기' : '펼치기'}</span>
+            <span
+              aria-hidden="true"
+              className="inline-block transition-transform duration-200"
+              style={{ transform: guideExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            >
+              ▾
+            </span>
+          </button>
+        </div>
+        <div
+          className="overflow-hidden transition-all duration-300 ease-out"
+          style={{
+            maxHeight: guideReady && guideExpanded ? '280px' : '0px',
+            opacity: guideReady && guideExpanded ? 1 : 0,
+          }}
+        >
+          <div className="pt-3 space-y-3">
+            <p className="text-xs text-dot-sub leading-relaxed">
+              히트맵은 멀티코인 김프의 상대적인 과열 구간을 빠르게 찾기 위한 화면이고,
+              계산기는 실제 진입 전에 수수료와 프리미엄 차이를 감안한 기대 수익률을 가늠하기 위한 보조 도구입니다.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+                <p className="text-[10px] text-dot-muted uppercase tracking-wider">히트맵</p>
+                <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">코인별 김프를 한눈에 비교하고, 거래대금 또는 시가총액 순으로 정렬해 상대적인 괴리를 찾을 수 있습니다.</p>
+              </div>
+              <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+                <p className="text-[10px] text-dot-muted uppercase tracking-wider">계산기</p>
+                <p className="text-[11px] text-dot-sub mt-1 leading-relaxed">표시 수익률은 참고치입니다. 실제 체결 슬리피지, 송금 지연, 세금과 출금 제한은 별도로 반영해야 합니다.</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
