@@ -1,0 +1,48 @@
+# BitFlow - 비트코인 기상청
+
+> Real-time cryptocurrency market intelligence dashboard focused on Kimchi Premium tracking
+
+## What is BitFlow?
+
+BitFlow (비트코인 기상청, "Bitcoin Weather Station") is a real-time financial intelligence dashboard that monitors the Korean cryptocurrency market premium (Kimchi Premium) and related market indicators. It provides traders and analysts with a unified view of key market signals.
+
+## Core Features
+
+- **Kimchi Premium (김치프리미엄)**: Real-time spread between Korean (Upbit) and global BTC prices, calculated using live USD/KRW exchange rates
+- **Perpetual Funding Rate**: BTCUSDT perpetual swap funding rate from OKX
+- **Fear & Greed Index**: Crypto market sentiment from alternative.me
+- **10-Factor Composite Signal**: Combines kimchi premium, funding rate, fear/greed, long/short ratio, open interest, liquidation data, and more into a single market sentiment level
+- **Multi-Coin Premium Heatmap**: Arbitrage premiums for 50+ cryptocurrencies across exchanges
+- **Arbitrage Calculator**: Profitability calculator with slippage, fees, and time estimates
+- **Historical Analytics**: 30-day charts, statistics, and correlation analysis
+- **Telegram Bot Integration**: Real-time alerts and queries via Telegram
+
+## Pages
+
+- `/` — Main dashboard with real-time market data
+- `/indicators` — Historical charts and analytics
+- `/tools` — Premium heatmap and arbitrage calculator
+- `/alert` — Telegram bot setup guide
+
+## API Endpoints
+
+- `/api/kimp` — Dashboard data (kimchi premium, funding rate, fear/greed, composite signal)
+- `/api/multi-kimp` — Multi-asset premium data for heatmap
+- `/api/indicators` — Historical chart data
+
+## Tech Stack
+
+- Next.js 14 (App Router), React 18, TypeScript
+- Tailwind CSS
+- Vercel KV (Redis), Supabase (PostgreSQL)
+- Data from: Upbit, CoinGecko, OKX, alternative.me, Exchange Rate API
+
+## Kimchi Premium Formula
+
+```
+Premium(%) = ((Upbit_KRW / (Global_USDT × USD_KRW_Rate)) - 1) × 100
+```
+
+## Links
+
+- llms-full.txt: /llms-full.txt

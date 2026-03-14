@@ -1,0 +1,11 @@
+{
+  "name": "비트코인 기상청",
+  "short_name": "비트기상청",
+  "description": "실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f0",
+  "theme_color": "#f5f5f0",
+  "lang": "ko",
+  "categories": ["finance", "utilities"]
+}

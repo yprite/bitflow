@@ -1,0 +1,161 @@
+# BitFlow - 비트코인 기상청 (Full Documentation)
+
+> Real-time cryptocurrency market intelligence dashboard focused on Kimchi Premium tracking
+
+## Overview
+
+BitFlow (비트코인 기상청, "Bitcoin Weather Station") is a real-time financial intelligence dashboard that monitors the Korean cryptocurrency market premium (Kimchi Premium) and related market indicators. It provides traders, analysts, and crypto enthusiasts with a unified view of key market signals including the kimchi premium, funding rates, fear/greed index, and a proprietary 10-factor composite signal.
+
+## What is Kimchi Premium?
+
+The Kimchi Premium (김치프리미엄, or "김프") refers to the price difference between Bitcoin on Korean exchanges versus global exchanges. It occurs due to capital controls, demand differences, and regulatory factors unique to the Korean market. BitFlow calculates this in real-time:
+
+```
+Premium(%) = ((Upbit_KRW / (Global_USDT × USD_KRW_Rate)) - 1) × 100
+```
+
+A positive premium means BTC is more expensive in Korea; a negative premium (역프) means it's cheaper.
+
+## Core Features
+
+### 1. Kimchi Premium Tracking (김치프리미엄)
+- Real-time spread between Upbit BTC/KRW and global BTC/USDT prices
+- Uses live USD/KRW exchange rates for accurate calculation
+- Daily high/low range tracking
+- Historical trend analysis
+
+### 2. Perpetual Funding Rate (펀딩비)
+- BTCUSDT perpetual swap funding rate from OKX
+- Indicates market leverage bias (positive = longs pay shorts)
+- Daily range tracking
+
+### 3. Fear & Greed Index (공포탐욕지수)
+- Crypto market sentiment indicator from alternative.me
+- Scale: 0 (Extreme Fear) to 100 (Extreme Greed)
+- Labeled categories: Extreme Fear, Fear, Neutral, Greed, Extreme Greed
+
+### 4. 10-Factor Composite Signal (복합 시그널)
+Combines multiple indicators into a single market sentiment level:
+- Kimchi Premium
+- Funding Rate
+- Fear & Greed Index
+- Long/Short Ratio
+- Open Interest changes
+- Liquidation data
+- BTC Dominance
+- Stablecoin supply changes
+- ETF flow data
+- Trading volume analysis
+
+Signal levels (Korean): 극과열 → 과열 → 중립 → 침체 → 극침체
+(Extreme Overheated → Overheated → Neutral → Depressed → Extreme Depression)
+
+### 5. Multi-Coin Premium Heatmap
+- Tracks arbitrage premiums for 50+ cryptocurrencies
+- Visual heatmap showing relative premiums across assets
+- Identifies outlier opportunities
+
+### 6. Arbitrage Calculator
+- Input-based profitability calculator
+- Accounts for slippage, exchange fees, and transfer times
+- Estimates net profit for cross-exchange arbitrage
+
+### 7. Historical Analytics
+- 30-day charts for kimchi premium, funding rate, and fear/greed
+- Multi-coin comparison charts
+- Statistical summaries and correlation analysis
+- Data persistence via Supabase
+
+### 8. Telegram Bot Integration
+- Real-time alerts when kimchi premium crosses user-defined thresholds
+- Bot commands:
+  - `/start` — Bot introduction and usage guide
+  - `/kimp` — Query current kimchi premium
+  - `/alert 3.0` — Set alert for premium above 3.0%
+  - `/alert off` — Disable alerts
+  - `/status` — Check current alert settings
+
+## Pages
+
+### Home (`/`)
+Main dashboard displaying all real-time market data in card-based layout with ambient motion backgrounds reflecting market state.
+
+### History / Indicators (`/indicators`)
+Historical charts and analytics with 30-day data visualization for kimchi premium, funding rate, fear/greed index, and multi-coin comparisons.
+
+### Tools (`/tools`)
+Premium heatmap showing 50+ cryptocurrency premiums and arbitrage calculator for profitability estimation.
+
+### Alert (`/alert`)
+Setup guide for Telegram bot integration with step-by-step instructions.
+
+### Admin (`/admin`)
+Event tracker for monitoring system events and market milestones.
+
+## API Endpoints
+
+### GET `/api/kimp`
+Returns comprehensive dashboard data:
+- Current kimchi premium (%)
+- BTC prices (Upbit KRW, global USDT)
+- USD/KRW exchange rate
+- Funding rate (BTCUSDT perpetual)
+- Fear & Greed Index (value + label)
+- Long/Short ratio
+- Open Interest data
+- Liquidation data
+- Composite signal level and score
+
+### GET `/api/multi-kimp`
+Returns premium data for multiple cryptocurrencies:
+- Array of coin premiums with exchange prices
+- Used for heatmap visualization
+
+### GET `/api/indicators`
+Returns historical data for charts:
+- Kimchi premium history (30 days)
+- Funding rate history
+- Fear & Greed history
+- Multi-coin comparison data
+
+### POST `/api/telegram/webhook`
+Telegram bot webhook endpoint for processing commands and sending alerts.
+
+### GET `/api/cron/collect-kimp`
+Scheduled endpoint for collecting and storing kimchi premium snapshots (recommended: every 10 minutes).
+
+### GET `/api/cron/check-alerts`
+Scheduled endpoint for checking alert thresholds and notifying subscribers.
+
+## Tech Stack
+
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **UI**: React 18, Tailwind CSS
+- **Database**: Supabase (PostgreSQL)
+- **Cache**: Vercel KV (Redis)
+- **Deployment**: Vercel
+- **External APIs**: Upbit, CoinGecko, OKX, alternative.me, Exchange Rate API
+- **Bot**: Telegram Bot API
+
+## Data Sources
+
+| Data | API Source |
+|------|-----------|
+| Korean BTC/KRW price | Upbit (`api.upbit.com/v1/ticker`) |
+| Global BTC/USDT price | CoinGecko (`api.coingecko.com/api/v3/simple/price`) |
+| USD/KRW exchange rate | Exchange Rate API (`open.er-api.com/v6/latest/USD`) |
+| Fear & Greed Index | alternative.me (`api.alternative.me/fng/`) |
+| Funding rate | OKX (`www.okx.com/api/v5/public/funding-rate`) |
+| Long/Short ratio | OKX |
+| Open Interest | OKX |
+| Liquidation data | OKX |
+
+## Design System
+
+BitFlow uses a minimal, data-focused design with:
+- Off-white background (#f5f5f0)
+- Monospace typography
+- Dot-based ambient animations reflecting market state
+- Color coding: Green (#00c853) for positive, Red (#e53935) for negative, Blue (#1e88e5) for neutral
+- Canvas-based particle system for ambient backgrounds
