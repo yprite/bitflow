@@ -57,12 +57,13 @@ export default function BtcSparkline({ level }: BtcSparklineProps) {
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 pointer-events-none overflow-hidden"
+      className="absolute top-0 right-0 pointer-events-none overflow-hidden"
+      style={{ width: '70%', height: '70%' }}
       aria-hidden="true"
     >
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMaxYMin meet"
         className="w-full h-full"
       >
         <defs>
