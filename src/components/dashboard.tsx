@@ -12,22 +12,28 @@ export default function Dashboard() {
   const [phase, setPhase] = useState<'loading' | 'exiting' | 'ready'>('loading');
 
   useEffect(() => {
-    if (!loading && phase === 'loading') {
-      if (data) {
-        // Data loaded — play exit animation then show content
-        setPhase('exiting');
-        const timer = setTimeout(() => setPhase('ready'), 400);
-        return () => clearTimeout(timer);
-      } else {
-        // Error or no data — skip animation, show error UI
-        setPhase('ready');
-      }
+    if (loading) return;
+
+    if (!data) {
+      setPhase('ready');
+      return;
+    }
+
+    if (phase === 'loading') {
+      setPhase('exiting');
     }
   }, [loading, data, phase]);
 
   useEffect(() => {
     if (loading && phase === 'ready') setPhase('loading');
   }, [loading, phase]);
+
+  useEffect(() => {
+    if (phase !== 'exiting') return;
+
+    const timer = window.setTimeout(() => setPhase('ready'), 400);
+    return () => window.clearTimeout(timer);
+  }, [phase]);
 
   if (phase !== 'ready') {
     return (

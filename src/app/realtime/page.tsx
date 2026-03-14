@@ -28,20 +28,28 @@ export default function RealtimePage() {
   const [phase, setPhase] = useState<'loading' | 'exiting' | 'ready'>('loading');
 
   useEffect(() => {
-    if (!loading && phase === 'loading') {
-      if (data) {
-        setPhase('exiting');
-        const timer = setTimeout(() => setPhase('ready'), 400);
-        return () => clearTimeout(timer);
-      } else {
-        setPhase('ready');
-      }
+    if (loading) return;
+
+    if (!data) {
+      setPhase('ready');
+      return;
+    }
+
+    if (phase === 'loading') {
+      setPhase('exiting');
     }
   }, [loading, data, phase]);
 
   useEffect(() => {
     if (loading && phase === 'ready') setPhase('loading');
   }, [loading, phase]);
+
+  useEffect(() => {
+    if (phase !== 'exiting') return;
+
+    const timer = window.setTimeout(() => setPhase('ready'), 400);
+    return () => window.clearTimeout(timer);
+  }, [phase]);
 
   if (phase !== 'ready') {
     return (
