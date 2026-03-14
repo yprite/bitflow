@@ -161,7 +161,7 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
           시장 온도
         </h2>
         <div className="flex items-center gap-2 mb-3">
-          <p className="text-[10px] text-dot-muted/60">10개 지표 가중 종합</p>
+          <p className="text-[10px] text-dot-muted/60">11개 지표 가중 종합</p>
           <TrendBadge trend={signal.trend} scoreChange={signal.scoreChange} />
         </div>
 
