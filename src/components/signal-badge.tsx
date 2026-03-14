@@ -178,7 +178,7 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
 
         <div className="relative">
           <DotMorphTransition
-            text={signal.level}
+            text={`${signal.normalizedScore > 0 ? '+' : ''}${signal.normalizedScore}`}
             fontScale={5}
             mode="dissolve"
             morphDuration={600}
@@ -187,10 +187,13 @@ export default function SignalBadge({ signal }: SignalBadgeProps) {
           <InsightBloom trigger={signal.level} dotCount={5} travelDistance={18} dotSize={2} color={color} />
         </div>
 
-        {/* Normalized score display */}
+        {/* Level name + score display */}
         <div className="flex items-center gap-1.5 mt-1">
+          <span className="text-sm font-semibold" style={{ color }}>
+            {signal.level}
+          </span>
           <span className="text-[10px] font-mono text-dot-muted/50">점수</span>
-          <span className="text-sm font-mono font-semibold" style={{ color }}>
+          <span className="text-[10px] font-mono text-dot-sub">
             {signal.normalizedScore > 0 ? '+' : ''}{signal.normalizedScore}
           </span>
           <span className="text-[9px] text-dot-muted/40 font-mono">/ 100</span>
