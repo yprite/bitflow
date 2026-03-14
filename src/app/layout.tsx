@@ -3,12 +3,16 @@ import AmbientBackground from '@/components/motion/ambient/AmbientBackground';
 import AnimatedLogo from '@/components/motion/brand/AnimatedLogo';
 import DataProvider from '@/components/data-provider';
 import EventTracker from '@/components/event-tracker';
+import { SITE_ALTERNATE_NAME, SITE_NAME, getBaseUrl } from '@/lib/site';
 import './globals.css';
 
+const baseUrl = getBaseUrl();
+
 export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl),
   title: {
-    default: '비트코인 기상청 | 실시간 김치프리미엄 · 펀딩비 · 공포탐욕지수',
-    template: '%s | 비트코인 기상청',
+    default: `${SITE_NAME} | 실시간 김치프리미엄 · 펀딩비 · 공포탐욕지수`,
+    template: `%s | ${SITE_NAME}`,
   },
   description:
     '실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에. 50개 이상 코인 프리미엄 히트맵, 복합 시그널, 텔레그램 알림까지.',
@@ -26,22 +30,23 @@ export const metadata: Metadata = {
     '코인 시세',
     '실시간 김프',
     '역프',
-    '비트코인 기상청',
-    'BitFlow',
+    SITE_NAME,
+    SITE_ALTERNATE_NAME,
   ],
-  authors: [{ name: 'BitFlow' }],
-  creator: 'BitFlow',
+  authors: [{ name: SITE_ALTERNATE_NAME }],
+  creator: SITE_ALTERNATE_NAME,
   openGraph: {
     type: 'website',
     locale: 'ko_KR',
-    siteName: '비트코인 기상청',
-    title: '비트코인 기상청 | 실시간 김치프리미엄 · 펀딩비 · 공포탐욕지수',
+    url: baseUrl,
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} | 실시간 김치프리미엄 · 펀딩비 · 공포탐욕지수`,
     description:
       '실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에. 50개 이상 코인 프리미엄 히트맵, 복합 시그널, 텔레그램 알림까지.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: '비트코인 기상청 | 실시간 김치프리미엄 · 펀딩비 · 공포탐욕지수',
+    title: `${SITE_NAME} | 실시간 김치프리미엄 · 펀딩비 · 공포탐욕지수`,
     description:
       '실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에. 50개 이상 코인 프리미엄 히트맵, 복합 시그널, 텔레그램 알림까지.',
   },
@@ -71,12 +76,13 @@ export default function RootLayout({
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
-    name: '비트코인 기상청',
-    alternateName: 'BitFlow',
+    name: SITE_NAME,
+    alternateName: SITE_ALTERNATE_NAME,
     description:
       '실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에. 50개 이상 코인 프리미엄 히트맵, 복합 시그널, 텔레그램 알림까지.',
     applicationCategory: 'FinanceApplication',
     operatingSystem: 'Web',
+    url: baseUrl,
     offers: {
       '@type': 'Offer',
       price: '0',
@@ -95,7 +101,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#f5f5f0" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="비트코인 기상청" />
+        <meta name="apple-mobile-web-app-title" content={SITE_NAME} />
         <meta name="naver-site-verification" content="" />
         <script
           type="application/ld+json"
@@ -109,7 +115,7 @@ export default function RootLayout({
             <a href="/" className="text-lg font-bold text-dot-accent tracking-tight">
               <span className="inline-flex items-center gap-2">
                 <AnimatedLogo size={24} className="opacity-80" />
-                비트코인 기상청
+                {SITE_NAME}
               </span>
             </a>
             <div className="flex gap-4 sm:gap-6 text-xs sm:text-sm">
@@ -140,10 +146,19 @@ export default function RootLayout({
         <footer className="dot-border-t mt-12 relative z-10 dot-grid-sparse">
           <div className="max-w-3xl mx-auto px-4 py-8 text-center space-y-2">
             <p className="text-[11px] text-dot-muted font-mono tracking-wide">
-              비트코인 기상청 — 데이터 기반 시장 인사이트
+              {SITE_NAME} — 데이터 기반 시장 인사이트
             </p>
             <p className="text-[10px] text-dot-muted/60">
               실시간 데이터는 업비트, 글로벌 시세 API, alternative.me에서 제공됩니다.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-dot-sub">
+              <a href="/about" className="hover:text-dot-accent transition">서비스 소개</a>
+              <a href="/contact" className="hover:text-dot-accent transition">문의</a>
+              <a href="/privacy" className="hover:text-dot-accent transition">개인정보처리방침</a>
+              <a href="/disclaimer" className="hover:text-dot-accent transition">면책 및 이용안내</a>
+            </div>
+            <p className="text-[10px] text-dot-muted/60">
+              본 사이트의 정보는 투자 자문이 아니며, 모든 투자 판단과 책임은 사용자에게 있습니다.
             </p>
           </div>
         </footer>
