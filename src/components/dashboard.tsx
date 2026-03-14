@@ -9,6 +9,7 @@ import LongShortCard from './long-short-card';
 import OpenInterestCard from './open-interest-card';
 import LiquidationCard from './liquidation-card';
 import StablecoinCard from './stablecoin-card';
+import StrategyBtcCard from './strategy-btc-card';
 import VolumeChangeCard from './volume-change-card';
 import SignalBadge from './signal-badge';
 import IndicatorCarousel from './indicator-carousel';
@@ -17,7 +18,7 @@ import { useData } from './data-provider';
 
 const CAROUSEL_LABELS = [
   '김프', '펀딩비', '공포탐욕', 'USDT', '도미넌스',
-  '롱숏', 'OI', '청산', '스테이블', '거래량',
+  '롱숏', 'OI', '청산', '스테이블', '거래량', 'MSTR',
 ];
 
 export default function Dashboard() {
@@ -25,7 +26,7 @@ export default function Dashboard() {
     data, error, loading, lastUpdated, fetchData,
     fundingRange, fearGreedRange,
     usdtPremiumRange, btcDominanceRange, longShortRange,
-    oiRange, liqRange, stableRange, volumeRange,
+    oiRange, liqRange, stableRange, volumeRange, strategyRange,
   } = useData();
 
   if (loading) {
@@ -79,6 +80,7 @@ export default function Dashboard() {
         <LiquidationCard data={data.liquidation} dayRange={liqRange} />
         <StablecoinCard data={data.stablecoinMcap} dayRange={stableRange} />
         <VolumeChangeCard data={data.volumeChange} dayRange={volumeRange} />
+        <StrategyBtcCard data={data.strategyBtc} dayRange={strategyRange} />
       </IndicatorCarousel>
     </div>
   );

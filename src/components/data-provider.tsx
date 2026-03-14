@@ -23,6 +23,7 @@ interface DataContextType {
   liqRange: DayRange | null;
   stableRange: DayRange | null;
   volumeRange: DayRange | null;
+  strategyRange: DayRange | null;
   error: string | null;
   loading: boolean;
   lastUpdated: string;
@@ -53,6 +54,7 @@ export default function DataProvider({ children }: { children: ReactNode }) {
   const [liqRange, setLiqRange] = useState<DayRange | null>(null);
   const [stableRange, setStableRange] = useState<DayRange | null>(null);
   const [volumeRange, setVolumeRange] = useState<DayRange | null>(null);
+  const [strategyRange, setStrategyRange] = useState<DayRange | null>(null);
 
   const fetchData = async () => {
     try {
@@ -136,6 +138,13 @@ export default function DataProvider({ children }: { children: ReactNode }) {
         return { min: Math.min(prev.min, volVal), max: Math.max(prev.max, volVal), current: volVal };
       });
 
+      // Track daily range for Strategy BTC change rate
+      const strategyVal = json.strategyBtc.changeRate;
+      setStrategyRange((prev) => {
+        if (!prev) return { min: strategyVal, max: strategyVal, current: strategyVal };
+        return { min: Math.min(prev.min, strategyVal), max: Math.max(prev.max, strategyVal), current: strategyVal };
+      });
+
       setSessionHistory((prev) => {
         if (json.history.length > 0) {
           return prev;
@@ -162,7 +171,7 @@ export default function DataProvider({ children }: { children: ReactNode }) {
   const chartData = data && data.history.length > 0 ? data.history : sessionHistory;
 
   return (
-    <DataContext.Provider value={{ data, multiCoinData, sessionHistory, chartData, fundingRange, fearGreedRange, usdtPremiumRange, btcDominanceRange, longShortRange, oiRange, liqRange, stableRange, volumeRange, error, loading, lastUpdated, fetchData }}>
+    <DataContext.Provider value={{ data, multiCoinData, sessionHistory, chartData, fundingRange, fearGreedRange, usdtPremiumRange, btcDominanceRange, longShortRange, oiRange, liqRange, stableRange, volumeRange, strategyRange, error, loading, lastUpdated, fetchData }}>
       {children}
     </DataContext.Provider>
   );
