@@ -2,6 +2,7 @@
 
 import type { ExtendedKimpHistoryPoint, DailyKimpSummary } from '@/lib/types';
 import LivePulse from '@/components/motion/indicators/LivePulse';
+import { useReducedMotion } from '@/components/motion/core/useReducedMotion';
 import { clamp } from '@/components/motion/core/dot-math';
 
 interface Props {
@@ -38,7 +39,19 @@ function aggregateDaily(data: ExtendedKimpHistoryPoint[]): DailyKimpSummary[] {
  * Higher |premium| → more dots, larger radius.
  * Positive → darker/denser. Negative → lighter/sparser.
  */
-function HalftoneCell({ avg, size }: { avg: number; size: number }) {
+function HalftoneCell({
+  avg,
+  size,
+  isToday,
+  isRecent,
+  reducedMotion,
+}: {
+  avg: number;
+  size: number;
+  isToday?: boolean;
+  isRecent?: boolean;
+  reducedMotion?: boolean;
+}) {
   const absAvg = Math.abs(avg);
   const intensity = clamp(absAvg / 5, 0, 1); // 0–1 based on 0–5% range
 
@@ -60,24 +73,128 @@ function HalftoneCell({ avg, size }: { avg: number; size: number }) {
 
   const r = minR + intensity * (maxR - minR);
   const baseOpacity = 0.12 + intensity * 0.7;
+  const animate = !reducedMotion;
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block">
+      {/* Today: pulsing border */}
+      {isToday && animate && (
+        <rect
+          x={0.5}
+          y={0.5}
+          width={size - 1}
+          height={size - 1}
+          rx={1}
+          fill="none"
+          stroke="#1a1a1a"
+          strokeWidth={0.5}
+          opacity={0.2}
+        >
+          <animate attributeName="opacity" values="0.15;0.35;0.15" dur="2s" repeatCount="indefinite" />
+        </rect>
+      )}
+
+      {/* Today: ripple ring from center */}
+      {isToday && animate && (
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={1}
+          fill="none"
+          stroke="#1a1a1a"
+          strokeWidth={0.3}
+          opacity={0}
+        >
+          <animate attributeName="r" values={`1;${size * 0.55}`} dur="2.5s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.12;0" dur="2.5s" repeatCount="indefinite" />
+        </circle>
+      )}
+
       {positions.map(([cx, cy], i) => {
         // Each successive dot slightly smaller
-        const dotR = r * (1 - i * 0.08);
+        const dotR = Math.max(r * (1 - i * 0.08), minR);
         const dotO = baseOpacity * (1 - i * 0.1);
+
         return (
           <circle
             key={i}
             cx={cx}
             cy={cy}
-            r={Math.max(dotR, minR)}
+            r={dotR}
             fill="#1a1a1a"
             opacity={dotO}
-          />
+          >
+            {/* Today: heartbeat pulse on dots */}
+            {isToday && animate && (
+              <>
+                <animate
+                  attributeName="r"
+                  values={`${dotR};${dotR * 1.35};${dotR}`}
+                  dur="1.5s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="opacity"
+                  values={`${dotO};${dotO * 0.55};${dotO}`}
+                  dur="1.5s"
+                  repeatCount="indefinite"
+                />
+              </>
+            )}
+            {/* Recent: gentle breathing */}
+            {isRecent && !isToday && animate && (
+              <animate
+                attributeName="opacity"
+                values={`${dotO};${dotO * 0.6};${dotO}`}
+                dur="3s"
+                repeatCount="indefinite"
+              />
+            )}
+          </circle>
         );
       })}
+    </svg>
+  );
+}
+
+/** Empty "today" cell: pulsing awaiting-data indicator */
+function TodayEmptyCell({ size, reducedMotion }: { size: number; reducedMotion?: boolean }) {
+  const cx = size / 2;
+  const cy = size / 2;
+  const animate = !reducedMotion;
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="block">
+      <rect
+        x={0.5}
+        y={0.5}
+        width={size - 1}
+        height={size - 1}
+        rx={1}
+        fill="none"
+        stroke="#1a1a1a"
+        strokeWidth={0.4}
+        strokeDasharray="1.5 1.5"
+        opacity={0.15}
+      >
+        {animate && (
+          <animate attributeName="opacity" values="0.1;0.25;0.1" dur="2s" repeatCount="indefinite" />
+        )}
+      </rect>
+      <circle cx={cx} cy={cy} r={1.2} fill="#1a1a1a" opacity={0.15}>
+        {animate && (
+          <>
+            <animate attributeName="r" values="1.2;2;1.2" dur="1.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.15;0.06;0.15" dur="1.5s" repeatCount="indefinite" />
+          </>
+        )}
+      </circle>
+      {animate && (
+        <circle cx={cx} cy={cy} r={1} fill="none" stroke="#1a1a1a" strokeWidth={0.3} opacity={0}>
+          <animate attributeName="r" values={`1;${size * 0.5}`} dur="2.5s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.1;0" dur="2.5s" repeatCount="indefinite" />
+        </circle>
+      )}
     </svg>
   );
 }
@@ -85,7 +202,18 @@ function HalftoneCell({ avg, size }: { avg: number; size: number }) {
 const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
 const CELL_SIZE = 16;
 
+function formatDateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function daysAgo(dateStr: string, now: Date): number {
+  const target = new Date(dateStr + 'T00:00:00');
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((todayStart.getTime() - target.getTime()) / (1000 * 60 * 60 * 24));
+}
+
 export default function KimpCalendar({ data }: Props) {
+  const reducedMotion = useReducedMotion();
   const daily = aggregateDaily(data);
 
   if (daily.length < 2) {
@@ -97,6 +225,8 @@ export default function KimpCalendar({ data }: Props) {
     );
   }
 
+  const now = new Date();
+  const todayStr = formatDateKey(now);
   const firstDate = new Date(daily[0].date + 'T00:00:00');
   const lastDate = new Date(daily[daily.length - 1].date + 'T00:00:00');
   const dailyMap = new Map(daily.map((d) => [d.date, d]));
@@ -157,29 +287,44 @@ export default function KimpCalendar({ data }: Props) {
             {/* Weeks */}
             {weeks.map((week, wi) => (
               <div key={wi} className="flex flex-col gap-px">
-                {week.map((day, di) => (
-                  <div
-                    key={di}
-                    className={`rounded-[1px] ${
-                      day.inRange ? 'bg-gray-50' : ''
-                    }`}
-                    style={{ width: CELL_SIZE, height: CELL_SIZE }}
-                    title={
-                      day.summary
-                        ? `${day.date}: 평균 ${day.summary.avg.toFixed(2)}% (${day.summary.count}개)`
-                        : day.date
-                    }
-                  >
-                    {day.summary ? (
-                      <HalftoneCell avg={day.summary.avg} size={CELL_SIZE} />
-                    ) : day.inRange ? (
-                      /* Empty in-range cell: single ghost dot */
-                      <svg width={CELL_SIZE} height={CELL_SIZE} viewBox={`0 0 ${CELL_SIZE} ${CELL_SIZE}`} className="block">
-                        <circle cx={CELL_SIZE / 2} cy={CELL_SIZE / 2} r={1} fill="#1a1a1a" opacity={0.04} />
-                      </svg>
-                    ) : null}
-                  </div>
-                ))}
+                {week.map((day, di) => {
+                  const isToday = day.date === todayStr;
+                  const age = day.date ? daysAgo(day.date, now) : -1;
+                  const isRecent = age >= 1 && age <= 2;
+
+                  return (
+                    <div
+                      key={di}
+                      className={`rounded-[1px] ${
+                        isToday ? 'bg-dot-accent/[0.05]' : day.inRange ? 'bg-gray-50' : ''
+                      }`}
+                      style={{ width: CELL_SIZE, height: CELL_SIZE }}
+                      title={
+                        day.summary
+                          ? `${day.date}: 평균 ${day.summary.avg.toFixed(2)}% (${day.summary.count}개)${isToday ? ' — 오늘' : ''}`
+                          : isToday
+                            ? `${day.date}: 수집 중...`
+                            : day.date
+                      }
+                    >
+                      {day.summary ? (
+                        <HalftoneCell
+                          avg={day.summary.avg}
+                          size={CELL_SIZE}
+                          isToday={isToday}
+                          isRecent={isRecent}
+                          reducedMotion={reducedMotion}
+                        />
+                      ) : isToday ? (
+                        <TodayEmptyCell size={CELL_SIZE} reducedMotion={reducedMotion} />
+                      ) : day.inRange ? (
+                        <svg width={CELL_SIZE} height={CELL_SIZE} viewBox={`0 0 ${CELL_SIZE} ${CELL_SIZE}`} className="block">
+                          <circle cx={CELL_SIZE / 2} cy={CELL_SIZE / 2} r={1} fill="#1a1a1a" opacity={0.04} />
+                        </svg>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
