@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import type { SignalFactor } from '@/lib/types';
 import LivePulse from './motion/indicators/LivePulse';
 
@@ -33,9 +34,10 @@ interface IndicatorTableProps {
   factors: SignalFactor[];
   selectedIndex: number | null;
   onSelect: (index: number) => void;
+  renderDetail?: (index: number) => ReactNode;
 }
 
-export default function IndicatorTable({ factors, selectedIndex, onSelect }: IndicatorTableProps) {
+export default function IndicatorTable({ factors, selectedIndex, onSelect, renderDetail }: IndicatorTableProps) {
   const factorMap = new Map(factors.map(f => [f.label, f]));
 
   const overheated = factors.filter(f => f.direction === '과열').length;
@@ -64,7 +66,7 @@ export default function IndicatorTable({ factors, selectedIndex, onSelect }: Ind
           </div>
         </div>
 
-        {/* Indicator rows */}
+        {/* Indicator rows with inline detail expansion */}
         <div>
           {INDICATOR_ORDER.map((def, i) => {
             const factor = factorMap.get(def.factorLabel);
@@ -75,42 +77,70 @@ export default function IndicatorTable({ factors, selectedIndex, onSelect }: Ind
             const arrow = getDirArrow(factor.direction);
 
             return (
-              <button
-                key={def.factorLabel}
-                onClick={() => onSelect(i)}
-                className={`dot-entrance w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-sm transition-colors ${
-                  i > 0 ? 'border-t border-dashed border-dot-border/15' : ''
-                } ${isSelected ? 'bg-dot-accent/[0.06]' : 'hover:bg-dot-border/[0.06]'}`}
-                style={{ '--entrance-delay': `${i * 30}ms` } as React.CSSProperties}
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: color }}
-                  />
-                  <span className={`text-[11px] ${isSelected ? 'text-dot-text font-medium' : 'text-dot-sub'}`}>
-                    {def.displayLabel}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono text-dot-text tabular-nums">
-                    {factor.value}
-                  </span>
-                  <span
-                    className="text-[9px] font-mono px-1.5 py-0.5 min-w-[32px] text-center"
-                    style={{ backgroundColor: `${color}12`, color }}
+              <div key={def.factorLabel}>
+                {/* Row button */}
+                <button
+                  onClick={() => onSelect(i)}
+                  className={`dot-entrance w-full flex items-center justify-between py-2.5 px-2 -mx-2 rounded-sm transition-colors ${
+                    i > 0 && !isSelected ? 'border-t border-dashed border-dot-border/15' : ''
+                  } ${isSelected ? 'bg-dot-accent/[0.06]' : 'hover:bg-dot-border/[0.06]'}`}
+                  style={{ '--entrance-delay': `${i * 30}ms` } as React.CSSProperties}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: color }}
+                    />
+                    <span className={`text-[11px] ${isSelected ? 'text-dot-text font-medium' : 'text-dot-sub'}`}>
+                      {def.displayLabel}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-mono text-dot-text tabular-nums">
+                      {factor.value}
+                    </span>
+                    <span
+                      className="text-[9px] font-mono px-1.5 py-0.5 min-w-[32px] text-center"
+                      style={{ backgroundColor: `${color}12`, color }}
+                    >
+                      {factor.direction}
+                    </span>
+                    <span className="text-[9px] w-3 text-center" style={{ color }}>{arrow}</span>
+                    <span
+                      className="text-[10px] text-dot-muted/30 transition-transform duration-200 inline-block"
+                      style={{ transform: isSelected ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                    >
+                      ›
+                    </span>
+                  </div>
+                </button>
+
+                {/* Inline detail panel — expands below the tapped row */}
+                {renderDetail && (
+                  <div
+                    className="overflow-hidden transition-all ease-out"
+                    style={{
+                      maxHeight: isSelected ? '800px' : '0px',
+                      opacity: isSelected ? 1 : 0,
+                      transitionDuration: isSelected ? '0.4s' : '0.2s',
+                    }}
                   >
-                    {factor.direction}
-                  </span>
-                  <span className="text-[9px] w-3 text-center" style={{ color }}>{arrow}</span>
-                  <span
-                    className="text-[10px] text-dot-muted/30 transition-transform duration-200 inline-block"
-                    style={{ transform: isSelected ? 'rotate(90deg)' : 'rotate(0deg)' }}
-                  >
-                    ›
-                  </span>
-                </div>
-              </button>
+                    {isSelected && (
+                      <div className="pt-2 pb-3">
+                        <div className="flex justify-end mb-1">
+                          <button
+                            onClick={() => onSelect(i)}
+                            className="text-[10px] text-dot-muted hover:text-dot-accent transition font-mono"
+                          >
+                            [ 접기 ]
+                          </button>
+                        </div>
+                        {renderDetail(i)}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

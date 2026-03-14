@@ -122,31 +122,15 @@ export default function RealtimePage() {
         </div>
       </DotAssemblyReveal>
 
-      {/* Summary table */}
+      {/* Summary table with inline detail expansion */}
       <DotAssemblyReveal delay={90} duration={620}>
         <IndicatorTable
           factors={data.signal.factors}
           selectedIndex={selectedIndex}
           onSelect={handleSelect}
+          renderDetail={renderDetailCard}
         />
       </DotAssemblyReveal>
-
-      {/* Detail card */}
-      {selectedIndex !== null && (
-        <DotAssemblyReveal key={selectedIndex} delay={0} duration={520}>
-          <div>
-            <div className="flex justify-end mb-1">
-              <button
-                onClick={() => setSelectedIndex(null)}
-                className="text-[10px] text-dot-muted hover:text-dot-accent transition font-mono"
-              >
-                [ 닫기 ]
-              </button>
-            </div>
-            {renderDetailCard()}
-          </div>
-        </DotAssemblyReveal>
-      )}
     </div>
   );
 }
