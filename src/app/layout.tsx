@@ -6,7 +6,7 @@ import EventTracker from '@/components/event-tracker';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: '김치프리미엄 트래커',
+  title: '비트코인 기상청',
   description: '실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에',
 };
 
@@ -27,7 +27,7 @@ export default function RootLayout({
             <a href="/" className="text-lg font-bold text-dot-accent tracking-tight">
               <span className="inline-flex items-center gap-2">
                 <AnimatedLogo size={24} className="opacity-80" />
-                김프 트래커
+                비트코인 기상청
               </span>
             </a>
             <div className="flex gap-4 sm:gap-6 text-sm">

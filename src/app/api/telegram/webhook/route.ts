@@ -25,7 +25,7 @@ async function handleCommand(chatId: number, text: string): Promise<void> {
 
   if (command === '/start') {
     await sendTelegramMessage(chatId, [
-      `🇰🇷 *김치프리미엄 트래커 봇*`,
+      `🇰🇷 *비트코인 기상청 봇*`,
       ``,
       `사용 가능한 명령어:`,
       `/kimp - 현재 김프 조회`,
