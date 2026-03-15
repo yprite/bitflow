@@ -63,7 +63,7 @@ export async function GET() {
       : { totalMcap: 0, change24h: 0, timestamp: new Date().toISOString() };
     const volumeChange = volResult.status === 'fulfilled'
       ? volResult.value
-      : { volume24h: 0, volumeAvg7d: 0, changeRate: 0, timestamp: new Date().toISOString() };
+      : { volume24h: 0, volumeAvg7d: 0, changeRate: 0, binanceVolume24h: 0, binanceVolumeAvg7d: 0, binanceChangeRate: 0, timestamp: new Date().toISOString() };
     const strategyCapital = strategyResult.status === 'fulfilled'
       ? strategyResult.value
       : {
@@ -97,7 +97,7 @@ export async function GET() {
       openInterest.changeRate,
       liquidation.ratio,
       stablecoinMcap.change24h,
-      volumeChange.changeRate,
+      volumeChange.binanceChangeRate || volumeChange.changeRate,
       strategyCapital.currentWeekEstimatedBtc,
       strategyCapital.latestConfirmed?.netProceedsUsd ?? 0,
       strategyCapital.distanceToThreshold,
