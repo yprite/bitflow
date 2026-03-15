@@ -582,38 +582,61 @@ export async function fetchStablecoinMcap(): Promise<StablecoinMcapData> {
   }
 }
 
-// BTC 거래량 변화율 (Upbit 24h vs 7일 평균)
+// BTC 거래량 변화율 (Upbit + Binance 24h vs 7일 평균)
 export async function fetchVolumeChange(): Promise<VolumeChangeData> {
+  const fallback: VolumeChangeData = {
+    volume24h: 0, volumeAvg7d: 0, changeRate: 0,
+    binanceVolume24h: 0, binanceVolumeAvg7d: 0, binanceChangeRate: 0,
+    timestamp: new Date().toISOString(),
+  };
+
   try {
-    // Upbit 일봉 7일치
-    const res = await fetch(
-      'https://api.upbit.com/v1/candles/days?market=KRW-BTC&count=8',
-      { next: { revalidate: 300 }, headers: { 'User-Agent': 'bitflow/1.0' } }
-    );
-    if (!res.ok) throw new Error(`Upbit candles API error: ${res.status}`);
+    const [upbitRes, binanceRes] = await Promise.allSettled([
+      // Upbit 일봉 7일치
+      fetch('https://api.upbit.com/v1/candles/days?market=KRW-BTC&count=8', {
+        next: { revalidate: 300 }, headers: { 'User-Agent': 'bitflow/1.0' },
+      }),
+      // Binance BTCUSDT 일봉 8개 (오늘 + 이전 7일)
+      fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=8', {
+        next: { revalidate: 300 }, headers: { 'User-Agent': 'bitflow/1.0' },
+      }),
+    ]);
 
-    const candles = await res.json() as Array<{
-      candle_acc_trade_volume: number;
-      candle_date_time_kst: string;
-    }>;
+    // Upbit 처리
+    let volume24h = 0, volumeAvg7d = 0, changeRate = 0;
+    if (upbitRes.status === 'fulfilled' && upbitRes.value.ok) {
+      const candles = await upbitRes.value.json() as Array<{
+        candle_acc_trade_volume: number;
+        candle_date_time_kst: string;
+      }>;
+      if (candles.length >= 2) {
+        volume24h = candles[0].candle_acc_trade_volume;
+        const prev7 = candles.slice(1, 8);
+        volumeAvg7d = prev7.reduce((s, c) => s + c.candle_acc_trade_volume, 0) / prev7.length;
+        changeRate = volumeAvg7d > 0 ? ((volume24h / volumeAvg7d) - 1) * 100 : 0;
+      }
+    }
 
-    if (candles.length < 2) throw new Error('Not enough candle data');
-
-    const volume24h = candles[0].candle_acc_trade_volume;
-    // 최근 7일 평균 (오늘 제외)
-    const prev7 = candles.slice(1, 8);
-    const volumeAvg7d = prev7.reduce((s, c) => s + c.candle_acc_trade_volume, 0) / prev7.length;
-    const changeRate = volumeAvg7d > 0 ? ((volume24h / volumeAvg7d) - 1) * 100 : 0;
+    // Binance 처리 — kline: [openTime, open, high, low, close, volume, ...]
+    let binanceVolume24h = 0, binanceVolumeAvg7d = 0, binanceChangeRate = 0;
+    if (binanceRes.status === 'fulfilled' && binanceRes.value.ok) {
+      const klines = await binanceRes.value.json() as Array<Array<string | number>>;
+      if (klines.length >= 2) {
+        binanceVolume24h = parseFloat(String(klines[klines.length - 1][5]));
+        const prev = klines.slice(0, klines.length - 1);
+        binanceVolumeAvg7d = prev.reduce((s, k) => s + parseFloat(String(k[5])), 0) / prev.length;
+        binanceChangeRate = binanceVolumeAvg7d > 0 ? ((binanceVolume24h / binanceVolumeAvg7d) - 1) * 100 : 0;
+      }
+    }
 
     return {
-      volume24h,
-      volumeAvg7d,
-      changeRate,
+      volume24h, volumeAvg7d, changeRate,
+      binanceVolume24h, binanceVolumeAvg7d, binanceChangeRate,
       timestamp: new Date().toISOString(),
     };
   } catch (error) {
     console.error('Volume change fetch failed:', error);
-    return { volume24h: 0, volumeAvg7d: 0, changeRate: 0, timestamp: new Date().toISOString() };
+    return fallback;
   }
 }
 

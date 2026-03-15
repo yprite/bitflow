@@ -132,7 +132,7 @@ export default function DataProvider({ children }: { children: ReactNode }) {
       });
 
       // Track daily range for volume change
-      const volVal = json.volumeChange.changeRate;
+      const volVal = json.volumeChange.binanceChangeRate || json.volumeChange.changeRate;
       setVolumeRange((prev) => {
         if (!prev) return { min: volVal, max: volVal, current: volVal };
         return { min: Math.min(prev.min, volVal), max: Math.max(prev.max, volVal), current: volVal };

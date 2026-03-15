@@ -98,6 +98,9 @@ export interface VolumeChangeData {
   volume24h: number;
   volumeAvg7d: number;
   changeRate: number;    // (24h / 7d avg - 1) * 100
+  binanceVolume24h: number;     // Binance BTCUSDT 24h 거래량 (BTC)
+  binanceVolumeAvg7d: number;   // Binance 7일 평균 거래량 (BTC)
+  binanceChangeRate: number;    // Binance 거래량 변화율 (%)
   timestamp: string;
 }
 
