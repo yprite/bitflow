@@ -846,11 +846,34 @@ export function getCompositeSignal(
   else if (volumeChangeRate < -20) volScore = -1;
 
   // STRC 자본엔진: 추정 ATM 발행량과 최신 확정 filing을 함께 반영
-  let strategyScore = 0;
-  if (strategyWeeklyEstimatedBtc >= 3000 || strategyLatestNetProceedsUsd >= 250_000_000) strategyScore = 2;
-  else if (strategyWeeklyEstimatedBtc >= 500 || strategyLatestNetProceedsUsd >= 50_000_000) strategyScore = 1;
-  else if (strategyDistanceToThreshold <= -1.5) strategyScore = -2;
-  else if (strategyDistanceToThreshold < 0) strategyScore = -1;
+  // 다이버전스 조건부 로직: 다른 지표들이 침체인데 STRC만 매수 중이면 매수 신호로 해석
+  let strategyRawScore = 0;
+  if (strategyWeeklyEstimatedBtc >= 3000 || strategyLatestNetProceedsUsd >= 250_000_000) strategyRawScore = 2;
+  else if (strategyWeeklyEstimatedBtc >= 500 || strategyLatestNetProceedsUsd >= 50_000_000) strategyRawScore = 1;
+  else if (strategyDistanceToThreshold <= -1.5) strategyRawScore = -2;
+  else if (strategyDistanceToThreshold < 0) strategyRawScore = -1;
+
+  // STRC 외 10개 지표의 평균 방향을 계산하여 시장 컨센서스 판단
+  const otherScores = [kimpScore, fundingScore, fgScore, usdtScore, domScore, lsScore, oiScore, liqScore, stableScore, volScore];
+  const otherWeights = [
+    FACTOR_WEIGHTS.kimp, FACTOR_WEIGHTS.funding, FACTOR_WEIGHTS.fearGreed,
+    FACTOR_WEIGHTS.usdt, FACTOR_WEIGHTS.dominance, FACTOR_WEIGHTS.longShort,
+    FACTOR_WEIGHTS.oi, FACTOR_WEIGHTS.liquidation, FACTOR_WEIGHTS.stablecoin,
+    FACTOR_WEIGHTS.volume,
+  ];
+  const otherWeightedSum = otherScores.reduce((sum, s, i) => sum + s * otherWeights[i], 0);
+  const otherMaxPossible = otherWeights.reduce((sum, w) => sum + 2 * w, 0);
+  const marketConsensus = (otherWeightedSum / otherMaxPossible) * 100; // -100 ~ +100
+
+  let strategyScore = strategyRawScore;
+  if (strategyRawScore > 0 && marketConsensus <= -30) {
+    // 다이버전스: 시장은 침체인데 STRC가 적극 매수 → 공급 흡수 = 매수 신호
+    strategyScore = -strategyRawScore;
+  } else if (strategyRawScore < 0 && marketConsensus >= 30) {
+    // 역다이버전스: 시장은 과열인데 STRC가 매수 중단 → 스마트머니 이탈 = 매도 신호
+    strategyScore = -strategyRawScore;
+  }
+  // 그 외(시장과 STRC 방향 일치): 기존 로직 유지
 
   // 가중 점수 계산
   const rawScores = [kimpScore, fundingScore, fgScore, usdtScore, domScore, lsScore, oiScore, liqScore, stableScore, volScore, strategyScore];
