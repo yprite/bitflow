@@ -101,13 +101,52 @@ export interface VolumeChangeData {
   timestamp: string;
 }
 
-export interface StrategyBtcData {
-  totalHoldings: number;       // Strategy 총 BTC 보유량
-  totalEntryValueUsd: number;  // 총 매입 비용 (USD)
-  currentValueUsd: number;     // 현재 가치 (USD)
-  supplyPercentage: number;    // 전체 BTC 공급량 대비 비율 (%)
-  holdingsChange: number;      // 이전 조회 대비 보유량 변화 (BTC)
-  changeRate: number;          // 보유량 변화율 (%)
+export type StrategyCapitalStatus = 'active' | 'standby' | 'unavailable';
+
+export interface StrategyCapitalEstimateDay {
+  date: string;
+  closePrice: number;
+  btcPrice: number;
+  totalVolume: number;
+  eligibleVolume: number;
+  regularEligibleVolume: number;
+  extendedEligibleVolume: number;
+  eligibleRatio: number;
+  estimatedAtmVolume: number;
+  estimatedNetProceedsUsd: number;
+  estimatedBtc: number;
+}
+
+export interface StrategyCapitalConfirmation {
+  filedDate: string;
+  period: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  sharesSold: number;
+  netProceedsUsd: number;
+  avgBtcPrice: number;
+  estimatedBtc: number;
+  secUrl: string;
+}
+
+export interface StrategyCapitalData {
+  ticker: string;
+  status: StrategyCapitalStatus;
+  thresholdPrice: number;
+  currentPrice: number;
+  distanceToThreshold: number;
+  currentYield: number;
+  annualizedDividend: number;
+  exDividendDate: string | null;
+  marketOpen: boolean;
+  currentDay: StrategyCapitalEstimateDay | null;
+  currentWeekEstimatedBtc: number;
+  currentWeekEstimatedNetProceedsUsd: number;
+  recentDays: StrategyCapitalEstimateDay[];
+  latestConfirmed: StrategyCapitalConfirmation | null;
+  confirmedTotalEstimatedBtc: number;
+  confirmedTotalNetProceedsUsd: number;
+  confirmedTotalSharesSold: number;
   timestamp: string;
 }
 
@@ -122,7 +161,7 @@ export interface DashboardData {
   liquidation: LiquidationData;
   stablecoinMcap: StablecoinMcapData;
   volumeChange: VolumeChangeData;
-  strategyBtc: StrategyBtcData;
+  strategyCapital: StrategyCapitalData;
   signal: CompositeSignal;
   avg30d: number | null;
   history: KimpHistoryPoint[];

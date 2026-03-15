@@ -10,7 +10,7 @@ import LongShortCard from '@/components/long-short-card';
 import OpenInterestCard from '@/components/open-interest-card';
 import LiquidationCard from '@/components/liquidation-card';
 import StablecoinCard from '@/components/stablecoin-card';
-import StrategyBtcCard from '@/components/strategy-btc-card';
+import StrategyCapitalCard from '@/components/strategy-capital-card';
 import VolumeChangeCard from '@/components/volume-change-card';
 import IndicatorTable from '@/components/indicator-table';
 import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
@@ -24,7 +24,7 @@ export default function RealtimePage() {
     data, error, loading, lastUpdated, fetchData,
     fundingRange, fearGreedRange,
     usdtPremiumRange, btcDominanceRange, longShortRange,
-    oiRange, liqRange, stableRange, volumeRange, strategyRange,
+    oiRange, liqRange, stableRange, volumeRange, capitalRange,
   } = useData();
 
   const [phase, setPhase] = useState<'loading' | 'exiting' | 'ready'>(() => (loading ? 'loading' : 'ready'));
@@ -95,7 +95,7 @@ export default function RealtimePage() {
       case 7: return <LiquidationCard data={data.liquidation} dayRange={liqRange} />;
       case 8: return <StablecoinCard data={data.stablecoinMcap} dayRange={stableRange} />;
       case 9: return <VolumeChangeCard data={data.volumeChange} dayRange={volumeRange} />;
-      case 10: return <StrategyBtcCard data={data.strategyBtc} dayRange={strategyRange} />;
+      case 10: return <StrategyCapitalCard data={data.strategyCapital} dayRange={capitalRange} />;
       default: return null;
     }
   };

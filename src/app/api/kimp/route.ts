@@ -3,9 +3,10 @@ import {
   getKimpData, fetchFundingRate, fetchFearGreed,
   fetchUsdtPremium, fetchBtcDominance, fetchLongShortRatio,
   fetchOpenInterest, fetchLiquidation, fetchStablecoinMcap, fetchVolumeChange,
-  fetchStrategyBtc, getCompositeSignal,
+  getCompositeSignal,
 } from '@/lib/kimp';
 import { loadKimpHistorySnapshot } from '@/lib/kimp-history';
+import { fetchStrategyCapital } from '@/lib/strategy-capital';
 import type { DashboardData } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +28,7 @@ export async function GET() {
       fetchLiquidation(),
       fetchStablecoinMcap(),
       fetchVolumeChange(),
-      fetchStrategyBtc(),
+      fetchStrategyCapital(),
     ]);
 
     if (kimpResult.status !== 'fulfilled') {
@@ -63,9 +64,28 @@ export async function GET() {
     const volumeChange = volResult.status === 'fulfilled'
       ? volResult.value
       : { volume24h: 0, volumeAvg7d: 0, changeRate: 0, timestamp: new Date().toISOString() };
-    const strategyBtc = strategyResult.status === 'fulfilled'
+    const strategyCapital = strategyResult.status === 'fulfilled'
       ? strategyResult.value
-      : { totalHoldings: 0, totalEntryValueUsd: 0, currentValueUsd: 0, supplyPercentage: 0, holdingsChange: 0, changeRate: 0, timestamp: new Date().toISOString() };
+      : {
+        ticker: 'STRC',
+        status: 'unavailable' as const,
+        thresholdPrice: 99.98,
+        currentPrice: 0,
+        distanceToThreshold: 0,
+        currentYield: 0,
+        annualizedDividend: 0,
+        exDividendDate: null,
+        marketOpen: false,
+        currentDay: null,
+        currentWeekEstimatedBtc: 0,
+        currentWeekEstimatedNetProceedsUsd: 0,
+        recentDays: [],
+        latestConfirmed: null,
+        confirmedTotalEstimatedBtc: 0,
+        confirmedTotalNetProceedsUsd: 0,
+        confirmedTotalSharesSold: 0,
+        timestamp: new Date().toISOString(),
+      };
 
     const signal = getCompositeSignal(
       kimp.kimchiPremium,
@@ -78,8 +98,9 @@ export async function GET() {
       liquidation.ratio,
       stablecoinMcap.change24h,
       volumeChange.changeRate,
-      strategyBtc.totalHoldings,
-      strategyBtc.changeRate,
+      strategyCapital.currentWeekEstimatedBtc,
+      strategyCapital.latestConfirmed?.netProceedsUsd ?? 0,
+      strategyCapital.distanceToThreshold,
     );
 
     const data: DashboardData = {
@@ -93,7 +114,7 @@ export async function GET() {
       liquidation,
       stablecoinMcap,
       volumeChange,
-      strategyBtc,
+      strategyCapital,
       signal,
       avg30d,
       history,

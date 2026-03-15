@@ -15,7 +15,7 @@ const INDICATOR_ORDER = [
   { factorLabel: '청산비율', displayLabel: '청산 비율' },
   { factorLabel: '스테이블', displayLabel: '스테이블코인' },
   { factorLabel: '거래량', displayLabel: 'BTC 거래량' },
-  { factorLabel: 'MSTR매입', displayLabel: 'Strategy BTC' },
+  { factorLabel: 'STRC엔진', displayLabel: 'Strategy 자본엔진' },
 ];
 
 function getDirColor(direction: string): string {

@@ -1,4 +1,4 @@
-import { KimpData, FundingRateData, FearGreedData, UsdtPremiumData, BtcDominanceData, LongShortRatioData, OpenInterestData, LiquidationData, StablecoinMcapData, VolumeChangeData, StrategyBtcData, CompositeSignal, SignalFactor, CoinPremium, MultiCoinKimpData, ArbitrageResult, FundingRateHistoryPoint, FearGreedHistoryPoint, TrendDirection } from './types';
+import { KimpData, FundingRateData, FearGreedData, UsdtPremiumData, BtcDominanceData, LongShortRatioData, OpenInterestData, LiquidationData, StablecoinMcapData, VolumeChangeData, CompositeSignal, SignalFactor, CoinPremium, MultiCoinKimpData, ArbitrageResult, FundingRateHistoryPoint, FearGreedHistoryPoint, TrendDirection } from './types';
 
 interface OkxResponse<T> {
   code: string;
@@ -617,66 +617,6 @@ export async function fetchVolumeChange(): Promise<VolumeChangeData> {
   }
 }
 
-// Strategy(구 MicroStrategy) BTC 보유량 (CoinGecko Public Treasury API)
-let previousStrategyHoldings: number | null = null;
-let previousStrategyTimestamp: number = 0;
-
-export async function fetchStrategyBtc(): Promise<StrategyBtcData> {
-  try {
-    const res = await fetch(
-      'https://api.coingecko.com/api/v3/companies/public_treasury/bitcoin',
-      { next: { revalidate: 600 }, headers: { 'User-Agent': 'bitflow/1.0' } }
-    );
-    if (!res.ok) throw new Error(`CoinGecko treasury API error: ${res.status}`);
-
-    const data = await res.json() as {
-      companies: Array<{
-        name: string;
-        symbol: string;
-        total_holdings: number;
-        total_entry_value_usd: number;
-        total_current_value_usd: number;
-        percentage_of_total_supply: number;
-      }>;
-    };
-
-    // Strategy (MSTR) 찾기
-    const strategy = data.companies.find(
-      c => c.symbol === 'MSTR.US' || c.name.toLowerCase().includes('strategy') || c.name.toLowerCase().includes('microstrategy')
-    );
-
-    if (!strategy) throw new Error('Strategy not found in treasury data');
-
-    const now = Date.now();
-    const holdingsChange = previousStrategyHoldings !== null
-      ? strategy.total_holdings - previousStrategyHoldings
-      : 0;
-    const changeRate = previousStrategyHoldings !== null && previousStrategyHoldings > 0
-      ? (holdingsChange / previousStrategyHoldings) * 100
-      : 0;
-
-    previousStrategyHoldings = strategy.total_holdings;
-    previousStrategyTimestamp = now;
-
-    return {
-      totalHoldings: strategy.total_holdings,
-      totalEntryValueUsd: strategy.total_entry_value_usd,
-      currentValueUsd: strategy.total_current_value_usd,
-      supplyPercentage: strategy.percentage_of_total_supply,
-      holdingsChange,
-      changeRate,
-      timestamp: new Date().toISOString(),
-    };
-  } catch (error) {
-    console.error('Strategy BTC fetch failed:', error);
-    return {
-      totalHoldings: 0, totalEntryValueUsd: 0, currentValueUsd: 0,
-      supplyPercentage: 0, holdingsChange: 0, changeRate: 0,
-      timestamp: new Date().toISOString(),
-    };
-  }
-}
-
 // USDT 프리미엄 (Upbit USDT/KRW vs 실제 환율)
 export async function fetchUsdtPremium(usdKrw?: number): Promise<UsdtPremiumData> {
   try {
@@ -787,6 +727,18 @@ function getFactorDirection(factorScore: number): '과열' | '중립' | '침체'
   return '중립';
 }
 
+function formatCompactBtc(value: number): string {
+  if (value >= 1000) return `~${(value / 1000).toFixed(1)}k BTC`;
+  if (value > 0) return `~${Math.round(value)} BTC`;
+  return '~0 BTC';
+}
+
+function formatCompactUsdMillions(value: number): string {
+  if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
+  if (value >= 1e6) return `$${(value / 1e6).toFixed(0)}M`;
+  return `$${value.toFixed(0)}`;
+}
+
 // 지표별 가중치: 시장 과열/침체 판단에 대한 영향력 차등
 const FACTOR_WEIGHTS = {
   kimp: 1.5,        // 김프 - 한국 시장 고유 과열 지표로 중요
@@ -799,7 +751,7 @@ const FACTOR_WEIGHTS = {
   liquidation: 1.0, // 청산비율 - 후행 지표
   stablecoin: 0.75, // 스테이블코인 - 느린 자금 흐름
   volume: 0.75,     // 거래량 - 확인 지표
-  strategy: 1.25,   // Strategy BTC 매입 - 기관 수요 대리 지표
+  strategy: 1.25,   // STRC 자본엔진 - Strategy 자금 조달 강도
 } as const;
 
 // 이전 점수를 저장하여 추세 계산에 사용
@@ -817,8 +769,9 @@ export function getCompositeSignal(
   liqRatio: number = 0.5,
   stablecoinChange: number = 0,
   volumeChangeRate: number = 0,
-  strategyHoldings: number = 0,
-  strategyChangeRate: number = 0,
+  strategyWeeklyEstimatedBtc: number = 0,
+  strategyLatestNetProceedsUsd: number = 0,
+  strategyDistanceToThreshold: number = 0,
 ): CompositeSignal {
   // 김프 점수: 높으면 과열
   let kimpScore = 0;
@@ -892,15 +845,12 @@ export function getCompositeSignal(
   else if (volumeChangeRate < -50) volScore = -2;
   else if (volumeChangeRate < -20) volScore = -1;
 
-  // Strategy BTC 매입: 보유량 증가 속도가 빠르면 기관 수요 과열
-  // changeRate는 이전 조회 대비 변화율(%), holdings 기반 절대 규모도 고려
+  // STRC 자본엔진: 추정 ATM 발행량과 최신 확정 filing을 함께 반영
   let strategyScore = 0;
-  if (strategyHoldings > 0) {
-    if (strategyChangeRate > 1) strategyScore = 2;        // 보유량 1%↑ 이상 급매입
-    else if (strategyChangeRate > 0.1) strategyScore = 1;  // 소폭 매입
-    else if (strategyChangeRate < -0.5) strategyScore = -2; // 매도 (극히 드뭄)
-    else if (strategyChangeRate < 0) strategyScore = -1;    // 소폭 감소
-  }
+  if (strategyWeeklyEstimatedBtc >= 3000 || strategyLatestNetProceedsUsd >= 250_000_000) strategyScore = 2;
+  else if (strategyWeeklyEstimatedBtc >= 500 || strategyLatestNetProceedsUsd >= 50_000_000) strategyScore = 1;
+  else if (strategyDistanceToThreshold <= -1.5) strategyScore = -2;
+  else if (strategyDistanceToThreshold < 0) strategyScore = -1;
 
   // 가중 점수 계산
   const rawScores = [kimpScore, fundingScore, fgScore, usdtScore, domScore, lsScore, oiScore, liqScore, stableScore, volScore, strategyScore];
@@ -945,7 +895,17 @@ export function getCompositeSignal(
     { label: '청산비율', value: `L${(liqRatio * 100).toFixed(0)}%`, direction: getFactorDirection(liqScore), weight: FACTOR_WEIGHTS.liquidation, weightedScore: liqScore * FACTOR_WEIGHTS.liquidation },
     { label: '스테이블', value: `${stablecoinChange >= 0 ? '+' : ''}${stablecoinChange.toFixed(2)}%`, direction: getFactorDirection(stableScore), weight: FACTOR_WEIGHTS.stablecoin, weightedScore: stableScore * FACTOR_WEIGHTS.stablecoin },
     { label: '거래량', value: `${volumeChangeRate >= 0 ? '+' : ''}${volumeChangeRate.toFixed(0)}%`, direction: getFactorDirection(volScore), weight: FACTOR_WEIGHTS.volume, weightedScore: volScore * FACTOR_WEIGHTS.volume },
-    { label: 'MSTR매입', value: strategyHoldings > 0 ? `${strategyChangeRate >= 0 ? '+' : ''}${strategyChangeRate.toFixed(2)}%` : 'N/A', direction: getFactorDirection(strategyScore), weight: FACTOR_WEIGHTS.strategy, weightedScore: strategyScore * FACTOR_WEIGHTS.strategy },
+    {
+      label: 'STRC엔진',
+      value: strategyWeeklyEstimatedBtc > 0
+        ? formatCompactBtc(strategyWeeklyEstimatedBtc)
+        : strategyLatestNetProceedsUsd > 0
+          ? formatCompactUsdMillions(strategyLatestNetProceedsUsd)
+          : `${strategyDistanceToThreshold >= 0 ? '+' : ''}${strategyDistanceToThreshold.toFixed(2)}$`,
+      direction: getFactorDirection(strategyScore),
+      weight: FACTOR_WEIGHTS.strategy,
+      weightedScore: strategyScore * FACTOR_WEIGHTS.strategy,
+    },
   ];
 
   // 가중치 기반으로 정렬: 영향력 큰 지표 먼저

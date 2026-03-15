@@ -51,7 +51,7 @@ const riskDescriptions: Record<string, string> = {
   '청산': '청산 비율 과열 — 롱 청산 집중, 추가 하락 촉발 가능',
   '스테이블코인': '스테이블코인 유입 과열 — 단기 과열 후 조정 주의',
   '거래량': '거래량 급증 과열 — 과매수 구간, 단기 되돌림 주의',
-  'Strategy BTC': 'Strategy BTC 매집 과열 — 기관 매수 과열 신호 점검',
+  'STRC엔진': 'STRC 자본엔진 과열 — Strategy 자금 조달 가속 신호 점검',
 };
 
 const reliefDescriptions: Record<string, string> = {
@@ -65,7 +65,7 @@ const reliefDescriptions: Record<string, string> = {
   '청산': '청산 비율 안정 — 시장 스트레스 완화 신호',
   '스테이블코인': '스테이블코인 감소 — 자금 이탈 중, 추가 하락 주의',
   '거래량': '거래량 급감 — 관망세 진입, 방향성 돌파 대기',
-  'Strategy BTC': 'Strategy BTC 매도 — 기관 물량 소화 후 안정 기대',
+  'STRC엔진': 'STRC 자본엔진 둔화 — ATM 발행 둔화 구간 확인',
 };
 
 function extractKeyRisk(data: DashboardData): MarketInsight['keyRisk'] {
@@ -106,7 +106,7 @@ function detectScenario(data: DashboardData): MarketScenario | null {
     openInterest,
     longShortRatio,
     liquidation,
-    strategyBtc,
+    strategyCapital,
     btcDominance,
     stablecoinMcap,
     fearGreed,
@@ -156,11 +156,17 @@ function detectScenario(data: DashboardData): MarketScenario | null {
     };
   }
 
-  if (strategyBtc.changeRate > 0 && btcDominance.dominance > 58) {
+  if (
+    (
+      strategyCapital.currentWeekEstimatedBtc > 1000 ||
+      (strategyCapital.latestConfirmed?.netProceedsUsd ?? 0) > 100_000_000
+    ) &&
+    btcDominance.dominance > 58
+  ) {
     return {
-      name: '기관 매집',
+      name: '자본엔진 가동',
       description:
-        'Strategy BTC 보유량 증가 + 높은 BTC 도미넌스 — 기관 매집 신호',
+        'STRC 자본조달 활성 + 높은 BTC 도미넌스 — Strategy 매수 재원 확대 신호',
       severity: 'neutral',
     };
   }
