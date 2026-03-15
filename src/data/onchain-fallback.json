@@ -1,0 +1,112 @@
+{
+  "generatedAt": "2026-03-15T12:10:32.815Z",
+  "source": "mempool.space block aggregates",
+  "latestBlockHeight": 940777,
+  "metrics": [
+    {
+      "day": "2026-03-11",
+      "metricName": "created_utxo_count",
+      "metricValue": 1071108,
+      "unit": "count",
+      "dimensionKey": "all"
+    },
+    {
+      "day": "2026-03-11",
+      "metricName": "spent_utxo_count",
+      "metricValue": 1024523,
+      "unit": "count",
+      "dimensionKey": "all"
+    },
+    {
+      "day": "2026-03-11",
+      "metricName": "spent_btc",
+      "metricValue": 714473.83938455,
+      "unit": "btc",
+      "dimensionKey": "all"
+    },
+    {
+      "day": "2026-03-12",
+      "metricName": "created_utxo_count",
+      "metricValue": 1152764,
+      "unit": "count",
+      "dimensionKey": "all"
+    },
+    {
+      "day": "2026-03-12",
+      "metricName": "spent_utxo_count",
+      "metricValue": 937442,
+      "unit": "count",
+      "dimensionKey": "all"
+    },
+    {
+      "day": "2026-03-12",
+      "metricName": "spent_btc",
+      "metricValue": 714820.21302135,
+      "unit": "btc",
+      "dimensionKey": "all"
+    },
+    {
+      "day": "2026-03-13",
+      "metricName": "created_utxo_count",
+      "metricValue": 1046818,
+      "unit": "count",
+      "dimensionKey": "all"
+    },
+    {
+      "day": "2026-03-13",
+      "metricName": "spent_utxo_count",
+      "metricValue": 891587,
+      "unit": "count",
+      "dimensionKey": "all"
+    },
+    {
+      "day": "2026-03-13",
+      "metricName": "spent_btc",
+      "metricValue": 761061.59475574,
+      "unit": "btc",
+      "dimensionKey": "all"
+    },
+    {
+      "day": "2026-03-14",
+      "metricName": "created_utxo_count",
+      "metricValue": 1168877,
+      "unit": "count",
+      "dimensionKey": "all"
+    },
+    {
+      "day": "2026-03-14",
+      "metricName": "spent_utxo_count",
+      "metricValue": 893134,
+      "unit": "count",
+      "dimensionKey": "all"
+    },
+    {
+      "day": "2026-03-14",
+      "metricName": "spent_btc",
+      "metricValue": 540491.50789866,
+      "unit": "btc",
+      "dimensionKey": "all"
+    },
+    {
+      "day": "2026-03-15",
+      "metricName": "created_utxo_count",
+      "metricValue": 665854,
+      "unit": "count",
+      "dimensionKey": "all"
+    },
+    {
+      "day": "2026-03-15",
+      "metricName": "spent_utxo_count",
+      "metricValue": 487801,
+      "unit": "count",
+      "dimensionKey": "all"
+    },
+    {
+      "day": "2026-03-15",
+      "metricName": "spent_btc",
+      "metricValue": 163488.5703772,
+      "unit": "btc",
+      "dimensionKey": "all"
+    }
+  ]
+}

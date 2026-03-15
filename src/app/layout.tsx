@@ -119,9 +119,12 @@ export default function RootLayout({
                 {SITE_NAME}
               </span>
             </Link>
-            <div className="flex gap-4 sm:gap-6 text-xs sm:text-sm">
+            <div className="flex flex-wrap justify-end gap-3 sm:gap-5 text-xs sm:text-sm">
               <Link href="/realtime" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
                 실시간
+              </Link>
+              <Link href="/onchain" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
+                온체인
               </Link>
               <Link href="/indicators" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
                 히스토리

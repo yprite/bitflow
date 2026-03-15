@@ -153,6 +153,77 @@ export interface StrategyCapitalData {
   timestamp: string;
 }
 
+export type OnchainDataStatus = 'available' | 'unavailable';
+export type OnchainDataSource = 'supabase' | 'local-postgres' | 'fallback';
+
+export type OnchainMetricId =
+  | 'created_utxo_count'
+  | 'spent_utxo_count'
+  | 'spent_btc'
+  | 'dormant_reactivated_btc'
+  | 'active_supply_ratio_30d'
+  | 'active_supply_ratio_90d';
+
+export interface OnchainMetricPoint {
+  day: string;
+  value: number;
+  unit: string;
+}
+
+export interface OnchainMetricSummary {
+  id: OnchainMetricId;
+  label: string;
+  description: string;
+  metricName: string;
+  dimensionKey: string;
+  unit: string;
+  latestDay: string | null;
+  latestValue: number | null;
+  previousValue: number | null;
+  changeValue: number | null;
+  changePercent: number | null;
+  series: OnchainMetricPoint[];
+}
+
+export interface OnchainEntityFlowEntry {
+  day: string;
+  entitySlug: string;
+  receivedSats: number;
+  sentSats: number;
+  netflowSats: number;
+  txCount: number;
+}
+
+export interface OnchainAlertEvent {
+  detectedAt: string;
+  alertType: string;
+  severity: string;
+  title: string;
+  body: string;
+  relatedTxid: string | null;
+  relatedEntitySlug: string | null;
+  context: Record<string, unknown>;
+}
+
+export interface OnchainAlertStats {
+  total: number;
+  high: number;
+  medium: number;
+  info: number;
+}
+
+export interface OnchainSummaryData {
+  status: OnchainDataStatus;
+  source: OnchainDataSource;
+  message: string | null;
+  latestDay: string | null;
+  metrics: OnchainMetricSummary[];
+  entityFlows: OnchainEntityFlowEntry[];
+  alerts: OnchainAlertEvent[];
+  alertStats: OnchainAlertStats;
+  updatedAt: string;
+}
+
 export interface DashboardData {
   kimp: KimpData;
   fundingRate: FundingRateData;

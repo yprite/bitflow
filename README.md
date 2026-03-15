@@ -20,7 +20,7 @@
 | 청산량 | 선물 청산 규모 |
 | 스테이블코인 시총 | 스테이블코인 총 시가총액 |
 | 거래량 변화 | 거래량 증감률 |
-| Strategy BTC 보유량 | 기관 비트코인 보유 현황 |
+| Strategy 자본엔진 (STRC) | STRC ATM 발행과 최근 확인 filing 기반 Strategy 매수 재원 추적 |
 
 ### 지표 히스토리 (`/indicators`)
 
@@ -57,6 +57,7 @@
 | DB | Supabase (PostgreSQL) |
 | 캐시/저장소 | Vercel KV (Redis) |
 | 테스트 | Vitest 4 |
+| 온체인 파이프라인 | Python 3.12+, Bitcoin Core RPC/ZMQ, Supabase Postgres |
 | 배포 | Vercel |
 
 ## 프로젝트 구조
@@ -89,6 +90,10 @@ src/
 │   ├── events.ts           # 이벤트 트래킹
 │   └── telegram.ts         # 텔레그램 메시지 포맷
 └── supabase/migrations/    # DB 마이그레이션 SQL
+
+python/                     # 온체인 인덱서/분석 파이프라인
+├── src/bitflow_onchain/    # RPC 클라이언트, 정규화, 지표, 실시간 소비자
+└── README.md               # 로컬/VPS 실행 가이드
 ```
 
 ## 시작하기
@@ -155,7 +160,18 @@ https://api.telegram.org/bot{TOKEN}/getWebhookInfo
    - `001_kimp_history.sql` — 김프 히스토리 테이블
    - `002_events.sql` — 이벤트 트래킹 + 분석 RPC
    - `003_growth_analytics.sql` — 성장 지표
+   - `004_btc_onchain.sql` — 비트코인 온체인 정규화 + serving 테이블
 3. `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`를 환경변수에 설정합니다.
+
+### 온체인 데이터 파이프라인
+
+비트코인 온체인 데이터는 웹 서버가 직접 노드에 붙지 않고, 별도 Python 워커가 `bitcoind/electrs -> Python -> Supabase Postgres -> Vercel 웹` 흐름으로 처리합니다.
+
+- Python 워커는 로컬 또는 VPS에서 실행
+- 원시 블록/트랜잭션 정규화와 일별 지표 계산은 Python이 담당
+- 웹은 Supabase의 serving 테이블이나 RPC만 조회
+
+자세한 설계는 `docs/bitcoin-onchain-supabase-architecture.md`와 `python/README.md`를 기준으로 확장합니다.
 
 ### Vercel KV
 

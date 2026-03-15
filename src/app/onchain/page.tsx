@@ -1,0 +1,111 @@
+import type { Metadata } from 'next';
+import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
+import OnchainAlertFeed from '@/components/onchain-alert-feed';
+import OnchainEntityFlowCard from '@/components/onchain-entity-flow-card';
+import OnchainMetricCard from '@/components/onchain-metric-card';
+import PageHeader from '@/components/page-header';
+import { fetchOnchainSummary } from '@/lib/onchain';
+
+export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: '온체인',
+  description:
+    '비트코인 온체인 serving layer를 기반으로 일별 지표, 엔티티 순유입, 알림 피드를 확인합니다.',
+};
+
+function formatTimestamp(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+
+  return parsed.toLocaleString('ko-KR', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Seoul',
+  });
+}
+
+export default async function OnchainPage() {
+  const summary = await fetchOnchainSummary({
+    metricLookbackDays: 30,
+    alertLimit: 8,
+    entityLimit: 6,
+  });
+  const hasMetricData = summary.metrics.some((metric) => metric.latestValue !== null);
+  const hasFlows = summary.entityFlows.length > 0;
+  const hasAlerts = summary.alerts.length > 0;
+
+  return (
+    <div className="space-y-3 sm:space-y-4">
+      <DotAssemblyReveal delay={0} duration={500} density="low">
+        <PageHeader
+          eyebrow="Bitcoin Serving Layer"
+          title="온체인 모니터"
+          description={(
+            <span>
+              Python 워커가 적재한 `btc_daily_metrics`, `btc_entity_flow_daily`, `btc_alert_events`
+              를 읽어 웹에서 바로 확인합니다.
+            </span>
+          )}
+          action={(
+            <span className="text-[10px] font-mono text-dot-muted">
+              업데이트 {formatTimestamp(summary.updatedAt)}
+            </span>
+          )}
+          variant="card"
+        />
+      </DotAssemblyReveal>
+
+      {summary.message ? (
+        <DotAssemblyReveal delay={70} duration={650}>
+          <section className="dot-card p-4 sm:p-5">
+            <div className="dot-card-inner space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">
+                    Status
+                  </p>
+                  <h2 className="text-sm font-semibold text-dot-accent tracking-tight">
+                    {summary.status === 'available' ? '부분 가용' : '데이터 대기'}
+                  </h2>
+                </div>
+                <span className="text-[10px] font-mono text-dot-muted">
+                  source: {summary.source}
+                </span>
+              </div>
+              <p className="text-sm text-dot-sub leading-relaxed">{summary.message}</p>
+              {summary.status === 'unavailable' ? (
+                <p className="dot-insight">
+                  다음 순서: `004_btc_onchain.sql` 적용 → Python backfill/metrics 실행 → serving
+                  테이블 확인.
+                </p>
+              ) : null}
+            </div>
+          </section>
+        </DotAssemblyReveal>
+      ) : null}
+
+      {hasMetricData ? (
+        <DotAssemblyReveal delay={120} duration={700}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {summary.metrics.map((metric) => (
+              <OnchainMetricCard key={metric.id} metric={metric} />
+            ))}
+          </div>
+        </DotAssemblyReveal>
+      ) : null}
+
+      {(hasFlows || hasAlerts) && (
+        <DotAssemblyReveal delay={180} duration={750}>
+          <div className="grid gap-3 lg:grid-cols-[1.05fr_0.95fr]">
+            <OnchainEntityFlowCard flows={summary.entityFlows} />
+            <OnchainAlertFeed alerts={summary.alerts} stats={summary.alertStats} />
+          </div>
+        </DotAssemblyReveal>
+      )}
+    </div>
+  );
+}

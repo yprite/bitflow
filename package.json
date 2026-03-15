@@ -14,11 +14,13 @@
     "@supabase/supabase-js": "^2.99.1",
     "@vercel/kv": "^2.0.0",
     "next": "14.2.35",
+    "pg": "^8.20.0",
     "react": "^18",
     "react-dom": "^18"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/pg": "^8.18.0",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
