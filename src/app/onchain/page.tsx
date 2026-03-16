@@ -89,20 +89,16 @@ export default async function OnchainPage() {
         </DotAssemblyReveal>
       ) : null}
 
-      {/* 반감기 카운트다운 */}
-      <DotAssemblyReveal delay={90} duration={650}>
-        <HalvingCountdown />
+      <DotAssemblyReveal delay={120} duration={700}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <HalvingCountdown />
+          {hasMetricData
+            ? summary.metrics.map((metric) => (
+                <OnchainMetricCard key={metric.id} metric={metric} />
+              ))
+            : null}
+        </div>
       </DotAssemblyReveal>
-
-      {hasMetricData ? (
-        <DotAssemblyReveal delay={120} duration={700}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {summary.metrics.map((metric) => (
-              <OnchainMetricCard key={metric.id} metric={metric} />
-            ))}
-          </div>
-        </DotAssemblyReveal>
-      ) : null}
 
       {(hasFlows || hasAlerts) && (
         <DotAssemblyReveal delay={180} duration={750}>
