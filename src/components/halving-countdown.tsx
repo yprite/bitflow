@@ -7,6 +7,8 @@ const HALVING_BLOCK_INTERVAL = 210_000;
 const LAST_HALVING_BLOCK = 840_000;       // 4th halving (April 2024)
 const NEXT_HALVING_BLOCK = 1_050_000;     // 5th halving (~2028)
 const AVG_BLOCK_TIME_MINUTES = 10;
+const BLOCKS_PER_DAY = (24 * 60) / AVG_BLOCK_TIME_MINUTES; // ~144
+const CURRENT_BLOCK_REWARD = 3.125; // BTC per block (after 4th halving)
 
 interface HalvingData {
   currentBlock: number;
@@ -14,6 +16,8 @@ interface HalvingData {
   progress: number;           // 0–100%
   estimatedDate: Date;
   daysRemaining: number;
+  dailyMining: number;        // BTC mined per day
+  nextDailyMining: number;    // BTC mined per day after next halving
 }
 
 async function fetchBlockHeight(): Promise<number> {
@@ -30,7 +34,10 @@ function calculateHalvingData(currentBlock: number): HalvingData {
   const estimatedDate = new Date(Date.now() + minutesRemaining * 60 * 1000);
   const daysRemaining = Math.floor(minutesRemaining / (60 * 24));
 
-  return { currentBlock, blocksRemaining, progress, estimatedDate, daysRemaining };
+  const dailyMining = CURRENT_BLOCK_REWARD * BLOCKS_PER_DAY;
+  const nextDailyMining = (CURRENT_BLOCK_REWARD / 2) * BLOCKS_PER_DAY;
+
+  return { currentBlock, blocksRemaining, progress, estimatedDate, daysRemaining, dailyMining, nextDailyMining };
 }
 
 function formatEstimatedDate(date: Date): string {
@@ -128,7 +135,19 @@ export default function HalvingCountdown() {
             {/* Block stats */}
             <div className="flex items-center justify-between text-[10px] font-mono text-dot-sub">
               <span>현재 #{formatNumber(halving.currentBlock)}</span>
-              <span>남은 블록 {formatNumber(halving.blocksRemaining)}</span>
+              <span>남은 {formatNumber(halving.blocksRemaining)} 블록</span>
+            </div>
+          </div>
+          {/* Daily mining */}
+          <div className="rounded-sm border border-dot-border/30 bg-white/70 px-3 py-2 flex items-center justify-between">
+            <span className="text-[10px] font-mono text-dot-muted">일일 채굴량</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono font-semibold text-dot-accent tabular-nums">
+                {halving.dailyMining} BTC
+              </span>
+              <span className="text-[9px] font-mono text-dot-muted">
+                → 반감기 후 {halving.nextDailyMining} BTC
+              </span>
             </div>
           </div>
         </div>
