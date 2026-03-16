@@ -138,16 +138,29 @@ export default function HalvingCountdown() {
               <span>남은 {formatNumber(halving.blocksRemaining)} 블록</span>
             </div>
           </div>
-          {/* Daily mining */}
-          <div className="rounded-sm border border-dot-border/30 bg-white/70 px-3 py-2 flex items-center justify-between">
-            <span className="text-[10px] font-mono text-dot-muted">일일 채굴량</span>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono font-semibold text-dot-accent tabular-nums">
-                {halving.dailyMining} BTC
-              </span>
-              <span className="text-[9px] font-mono text-dot-muted">
-                → 반감기 후 {halving.nextDailyMining} BTC
-              </span>
+          {/* Mining info */}
+          <div className="rounded-sm border border-dot-border/30 bg-white/70 px-3 py-2 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-dot-muted">블록 보상</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono font-semibold text-dot-accent tabular-nums">
+                  {CURRENT_BLOCK_REWARD} BTC
+                </span>
+                <span className="text-[9px] font-mono text-dot-muted">
+                  → 반감기 후 {CURRENT_BLOCK_REWARD / 2} BTC
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono text-dot-muted">일일 채굴량</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono font-semibold text-dot-accent tabular-nums">
+                  {halving.dailyMining} BTC
+                </span>
+                <span className="text-[9px] font-mono text-dot-muted">
+                  → 반감기 후 {halving.nextDailyMining} BTC
+                </span>
+              </div>
             </div>
           </div>
         </div>
