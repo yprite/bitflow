@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import SignalBadge from './signal-badge';
 import MarketBriefing from './market-briefing';
 import EventStrip from './event-strip';
+import HalvingCountdown from './halving-countdown';
 import OrbitalSilence from './motion/storytelling/OrbitalSilence';
 import DotAssemblyReveal from './motion/transitions/DotAssemblyReveal';
 import { useData } from './data-provider';
@@ -90,6 +91,11 @@ export default function Dashboard() {
       {/* 매크로 이벤트 캘린더 */}
       <DotAssemblyReveal delay={320} duration={740}>
         <EventStrip />
+      </DotAssemblyReveal>
+
+      {/* 반감기 카운트다운 */}
+      <DotAssemblyReveal delay={390} duration={740}>
+        <HalvingCountdown />
       </DotAssemblyReveal>
 
       {/* 지표 상세 페이지 링크 */}

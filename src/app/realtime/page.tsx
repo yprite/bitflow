@@ -13,6 +13,7 @@ import StablecoinCard from '@/components/stablecoin-card';
 import StrategyCapitalCard from '@/components/strategy-capital-card';
 import VolumeChangeCard from '@/components/volume-change-card';
 import IndicatorTable from '@/components/indicator-table';
+import HalvingCountdown from '@/components/halving-countdown';
 import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import PageHeader from '@/components/page-header';
@@ -129,6 +130,11 @@ export default function RealtimePage() {
           onSelect={handleSelect}
           renderDetail={renderDetailCard}
         />
+      </DotAssemblyReveal>
+
+      {/* 반감기 카운트다운 */}
+      <DotAssemblyReveal delay={160} duration={700}>
+        <HalvingCountdown />
       </DotAssemblyReveal>
     </div>
   );
