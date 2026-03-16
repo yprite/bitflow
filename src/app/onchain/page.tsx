@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: '온체인',
   description:
-    '비트코인 온체인 serving layer를 기반으로 일별 지표, 엔티티 순유입, 알림 피드를 확인합니다.',
+    '비트코인 네트워크의 일별 온체인 지표, 자금 흐름, 주요 이벤트를 확인합니다.',
 };
 
 function formatTimestamp(value: string): string {
@@ -42,12 +42,11 @@ export default async function OnchainPage() {
     <div className="space-y-3 sm:space-y-4">
       <DotAssemblyReveal delay={0} duration={500} density="low">
         <PageHeader
-          eyebrow="Bitcoin Serving Layer"
+          eyebrow="Bitcoin On-chain"
           title="온체인 모니터"
           description={(
             <span>
-              Python 워커가 적재한 `btc_daily_metrics`, `btc_entity_flow_daily`, `btc_alert_events`
-              를 읽어 웹에서 바로 확인합니다.
+              비트코인 네트워크의 일별 지표, 자금 흐름, 주요 이벤트를 실시간으로 확인합니다.
             </span>
           )}
           action={(
@@ -69,18 +68,19 @@ export default async function OnchainPage() {
                     Status
                   </p>
                   <h2 className="text-sm font-semibold text-dot-accent tracking-tight">
-                    {summary.status === 'available' ? '부분 가용' : '데이터 대기'}
+                    {summary.status === 'available' ? '일부 지표 준비 중' : '데이터 준비 중'}
                   </h2>
                 </div>
-                <span className="text-[10px] font-mono text-dot-muted">
-                  source: {summary.source}
-                </span>
+                {summary.source === 'fallback' ? (
+                  <span className="text-[10px] font-mono text-dot-muted">
+                    최근 스냅샷 기준
+                  </span>
+                ) : null}
               </div>
               <p className="text-sm text-dot-sub leading-relaxed">{summary.message}</p>
               {summary.status === 'unavailable' ? (
                 <p className="dot-insight">
-                  다음 순서: `004_btc_onchain.sql` 적용 → Python backfill/metrics 실행 → serving
-                  테이블 확인.
+                  온체인 데이터는 블록 동기화 완료 후 자동으로 업데이트됩니다.
                 </p>
               ) : null}
             </div>

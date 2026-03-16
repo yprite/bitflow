@@ -248,7 +248,7 @@ async function loadFallbackOnchainSummary(reason: string): Promise<OnchainSummar
 
   return buildOnchainSummary({
     metricRows: payload.metrics,
-    message: `${reason} ${payload.source} snapshot fallback을 사용 중입니다. 고급 지표와 알림/엔티티 플로우는 direct worker 경로가 필요합니다.`,
+    message: `${reason} 최근 스냅샷 데이터를 표시하고 있습니다. 실시간 데이터가 준비되면 자동으로 전환됩니다.`,
     updatedAt: payload.generatedAt,
     source: 'fallback',
   });
@@ -430,10 +430,10 @@ async function fetchOnchainSummaryFromLocalPostgres(options?: {
     updatedAt: new Date().toISOString(),
     message:
       messages.length > 0
-        ? `${messages.join(' / ')}. 로컬 worker/Postgres 상태를 확인하세요.`
+        ? '일부 온체인 지표를 불러오지 못했습니다. 잠시 후 자동으로 복구됩니다.'
         : !hasData
-        ? '로컬 Postgres 온체인 테이블이 비어 있습니다. bitcoind sync와 Python backfill/metrics 진행 상태를 확인하세요.'
-        : '로컬 bitcoind -> Python worker -> Postgres 경로를 우선 사용 중입니다.',
+        ? '온체인 데이터를 동기화하고 있습니다. 블록체인 동기화가 완료되면 지표가 자동으로 표시됩니다.'
+        : null,
   };
 }
 
@@ -579,10 +579,10 @@ export async function fetchOnchainSummary(options?: {
 
   if (!hasSupabaseServiceConfig()) {
     const fallback = await loadFallbackOnchainSummary(
-      'SUPABASE_URL 또는 SUPABASE_SERVICE_KEY가 없어 hosted serving layer를 읽지 못했습니다.'
+      '온체인 데이터 서버에 연결할 수 없어'
     );
     return fallback ?? createUnavailableOnchainSummary(
-      'SUPABASE_URL 또는 SUPABASE_SERVICE_KEY가 없어 온체인 serving layer를 읽을 수 없습니다.'
+      '온체인 데이터를 준비하고 있습니다. 잠시 후 다시 확인해 주세요.'
     );
   }
 
@@ -630,15 +630,15 @@ export async function fetchOnchainSummary(options?: {
     updatedAt: new Date().toISOString(),
     message:
       messages.length > 0
-        ? `${messages.join(' / ')}. Supabase 마이그레이션과 백필 상태를 확인하세요.`
+        ? '일부 온체인 지표를 불러오지 못했습니다. 잠시 후 자동으로 복구됩니다.'
         : !hasData
-        ? '온체인 serving 테이블에 아직 적재된 데이터가 없습니다. 마이그레이션 적용과 Python backfill/metrics 실행 여부를 확인하세요.'
+        ? '온체인 데이터를 동기화하고 있습니다. 블록체인 동기화가 완료되면 지표가 자동으로 표시됩니다.'
         : null,
   };
 
   if (summary.status === 'unavailable') {
     const fallback = await loadFallbackOnchainSummary(
-      'Hosted Supabase serving 테이블이 비어 있어'
+      '실시간 데이터가 아직 준비되지 않아'
     );
     if (fallback) {
       return fallback;

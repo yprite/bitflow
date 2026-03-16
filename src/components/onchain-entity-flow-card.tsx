@@ -12,7 +12,7 @@ function formatBtcFromSats(value: number): string {
 }
 
 function formatDate(value: string | null): string {
-  if (!value) return 'N/A';
+  if (!value) return '—';
 
   return new Date(`${value}T00:00:00Z`).toLocaleDateString('ko-KR', {
     month: 'short',
@@ -45,7 +45,7 @@ export default function OnchainEntityFlowCard({
 
         {flows.length === 0 ? (
           <p className="text-sm text-dot-muted leading-relaxed">
-            `btc_entity_labels`가 비어 있거나 아직 일별 집계가 생성되지 않았습니다.
+            엔티티 플로우 데이터를 준비하고 있습니다. 거래소 및 주요 지갑의 자금 흐름이 집계되면 여기에 표시됩니다.
           </p>
         ) : (
           <div className="space-y-2">

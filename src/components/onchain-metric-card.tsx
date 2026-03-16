@@ -5,7 +5,7 @@ interface OnchainMetricCardProps {
 }
 
 function formatDate(value: string | null): string {
-  if (!value) return 'N/A';
+  if (!value) return '—';
 
   return new Date(`${value}T00:00:00Z`).toLocaleDateString('ko-KR', {
     month: 'short',
@@ -15,7 +15,7 @@ function formatDate(value: string | null): string {
 }
 
 function formatMetricValue(unit: string, value: number | null, compact = false): string {
-  if (value === null) return 'N/A';
+  if (value === null) return '수집 중';
 
   if (unit === 'percent') {
     return `${value.toFixed(compact ? 1 : 2)}%`;
@@ -35,7 +35,7 @@ function formatMetricValue(unit: string, value: number | null, compact = false):
 
 function getDeltaTone(changeValue: number | null) {
   if (changeValue === null || changeValue === 0) {
-    return { className: 'text-dot-muted', label: '변화 없음' };
+    return { className: 'text-dot-muted', label: changeValue === null ? '' : '변화 없음' };
   }
 
   if (changeValue > 0) {
@@ -48,8 +48,8 @@ function getDeltaTone(changeValue: number | null) {
 function Sparkline({ metric }: { metric: OnchainMetricSummary }) {
   if (metric.series.length < 2) {
     return (
-      <div className="h-20 rounded-sm border border-dashed border-dot-border/30 bg-white/60 px-3 py-2 text-[11px] text-dot-muted">
-        시계열이 아직 충분하지 않습니다.
+      <div className="flex h-20 items-center justify-center rounded-sm border border-dashed border-dot-border/30 bg-white/60 px-3 py-2 text-[11px] text-dot-muted">
+        데이터가 쌓이면 추이 차트가 표시됩니다
       </div>
     );
   }
@@ -93,7 +93,7 @@ export default function OnchainMetricCard({ metric }: OnchainMetricCardProps) {
   const delta = getDeltaTone(metric.changeValue);
   const changeText =
     metric.changeValue === null
-      ? '전일 비교 대기'
+      ? '비교 데이터 수집 중'
       : `${metric.changeValue > 0 ? '+' : ''}${formatMetricValue(metric.unit, metric.changeValue, true)}${
           metric.changePercent === null
             ? ''

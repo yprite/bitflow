@@ -60,7 +60,7 @@ export default function OnchainAlertFeed({
 
         {alerts.length === 0 ? (
           <p className="text-sm text-dot-muted leading-relaxed">
-            아직 적재된 알림이 없습니다. realtime 소비자 또는 백필 이후 알림 조건을 확인하세요.
+            현재 감지된 이상 거래가 없습니다. 고액 이동이나 휴면 코인 재활성 등 주요 이벤트가 발생하면 여기에 표시됩니다.
           </p>
         ) : (
           <div className="space-y-2">
