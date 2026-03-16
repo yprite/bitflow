@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import SignalBadge from './signal-badge';
 import MarketBriefing from './market-briefing';
 import EventStrip from './event-strip';
-import HalvingCountdown from './halving-countdown';
+
 import OrbitalSilence from './motion/storytelling/OrbitalSilence';
 import DotAssemblyReveal from './motion/transitions/DotAssemblyReveal';
 import { useData } from './data-provider';
@@ -93,13 +93,8 @@ export default function Dashboard() {
         <EventStrip />
       </DotAssemblyReveal>
 
-      {/* 반감기 카운트다운 */}
-      <DotAssemblyReveal delay={390} duration={740}>
-        <HalvingCountdown />
-      </DotAssemblyReveal>
-
       {/* 지표 상세 페이지 링크 */}
-      <DotAssemblyReveal delay={460} duration={600} density="low">
+      <DotAssemblyReveal delay={390} duration={600} density="low">
         <Link
           href="/realtime"
           className="dot-card p-4 flex items-center justify-between group hover:border-dot-accent/40 transition-colors"

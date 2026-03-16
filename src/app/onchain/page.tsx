@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
+import HalvingCountdown from '@/components/halving-countdown';
 import OnchainAlertFeed from '@/components/onchain-alert-feed';
 import OnchainEntityFlowCard from '@/components/onchain-entity-flow-card';
 import OnchainMetricCard from '@/components/onchain-metric-card';
@@ -87,6 +88,11 @@ export default async function OnchainPage() {
           </section>
         </DotAssemblyReveal>
       ) : null}
+
+      {/* 반감기 카운트다운 */}
+      <DotAssemblyReveal delay={90} duration={650}>
+        <HalvingCountdown />
+      </DotAssemblyReveal>
 
       {hasMetricData ? (
         <DotAssemblyReveal delay={120} duration={700}>
