@@ -34,6 +34,24 @@ interface OnchainFallbackPayload {
   metrics: OnchainMetricRow[];
 }
 
+interface SupabasePublishedMetricApiRow {
+  collected_at: string;
+  metric_name: string;
+  value: number | string;
+  resolution: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+interface SupabasePublishedAlertApiRow {
+  tx_hash: string | null;
+  timestamp: string;
+  amount_btc: number | string | null;
+  from_type: string | null;
+  from_name: string | null;
+  to_type: string | null;
+  to_name: string | null;
+}
+
 const DEFAULT_METRIC_LOOKBACK_DAYS = 30;
 const DEFAULT_ALERT_LIMIT = 8;
 const DEFAULT_ENTITY_LIMIT = 6;
@@ -92,6 +110,42 @@ export const ONCHAIN_METRIC_DEFINITIONS: OnchainMetricDefinition[] = [
 const ONCHAIN_METRIC_IDS = new Set<OnchainMetricId>(
   ONCHAIN_METRIC_DEFINITIONS.map((definition) => definition.id)
 );
+
+const PUBLISHED_METRIC_ROW_MAP: Record<
+  OnchainMetricId,
+  Pick<OnchainMetricRow, 'metricName' | 'dimensionKey' | 'unit'>
+> = {
+  created_utxo_count: {
+    metricName: 'created_utxo_count',
+    dimensionKey: 'all',
+    unit: 'count',
+  },
+  spent_utxo_count: {
+    metricName: 'spent_utxo_count',
+    dimensionKey: 'all',
+    unit: 'count',
+  },
+  spent_btc: {
+    metricName: 'spent_btc',
+    dimensionKey: 'all',
+    unit: 'btc',
+  },
+  dormant_reactivated_btc: {
+    metricName: 'dormant_reactivated_btc',
+    dimensionKey: 'all',
+    unit: 'btc',
+  },
+  active_supply_ratio_30d: {
+    metricName: 'active_supply_ratio',
+    dimensionKey: '30d',
+    unit: 'percent',
+  },
+  active_supply_ratio_90d: {
+    metricName: 'active_supply_ratio',
+    dimensionKey: '90d',
+    unit: 'percent',
+  },
+};
 
 function getMetricDefinition(id: OnchainMetricId): OnchainMetricDefinition {
   const definition = ONCHAIN_METRIC_DEFINITIONS.find((item) => item.id === id);
@@ -157,6 +211,115 @@ function toIsoDate(value: unknown): string {
   if (typeof value === 'string') return value.slice(0, 10);
   if (value instanceof Date) return value.toISOString().slice(0, 10);
   return '';
+}
+
+function isMissingSupabaseRelation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: string }).code === 'PGRST205'
+  );
+}
+
+function isMissingSupabaseFunction(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: string }).code === 'PGRST202'
+  );
+}
+
+function createSupabaseServiceHeaders(): HeadersInit {
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY;
+  if (!serviceKey) {
+    throw new Error('Missing SUPABASE_SERVICE_KEY');
+  }
+
+  return {
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
+    Accept: 'application/json',
+  };
+}
+
+async function fetchSupabaseRestRows<T>(relativePath: string): Promise<T[]> {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  if (!supabaseUrl) {
+    throw new Error('Missing SUPABASE_URL');
+  }
+
+  const response = await fetch(`${supabaseUrl}${relativePath}`, {
+    headers: createSupabaseServiceHeaders(),
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    let payload: unknown = null;
+    try {
+      payload = await response.json();
+    } catch {
+      payload = await response.text();
+    }
+
+    const message =
+      typeof payload === 'object' && payload !== null && 'message' in payload
+        ? String((payload as { message?: string }).message)
+        : typeof payload === 'string'
+        ? payload
+        : `Supabase REST request failed with ${response.status}`;
+    const error = new Error(message) as Error & { code?: string };
+    if (typeof payload === 'object' && payload !== null && 'code' in payload) {
+      error.code = String((payload as { code?: string }).code);
+    }
+    throw error;
+  }
+
+  return (await response.json()) as T[];
+}
+
+function mapPublishedMetricRow(input: {
+  metricName: string;
+  value: number;
+  collectedAt: string | Date;
+  metadata?: Record<string, unknown> | null;
+}): OnchainMetricRow | null {
+  if (!isOnchainMetricId(input.metricName)) {
+    return null;
+  }
+
+  const mapping = PUBLISHED_METRIC_ROW_MAP[input.metricName];
+  const metadata = input.metadata ?? {};
+  const unit =
+    typeof metadata.unit === 'string' && metadata.unit.length > 0
+      ? metadata.unit
+      : mapping.unit;
+
+  return {
+    day: toIsoDate(input.collectedAt),
+    metricName: mapping.metricName,
+    metricValue: input.value,
+    unit,
+    dimensionKey: mapping.dimensionKey,
+  };
+}
+
+function buildWhaleAlertBody(
+  alertType: string,
+  txid: string,
+  amountBtc: number
+): string {
+  if (alertType === 'mempool_large_tx') {
+    return `Unconfirmed transaction ${txid} is moving ${amountBtc.toFixed(2)} BTC.`;
+  }
+  if (alertType === 'large_confirmed_spend') {
+    return `Confirmed transaction ${txid} moved ${amountBtc.toFixed(2)} BTC.`;
+  }
+  if (alertType === 'dormant_reactivation') {
+    return `Dormant coins reactivated in transaction ${txid} with ${amountBtc.toFixed(2)} BTC.`;
+  }
+  return `Transaction ${txid} moved ${amountBtc.toFixed(2)} BTC.`;
 }
 
 function latestDate(values: Array<string | null | undefined>): string | null {
@@ -263,7 +426,7 @@ async function fetchLocalPostgresMetricRows(
   );
 
   const result = await pool.query<{
-    day: string | Date;
+    day: string;
     metric_name: string;
     metric_value: string | number;
     unit: string;
@@ -277,7 +440,7 @@ async function fetchLocalPostgresMetricRows(
         ORDER BY day DESC
         LIMIT $1
       )
-      SELECT day, metric_name, metric_value, unit, dimension_key
+      SELECT day::text AS day, metric_name, metric_value, unit, dimension_key
       FROM btc_daily_metrics
       WHERE metric_name = ANY($2::text[])
         AND day IN (SELECT day FROM latest_days)
@@ -293,6 +456,35 @@ async function fetchLocalPostgresMetricRows(
     unit: row.unit,
     dimensionKey: row.dimension_key,
   }));
+}
+
+async function fetchPublishedSupabaseMetricRows(
+  lookbackDays: number
+): Promise<OnchainMetricRow[]> {
+  const metricNames = Array.from(ONCHAIN_METRIC_IDS).join(',');
+  const query = new URLSearchParams({
+    select: 'collected_at,metric_name,value,resolution,metadata',
+    resolution: 'eq.daily',
+    order: 'collected_at.desc',
+    limit: String(Math.max(lookbackDays * ONCHAIN_METRIC_DEFINITIONS.length * 2, 120)),
+  });
+  const data = await fetchSupabaseRestRows<SupabasePublishedMetricApiRow>(
+    `/rest/v1/onchain_metrics?${query.toString()}&metric_name=in.(${metricNames})`
+  );
+
+  return data
+    .map((row) =>
+      mapPublishedMetricRow({
+        metricName: String(row.metric_name),
+        value: toNumber(row.value),
+        collectedAt: row.collected_at,
+        metadata:
+          row.metadata && typeof row.metadata === 'object'
+            ? (row.metadata as Record<string, unknown>)
+            : null,
+      })
+    )
+    .filter((row): row is OnchainMetricRow => row !== null);
 }
 
 async function fetchLocalPostgresAlerts(limit: number): Promise<OnchainAlertEvent[]> {
@@ -331,13 +523,60 @@ async function fetchLocalPostgresAlerts(limit: number): Promise<OnchainAlertEven
   }));
 }
 
+async function fetchPublishedSupabaseAlerts(
+  limit: number
+): Promise<OnchainAlertEvent[]> {
+  const query = new URLSearchParams({
+    select: 'tx_hash,timestamp,amount_btc,from_type,from_name,to_type,to_name',
+    from_type: 'eq.bitflow_onchain',
+    order: 'timestamp.desc',
+    limit: String(limit),
+  });
+  const data = await fetchSupabaseRestRows<SupabasePublishedAlertApiRow>(
+    `/rest/v1/whale_transactions?${query.toString()}`
+  );
+
+  return data.map((row) => {
+    const alertType = row.from_name ? String(row.from_name) : 'large_confirmed_spend';
+    const amountBtc = toNumber(row.amount_btc);
+    const severity =
+      row.to_type && ['high', 'medium', 'info'].includes(String(row.to_type))
+        ? String(row.to_type)
+        : amountBtc >= 1000
+        ? 'high'
+        : 'medium';
+    const txid = row.tx_hash ? String(row.tx_hash) : null;
+    const title =
+      row.to_name && String(row.to_name).length > 0
+        ? String(row.to_name)
+        : `${alertType} ${amountBtc.toFixed(2)} BTC`;
+
+    return {
+      detectedAt:
+        typeof row.timestamp === 'string'
+          ? row.timestamp
+          : new Date(String(row.timestamp)).toISOString(),
+      alertType,
+      severity,
+      title,
+      body: txid ? buildWhaleAlertBody(alertType, txid, amountBtc) : title,
+      relatedTxid: txid,
+      relatedEntitySlug: null,
+      context: {
+        amount_btc: amountBtc,
+        source: 'supabase_whale_transactions',
+      },
+    };
+  });
+}
+
 async function fetchLocalPostgresEntityFlows(
   limit: number
 ): Promise<OnchainEntityFlowEntry[]> {
   const pool = getBitflowPgPool();
-  const latestDayResult = await pool.query<{ day: string | Date }>(
+  const latestDayResult = await pool.query<{ day: string }>(
     `
-      SELECT day
+      SELECT day::text AS day
       FROM btc_entity_flow_daily
       ORDER BY day DESC
       LIMIT 1
@@ -352,7 +591,7 @@ async function fetchLocalPostgresEntityFlows(
   }
 
   const result = await pool.query<{
-    day: string | Date;
+    day: string;
     entity_slug: string;
     received_sats: string | number;
     sent_sats: string | number;
@@ -360,7 +599,7 @@ async function fetchLocalPostgresEntityFlows(
     tx_count: string | number;
   }>(
     `
-      SELECT day, entity_slug, received_sats, sent_sats, netflow_sats, tx_count
+      SELECT day::text AS day, entity_slug, received_sats, sent_sats, netflow_sats, tx_count
       FROM btc_entity_flow_daily
       WHERE day = $1::date
       LIMIT $2
@@ -444,10 +683,20 @@ export async function fetchOnchainMetricSummaries(
     return buildOnchainMetricSummaries([]);
   }
 
+  try {
+    const publishedRows = await fetchPublishedSupabaseMetricRows(lookbackDays);
+    if (publishedRows.length > 0) {
+      return buildOnchainMetricSummaries(publishedRows);
+    }
+  } catch (error) {
+    if (!isMissingSupabaseRelation(error)) {
+      throw error;
+    }
+  }
+
   const supabase = createServiceClient();
   const lookbackStart = new Date();
   lookbackStart.setUTCDate(lookbackStart.getUTCDate() - Math.max(lookbackDays - 1, 0));
-
   const { data, error } = await supabase
     .from('btc_daily_metrics')
     .select('day, metric_name, metric_value, unit, dimension_key')
@@ -461,6 +710,9 @@ export async function fetchOnchainMetricSummaries(
     .order('day', { ascending: true });
 
   if (error) {
+    if (isMissingSupabaseRelation(error)) {
+      return buildOnchainMetricSummaries([]);
+    }
     throw error;
   }
 
@@ -471,7 +723,6 @@ export async function fetchOnchainMetricSummaries(
     unit: String(row.unit),
     dimensionKey: String(row.dimension_key),
   }));
-
   return buildOnchainMetricSummaries(rows);
 }
 
@@ -480,6 +731,17 @@ export async function fetchOnchainAlerts(
 ): Promise<OnchainAlertEvent[]> {
   if (!hasSupabaseServiceConfig()) {
     return [];
+  }
+
+  try {
+    const publishedAlerts = await fetchPublishedSupabaseAlerts(limit);
+    if (publishedAlerts.length > 0) {
+      return publishedAlerts;
+    }
+  } catch (error) {
+    if (!isMissingSupabaseRelation(error)) {
+      throw error;
+    }
   }
 
   const supabase = createServiceClient();
@@ -492,6 +754,9 @@ export async function fetchOnchainAlerts(
     .limit(limit);
 
   if (error) {
+    if (isMissingSupabaseRelation(error)) {
+      return [];
+    }
     throw error;
   }
 
@@ -530,6 +795,9 @@ export async function fetchOnchainEntityFlows(
     .maybeSingle();
 
   if (latestDayError) {
+    if (isMissingSupabaseRelation(latestDayError) || isMissingSupabaseFunction(latestDayError)) {
+      return [];
+    }
     throw latestDayError;
   }
 
@@ -545,6 +813,9 @@ export async function fetchOnchainEntityFlows(
     .limit(Math.max(limit * 4, 24));
 
   if (error) {
+    if (isMissingSupabaseRelation(error)) {
+      return [];
+    }
     throw error;
   }
 
@@ -566,18 +837,18 @@ export async function fetchOnchainSummary(options?: {
   alertLimit?: number;
   entityLimit?: number;
 }): Promise<OnchainSummaryData> {
-  if (hasBitflowPgDsn()) {
-    try {
-      const localSummary = await fetchOnchainSummaryFromLocalPostgres(options);
-      if (localSummary.status === 'available') {
-        return localSummary;
-      }
-    } catch {
-      // Fall through to hosted Supabase/fallback sources when local Postgres is unavailable.
-    }
-  }
-
   if (!hasSupabaseServiceConfig()) {
+    if (hasBitflowPgDsn()) {
+      try {
+        const localSummary = await fetchOnchainSummaryFromLocalPostgres(options);
+        if (localSummary.status === 'available') {
+          return localSummary;
+        }
+      } catch {
+        // Fall through to fallback sources when local Postgres is unavailable.
+      }
+    }
+
     const fallback = await loadFallbackOnchainSummary(
       '온체인 데이터 서버에 연결할 수 없어'
     );
@@ -633,16 +904,29 @@ export async function fetchOnchainSummary(options?: {
         ? '일부 온체인 지표를 불러오지 못했습니다. 잠시 후 자동으로 복구됩니다.'
         : !hasData
         ? '온체인 데이터를 동기화하고 있습니다. 블록체인 동기화가 완료되면 지표가 자동으로 표시됩니다.'
-        : null,
+        : 'Supabase onchain_metrics / whale_transactions published stream을 사용 중입니다.',
   };
 
-  if (summary.status === 'unavailable') {
-    const fallback = await loadFallbackOnchainSummary(
-      '실시간 데이터가 아직 준비되지 않아'
-    );
-    if (fallback) {
-      return fallback;
+  if (summary.status === 'available') {
+    return summary;
+  }
+
+  if (hasBitflowPgDsn()) {
+    try {
+      const localSummary = await fetchOnchainSummaryFromLocalPostgres(options);
+      if (localSummary.status === 'available') {
+        return localSummary;
+      }
+    } catch {
+      // Fall through to fallback sources when local Postgres is unavailable.
     }
+  }
+
+  const fallback = await loadFallbackOnchainSummary(
+    '실시간 데이터가 아직 준비되지 않아'
+  );
+  if (fallback) {
+    return fallback;
   }
 
   return summary;

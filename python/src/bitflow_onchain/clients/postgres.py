@@ -15,6 +15,7 @@ from bitflow_onchain.models import (
     DailyMetricRow,
     EntityFlowRow,
     OutputReference,
+    SpentEdgeRecord,
     SyncState,
 )
 
@@ -31,6 +32,52 @@ class PostgresStore:
     def _executemany(self, cur: Any, sql: str, rows: list[dict[str, Any]]) -> None:
         if rows:
             cur.executemany(sql, rows)
+
+    def _persistable_spent_edges(
+        self,
+        cur: Any,
+        rows: list[SpentEdgeRecord],
+        block_height: int,
+    ) -> list[dict[str, Any]]:
+        if not rows:
+            return []
+
+        cur.execute(
+            """
+            WITH candidate_prevouts AS (
+              SELECT DISTINCT prev_txid, prev_vout_n
+              FROM jsonb_to_recordset(%s::jsonb) AS candidate(prev_txid TEXT, prev_vout_n INTEGER)
+            )
+            SELECT candidate.prev_txid, candidate.prev_vout_n
+            FROM candidate_prevouts candidate
+            JOIN btc_outputs o
+              ON o.txid = candidate.prev_txid
+             AND o.vout_n = candidate.prev_vout_n
+            """,
+            (
+                psycopg.types.json.Jsonb(
+                    [
+                        {
+                            "prev_txid": row.prev_txid,
+                            "prev_vout_n": row.prev_vout_n,
+                        }
+                        for row in rows
+                    ]
+                ),
+            ),
+        )
+        existing_prevouts = {(txid, vout_n) for txid, vout_n in cur.fetchall()}
+        persisted_rows = [
+            asdict(row)
+            for row in rows
+            if (row.prev_txid, row.prev_vout_n) in existing_prevouts
+        ]
+        skipped_rows = len(rows) - len(persisted_rows)
+        if skipped_rows > 0:
+            print(
+                f"skipping {skipped_rows} spent edges with missing prevouts at height {block_height}"
+            )
+        return persisted_rows
 
     def upsert_block_bundle(self, bundle: BlockBundle) -> None:
         with self.connect() as conn, conn.cursor() as cur:
@@ -234,7 +281,11 @@ class PostgresStore:
                   age_seconds = EXCLUDED.age_seconds,
                   updated_at = NOW()
                 """,
-                [asdict(row) for row in bundle.spent_edges],
+                self._persistable_spent_edges(
+                    cur,
+                    bundle.spent_edges,
+                    bundle.block.height,
+                ),
             )
 
     def replace_daily_metrics(self, day: date, rows: Iterable[DailyMetricRow]) -> None:

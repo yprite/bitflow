@@ -1,0 +1,217 @@
+#!/usr/bin/env node
+
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import pg from 'pg';
+
+const { Client } = pg;
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT_DIR = path.resolve(__dirname, '..');
+
+function setEnvFromText(text) {
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#') || !line.includes('=')) continue;
+    const [key, ...rest] = line.split('=');
+    if (!process.env[key]) {
+      process.env[key] = rest.join('=').trim().replace(/^['"]|['"]$/g, '');
+    }
+  }
+}
+
+async function loadEnvFile(filePath) {
+  try {
+    const text = await readFile(filePath, 'utf8');
+    setEnvFromText(text);
+  } catch {
+    // Optional env file.
+  }
+}
+
+function requiredEnv(name) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
+function toIsoTimestamp(dayValue) {
+  if (dayValue instanceof Date) {
+    return `${dayValue.toISOString().slice(0, 10)}T00:00:00Z`;
+  }
+
+  return `${String(dayValue).slice(0, 10)}T00:00:00Z`;
+}
+
+function toNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function inferAlertAmountBtc(alert) {
+  const context = alert.context && typeof alert.context === 'object' ? alert.context : {};
+  if (typeof context.total_output_sats === 'number') {
+    return context.total_output_sats / 100_000_000;
+  }
+  if (typeof context.value_sats === 'number') {
+    return context.value_sats / 100_000_000;
+  }
+  return 0;
+}
+
+function createSupabaseHeaders() {
+  const serviceKey = requiredEnv('SUPABASE_SERVICE_KEY');
+  return {
+    apikey: serviceKey,
+    Authorization: `Bearer ${serviceKey}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+async function supabaseDelete(relativePath) {
+  const url = `${requiredEnv('SUPABASE_URL')}${relativePath}`;
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      ...createSupabaseHeaders(),
+      Prefer: 'return=minimal',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Supabase DELETE failed (${response.status}): ${await response.text()}`);
+  }
+}
+
+async function supabaseInsert(relativePath, rows) {
+  if (rows.length === 0) return;
+
+  const url = `${requiredEnv('SUPABASE_URL')}${relativePath}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      ...createSupabaseHeaders(),
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify(rows),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Supabase POST failed (${response.status}): ${await response.text()}`);
+  }
+}
+
+async function insertInBatches(relativePath, rows, batchSize = 500) {
+  for (let index = 0; index < rows.length; index += batchSize) {
+    await supabaseInsert(relativePath, rows.slice(index, index + batchSize));
+  }
+}
+
+const METRIC_NAME_MAP = new Map([
+  ['created_utxo_count:all', 'created_utxo_count'],
+  ['spent_utxo_count:all', 'spent_utxo_count'],
+  ['spent_btc:all', 'spent_btc'],
+  ['dormant_reactivated_btc:all', 'dormant_reactivated_btc'],
+  ['active_supply_ratio:30d', 'active_supply_ratio_30d'],
+  ['active_supply_ratio:90d', 'active_supply_ratio_90d'],
+]);
+
+async function main() {
+  await loadEnvFile(path.join(ROOT_DIR, '.env.local'));
+  await loadEnvFile(path.join(ROOT_DIR, 'python', '.env'));
+
+  const client = new Client({
+    connectionString: process.env.BITFLOW_PG_DSN || 'postgresql:///bitflow_onchain',
+  });
+
+  await client.connect();
+
+  try {
+    const metricResult = await client.query(`
+      SELECT day::text AS day, metric_name, metric_value, unit, dimension_key
+      FROM btc_daily_metrics
+      ORDER BY day ASC
+    `);
+
+    const metricRows = metricResult.rows.flatMap((row) => {
+      const publishedMetricName = METRIC_NAME_MAP.get(
+        `${row.metric_name}:${row.dimension_key}`
+      );
+      if (!publishedMetricName) {
+        return [];
+      }
+
+      return [
+        {
+          collected_at: toIsoTimestamp(row.day),
+          metric_name: publishedMetricName,
+          value: toNumber(row.metric_value),
+          resolution: 'daily',
+          metadata: {
+            source: 'bitflow-local-worker',
+            unit: row.unit,
+            source_metric_name: row.metric_name,
+            dimension_key: row.dimension_key,
+          },
+        },
+      ];
+    });
+
+    const alertResult = await client.query(`
+      SELECT detected_at, alert_type, severity, title, body, related_txid, context
+      FROM btc_alert_events
+      WHERE related_txid IS NOT NULL
+        AND alert_type IN ('mempool_large_tx', 'large_confirmed_spend', 'dormant_reactivation')
+      ORDER BY detected_at DESC
+      LIMIT 200
+    `);
+
+    const alertRows = alertResult.rows
+      .map((row) => ({
+        tx_hash: String(row.related_txid),
+        timestamp:
+          row.detected_at instanceof Date
+            ? row.detected_at.toISOString()
+            : new Date(String(row.detected_at)).toISOString(),
+        amount_btc: inferAlertAmountBtc(row),
+        from_type: 'bitflow_onchain',
+        from_name: String(row.alert_type),
+        to_type: String(row.severity),
+        to_name: String(row.title),
+        tweeted: false,
+      }))
+      .filter((row) => row.amount_btc > 0);
+
+    const metricNames = Array.from(new Set(metricRows.map((row) => row.metric_name)));
+    if (metricNames.length > 0) {
+      await supabaseDelete(
+        `/rest/v1/onchain_metrics?metric_name=in.(${metricNames.join(',')})&resolution=eq.daily`
+      );
+      await insertInBatches('/rest/v1/onchain_metrics', metricRows);
+    }
+
+    await supabaseDelete('/rest/v1/whale_transactions?from_type=eq.bitflow_onchain');
+    await insertInBatches('/rest/v1/whale_transactions', alertRows, 200);
+
+    console.log(
+      JSON.stringify(
+        {
+          syncedMetricRows: metricRows.length,
+          syncedAlertRows: alertRows.length,
+        },
+        null,
+        2
+      )
+    );
+  } finally {
+    await client.end();
+  }
+}
+
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exitCode = 1;
+});
