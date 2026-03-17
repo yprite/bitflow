@@ -487,6 +487,50 @@ async function fetchPublishedSupabaseMetricRows(
     .filter((row): row is OnchainMetricRow => row !== null);
 }
 
+async function fetchPublishedSupabaseEntityFlows(
+  limit: number
+): Promise<OnchainEntityFlowEntry[]> {
+  const query = new URLSearchParams({
+    select: 'collected_at,metric_name,value,resolution,metadata',
+    resolution: 'eq.daily',
+    order: 'collected_at.desc',
+    limit: String(Math.max(limit * 12, 240)),
+  });
+  const data = await fetchSupabaseRestRows<SupabasePublishedMetricApiRow>(
+    `/rest/v1/onchain_metrics?${query.toString()}`
+  );
+
+  return data
+    .filter((row) => String(row.metric_name).startsWith('entity_flow_net:'))
+    .map((row) => {
+      const metadata =
+        row.metadata && typeof row.metadata === 'object'
+          ? (row.metadata as Record<string, unknown>)
+          : null;
+      const metadataRecord = metadata ?? {};
+      const entitySlug =
+        typeof metadataRecord.entity_slug === 'string'
+          ? metadataRecord.entity_slug
+          : String(row.metric_name).startsWith('entity_flow_net:')
+            ? String(row.metric_name).slice('entity_flow_net:'.length)
+            : null;
+      const day = toIsoDate(row.collected_at);
+      if (!entitySlug || !day) return null;
+
+      return {
+        day,
+        entitySlug,
+        receivedSats: toNumber(metadataRecord.received_sats),
+        sentSats: toNumber(metadataRecord.sent_sats),
+        netflowSats: toNumber(metadataRecord.netflow_sats),
+        txCount: toNumber(metadataRecord.tx_count),
+      };
+    })
+    .filter((row): row is OnchainEntityFlowEntry => row !== null)
+    .sort((a, b) => Math.abs(b.netflowSats) - Math.abs(a.netflowSats))
+    .slice(0, limit);
+}
+
 async function fetchLocalPostgresAlerts(limit: number): Promise<OnchainAlertEvent[]> {
   const pool = getBitflowPgPool();
   const result = await pool.query<{
@@ -786,6 +830,17 @@ export async function fetchOnchainEntityFlows(
     return [];
   }
 
+  try {
+    const publishedEntityFlows = await fetchPublishedSupabaseEntityFlows(limit);
+    if (publishedEntityFlows.length > 0) {
+      return publishedEntityFlows;
+    }
+  } catch (error) {
+    if (!isMissingSupabaseRelation(error)) {
+      throw error;
+    }
+  }
+
   const supabase = createServiceClient();
   const { data: latestDayRow, error: latestDayError } = await supabase
     .from('btc_entity_flow_daily')
@@ -876,10 +931,21 @@ export async function fetchOnchainSummary(options?: {
     results[1].status === 'fulfilled'
       ? results[1].value
       : (messages.push('알림 피드 조회 실패'), []);
-  const entityFlows =
+  let entityFlows =
     results[2].status === 'fulfilled'
       ? results[2].value
       : (messages.push('엔티티 순유입 조회 실패'), []);
+
+  if (entityFlows.length === 0 && hasBitflowPgDsn()) {
+    try {
+      const localEntityFlows = await fetchLocalPostgresEntityFlows(entityLimit);
+      if (localEntityFlows.length > 0) {
+        entityFlows = localEntityFlows;
+      }
+    } catch {
+      // Keep published summary even if local supplement fails.
+    }
+  }
   const latestDay =
     [...metrics.map((metric) => metric.latestDay), entityFlows[0]?.day]
       .filter((value): value is string => Boolean(value))

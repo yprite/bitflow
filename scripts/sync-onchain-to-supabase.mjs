@@ -268,6 +268,40 @@ async function main() {
       }))
       .filter((row) => row.amount_btc > 0);
 
+    const entityFlowResult = await client.query(`
+      WITH latest_day AS (
+        SELECT MAX(day) AS day
+        FROM btc_entity_flow_daily
+      )
+      SELECT
+        day::text AS day,
+        entity_slug,
+        received_sats,
+        sent_sats,
+        netflow_sats,
+        tx_count
+      FROM btc_entity_flow_daily
+      WHERE day = (SELECT day FROM latest_day)
+      ORDER BY ABS(netflow_sats) DESC
+      LIMIT 24
+    `);
+
+    const entityFlowRows = entityFlowResult.rows.map((row) => ({
+      collected_at: toIsoTimestamp(row.day),
+      metric_name: `entity_flow_net:${String(row.entity_slug)}`,
+      value: toNumber(row.netflow_sats) / 100_000_000,
+      resolution: 'daily',
+      metadata: {
+        source: 'bitflow-local-worker',
+        entity_slug: String(row.entity_slug),
+        received_sats: toNumber(row.received_sats),
+        sent_sats: toNumber(row.sent_sats),
+        netflow_sats: toNumber(row.netflow_sats),
+        tx_count: toNumber(row.tx_count),
+        unit: 'btc',
+      },
+    }));
+
     const metricNames = Array.from(new Set(metricRows.map((row) => row.metric_name)));
     if (metricNames.length > 0) {
       await supabaseDelete(
@@ -275,6 +309,11 @@ async function main() {
       );
       await insertInBatches('/rest/v1/onchain_metrics', metricRows);
     }
+
+    await supabaseDelete(
+      '/rest/v1/onchain_metrics?resolution=eq.daily&metric_name=gte.entity_flow_net:&metric_name=lt.entity_flow_net;'
+    );
+    await insertInBatches('/rest/v1/onchain_metrics', entityFlowRows);
 
     await supabaseDelete('/rest/v1/whale_transactions?from_type=eq.bitflow_onchain');
     await insertInBatches('/rest/v1/whale_transactions', alertRows, 200);
@@ -298,8 +337,12 @@ async function main() {
             )
           )
         : null;
-    const publishedLatestDay = latestPublishedDay(metricRows, alertRows);
-    const publishedState = metricRows.length > 0 || alertRows.length > 0 ? 'ok' : 'empty';
+    const publishedLatestDay = latestPublishedDay(
+      [...metricRows, ...entityFlowRows],
+      alertRows
+    );
+    const publishedState =
+      metricRows.length > 0 || alertRows.length > 0 || entityFlowRows.length > 0 ? 'ok' : 'empty';
 
     await supabaseDelete('/rest/v1/onchain_metrics?metric_name=eq.pipeline_status&resolution=eq.status');
     await supabaseInsert('/rest/v1/onchain_metrics', [
@@ -322,6 +365,7 @@ async function main() {
           published_source: 'supabase',
           published_latest_day: publishedLatestDay,
           alert_total: alertRows.length,
+          entity_flow_total: entityFlowRows.length,
           initial_block_download: nodeStatus.initialBlockDownload,
           pruned: nodeStatus.pruned,
           prune_height: nodeStatus.pruneHeight,
@@ -333,6 +377,7 @@ async function main() {
       JSON.stringify(
         {
           syncedMetricRows: metricRows.length,
+          syncedEntityFlowRows: entityFlowRows.length,
           syncedAlertRows: alertRows.length,
           nodeState: nodeStatus.state,
           indexerState: indexedStatus.state,
