@@ -17,10 +17,19 @@ const PUBLIC_NAV_ITEMS = [
 
 const ADMIN_NAV_ITEMS = [
   { href: '/admin', label: '이벤트' },
+  { href: '/admin/onchain', label: '온체인' },
 ] as const;
 
 function isActivePath(pathname: string, href: string): boolean {
-  return pathname === href || pathname.startsWith(`${href}/`);
+  if (pathname === href) {
+    return true;
+  }
+
+  if (href === '/admin') {
+    return false;
+  }
+
+  return pathname.startsWith(`${href}/`);
 }
 
 function NavLink({
