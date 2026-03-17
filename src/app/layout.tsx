@@ -1,9 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import AmbientBackground from '@/components/motion/ambient/AmbientBackground';
-import AnimatedLogo from '@/components/motion/brand/AnimatedLogo';
-import DataProvider from '@/components/data-provider';
-import EventTracker from '@/components/event-tracker';
+import SiteChrome from '@/components/site-chrome';
 import { SITE_ALTERNATE_NAME, SITE_NAME, getBaseUrl } from '@/lib/site';
 import './globals.css';
 
@@ -111,52 +108,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-dot-bg env-safe dot-vignette">
         <AmbientBackground />
-        <header className="dot-border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-          <nav className="max-w-3xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
-            <Link href="/" className="text-lg font-bold text-dot-accent tracking-tight">
-              <span className="inline-flex items-center gap-2">
-                <AnimatedLogo size={24} className="opacity-80" />
-                {SITE_NAME}
-              </span>
-            </Link>
-            <div className="flex flex-wrap justify-end gap-3 sm:gap-5 text-xs sm:text-sm">
-              <Link href="/realtime" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
-                실시간
-              </Link>
-              <Link href="/onchain" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
-                온체인
-              </Link>
-              <Link href="/indicators" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
-                히스토리
-              </Link>
-              <Link href="/tools" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
-                도구
-              </Link>
-              <Link href="/alert" className="text-dot-sub hover:text-dot-accent transition font-medium tracking-wide">
-                알림
-              </Link>
-            </div>
-          </nav>
-        </header>
-        <main className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 relative z-10">
-          <EventTracker />
-          <DataProvider>
-            {children}
-          </DataProvider>
-        </main>
-        <footer className="dot-border-t mt-12 relative z-10 dot-grid-sparse">
-          <div className="max-w-3xl mx-auto px-4 py-8 text-center space-y-2">
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-dot-sub">
-              <Link href="/about" className="hover:text-dot-accent transition">서비스 소개</Link>
-              <Link href="/contact" className="hover:text-dot-accent transition">문의</Link>
-              <Link href="/privacy" className="hover:text-dot-accent transition">개인정보처리방침</Link>
-              <Link href="/disclaimer" className="hover:text-dot-accent transition">면책 및 이용안내</Link>
-            </div>
-            <p className="text-[10px] text-dot-muted/60">
-              본 사이트의 정보는 투자 자문이 아니며, 모든 투자 판단과 책임은 사용자에게 있습니다.
-            </p>
-          </div>
-        </footer>
+        <SiteChrome>{children}</SiteChrome>
       </body>
     </html>
   );
