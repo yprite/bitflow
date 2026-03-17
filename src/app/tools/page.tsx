@@ -9,6 +9,7 @@ import GuideCard from '@/components/guide-card';
 import PageHeader from '@/components/page-header';
 import ToolsArbitrageSection from '@/components/tools-arbitrage-section';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
+import { fetchUsdKrw } from '@/lib/kimp';
 import { fetchOnchainNetworkPulse } from '@/lib/onchain-monitor';
 
 const GUIDE_STORAGE_KEY = 'bitflow:tools-guide-seen';
@@ -41,7 +42,10 @@ function ToolSection({
 }
 
 export default async function ToolsPage() {
-  const networkPulse = await fetchOnchainNetworkPulse();
+  const [networkPulse, usdKrw] = await Promise.all([
+    fetchOnchainNetworkPulse(),
+    fetchUsdKrw().catch(() => null),
+  ]);
 
   return (
     <div className="space-y-3 sm:space-y-5">
@@ -112,7 +116,14 @@ export default async function ToolsPage() {
               />
             </div>
             <div className="grid gap-3 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-              <BitcoinUnitConverter btcPriceUsd={networkPulse.marketContext.currentPriceUsd} />
+              <BitcoinUnitConverter
+                btcPriceUsd={networkPulse.marketContext.currentPriceUsd}
+                btcPriceKrw={
+                  usdKrw !== null
+                    ? networkPulse.marketContext.currentPriceUsd * usdKrw
+                    : null
+                }
+              />
               <BitcoinUtxoConsolidationPlanner
                 feePressure={networkPulse.feePressure}
                 btcPriceUsd={networkPulse.marketContext.currentPriceUsd}

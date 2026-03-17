@@ -4,9 +4,17 @@ import { useState } from 'react';
 
 interface BitcoinUnitConverterProps {
   btcPriceUsd: number;
+  btcPriceKrw: number | null;
 }
 
-type InputMode = 'usd' | 'btc' | 'sats';
+type InputMode = 'krw' | 'usd' | 'btc' | 'sats';
+
+function formatKrw(value: number): string {
+  return `${value.toLocaleString('ko-KR', {
+    minimumFractionDigits: value < 10_000 ? 0 : 0,
+    maximumFractionDigits: 0,
+  })}원`;
+}
 
 function formatUsd(value: number): string {
   return `$${value.toLocaleString('en-US', {
@@ -33,9 +41,10 @@ function parseAmount(raw: string): number {
 
 export default function BitcoinUnitConverter({
   btcPriceUsd,
+  btcPriceKrw,
 }: BitcoinUnitConverterProps) {
-  const [mode, setMode] = useState<InputMode>('usd');
-  const [amountInput, setAmountInput] = useState('100');
+  const [mode, setMode] = useState<InputMode>('krw');
+  const [amountInput, setAmountInput] = useState('100000');
 
   const amount = parseAmount(amountInput);
   const btc =
@@ -43,13 +52,19 @@ export default function BitcoinUnitConverter({
       ? amount
       : mode === 'sats'
         ? amount / 100_000_000
+        : mode === 'krw'
+          ? btcPriceKrw && btcPriceKrw > 0
+            ? amount / btcPriceKrw
+            : 0
         : btcPriceUsd > 0
           ? amount / btcPriceUsd
           : 0;
   const sats = btc * 100_000_000;
   const usd = btc * btcPriceUsd;
+  const krw = btcPriceKrw && btcPriceKrw > 0 ? btc * btcPriceKrw : 0;
 
   const modeOptions: Array<{ key: InputMode; label: string; suffix: string }> = [
+    { key: 'krw', label: 'KRW 입력', suffix: 'KRW' },
     { key: 'usd', label: 'USD 입력', suffix: 'USD' },
     { key: 'btc', label: 'BTC 입력', suffix: 'BTC' },
     { key: 'sats', label: 'sats 입력', suffix: 'sats' },
@@ -66,7 +81,7 @@ export default function BitcoinUnitConverter({
             {formatSats(sats)}
           </h2>
           <p className="text-xs leading-relaxed text-dot-sub">
-            달러, BTC, sats 중 하나를 기준으로 비트코인 단위를 빠르게 환산합니다.
+            KRW, 달러, BTC, sats 중 하나를 기준으로 비트코인 단위를 빠르게 환산합니다.
           </p>
         </div>
 
@@ -107,25 +122,46 @@ export default function BitcoinUnitConverter({
           </label>
         </div>
 
-        <div className="grid gap-2 text-[11px] font-mono sm:grid-cols-3">
-          <div className="rounded-sm border border-dot-border/30 bg-white/70 px-3 py-3">
+        <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+          <div className="min-w-0 rounded-sm border border-dot-border/30 bg-white/70 px-3 py-3">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-dot-muted">KRW</p>
+            <p className="mt-2 break-all text-xs font-semibold leading-snug text-dot-accent sm:text-sm">
+              {formatKrw(krw)}
+            </p>
+          </div>
+          <div className="min-w-0 rounded-sm border border-dot-border/30 bg-white/70 px-3 py-3">
             <p className="text-[10px] uppercase tracking-[0.14em] text-dot-muted">USD</p>
-            <p className="mt-2 text-sm font-semibold text-dot-accent">{formatUsd(usd)}</p>
+            <p className="mt-2 break-all text-xs font-semibold leading-snug text-dot-accent sm:text-sm">
+              {formatUsd(usd)}
+            </p>
           </div>
-          <div className="rounded-sm border border-dot-border/30 bg-white/70 px-3 py-3">
+          <div className="min-w-0 rounded-sm border border-dot-border/30 bg-white/70 px-3 py-3">
             <p className="text-[10px] uppercase tracking-[0.14em] text-dot-muted">BTC</p>
-            <p className="mt-2 text-sm font-semibold text-dot-accent">{formatBtc(btc)}</p>
+            <p className="mt-2 break-all text-xs font-semibold leading-snug text-dot-accent sm:text-sm">
+              {formatBtc(btc)}
+            </p>
           </div>
-          <div className="rounded-sm border border-dot-border/30 bg-white/70 px-3 py-3">
+          <div className="min-w-0 rounded-sm border border-dot-border/30 bg-white/70 px-3 py-3">
             <p className="text-[10px] uppercase tracking-[0.14em] text-dot-muted">sats</p>
-            <p className="mt-2 text-sm font-semibold text-dot-accent">{formatSats(sats)}</p>
+            <p className="mt-2 break-all text-xs font-semibold leading-snug text-dot-accent sm:text-sm">
+              {formatSats(sats)}
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 text-[11px] font-mono text-dot-muted">
-          <span>1 BTC</span>
-          <span>{formatUsd(btcPriceUsd)}</span>
-          <span>100,000,000 sats</span>
+        <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-dot-muted sm:grid-cols-4">
+          <div className="rounded-sm border border-dot-border/20 bg-white/50 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.14em]">1 BTC</p>
+          </div>
+          <div className="min-w-0 rounded-sm border border-dot-border/20 bg-white/50 px-3 py-2">
+            <p className="break-all leading-snug">{btcPriceKrw ? formatKrw(btcPriceKrw) : 'KRW n/a'}</p>
+          </div>
+          <div className="min-w-0 rounded-sm border border-dot-border/20 bg-white/50 px-3 py-2">
+            <p className="break-all leading-snug">{formatUsd(btcPriceUsd)}</p>
+          </div>
+          <div className="rounded-sm border border-dot-border/20 bg-white/50 px-3 py-2">
+            <p className="leading-snug">100,000,000 sats</p>
+          </div>
         </div>
       </div>
     </article>
