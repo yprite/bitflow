@@ -260,9 +260,21 @@ export interface OnchainBlockTempoData {
 }
 
 export interface OnchainNetworkPulseData {
+  marketContext: OnchainMarketContextData;
   feePressure: OnchainFeePressureData;
   feeHistory: OnchainFeeRegimeHistoryData;
   blockTempo: OnchainBlockTempoData;
+}
+
+export interface OnchainMarketContextPoint {
+  time: string;
+  priceUsd: number;
+}
+
+export interface OnchainMarketContextData {
+  currentPriceUsd: number;
+  windowDays: number;
+  history: OnchainMarketContextPoint[];
 }
 
 export interface OnchainFeeRegimeHistoryPoint {
@@ -361,10 +373,12 @@ export interface OnchainFlowPressureEntry {
 
 export interface OnchainFlowPressureData {
   tone: 'inflow' | 'outflow' | 'balanced';
+  scope: 'exchange' | 'labeled';
   label: string;
   summary: string;
   latestDay: string | null;
   trackedEntityCount: number;
+  exchangeEntityCount: number;
   totalReceivedBtc: number;
   totalSentBtc: number;
   netflowBtc: number;
@@ -377,6 +391,42 @@ export interface OnchainBriefingData {
   summary: string;
   bullets: string[];
   watchLabel: string;
+}
+
+export interface OnchainAgeBandSegment {
+  key: 'hot' | 'warm' | 'cold';
+  label: string;
+  share: number;
+  description: string;
+}
+
+export interface OnchainAgeBandSummary {
+  tone: 'rotation' | 'balanced' | 'dormant';
+  label: string;
+  summary: string;
+  latestDay: string | null;
+  hotShare: number;
+  warmShare: number;
+  coldShare: number;
+  active30d: number;
+  active90d: number;
+  dormantMovedBtc: number | null;
+  segments: OnchainAgeBandSegment[];
+}
+
+export interface OnchainSupportResistanceSummary {
+  tone: 'supportive' | 'neutral' | 'capped';
+  label: string;
+  summary: string;
+  currentPriceUsd: number;
+  periodLowUsd: number;
+  periodAverageUsd: number;
+  periodHighUsd: number;
+  supportUsd: number;
+  resistanceUsd: number;
+  supportDistancePercent: number;
+  resistanceDistancePercent: number;
+  windowDays: number;
 }
 
 export interface DashboardData {

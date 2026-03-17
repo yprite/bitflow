@@ -13,10 +13,14 @@ const readingSteps = [
   },
   {
     title: '3. 그다음 Dormancy / Flow',
-    body: '장기 보유 코인이 다시 움직이는지, 라벨 엔티티 기준 자금이 안으로 들어오는지 밖으로 나가는지 확인합니다.',
+    body: '장기 보유 코인이 다시 움직이는지, 거래소 쪽으로 코인이 들어오는지 빠져나가는지 확인합니다.',
   },
   {
-    title: '4. 마지막 Fee / Tempo',
+    title: '4. Age-band / Levels',
+    body: '최근 활동 공급 비중과 support/resistance proxy를 같이 보면, 지금 회전율과 가격 부담 구간을 같이 볼 수 있습니다.',
+  },
+  {
+    title: '5. 마지막 Fee / Tempo',
     body: '수수료 경쟁과 블록 속도는 지금 네트워크가 바쁜지 보여줍니다. 가격보다 참여 강도를 읽는 데 유용합니다.',
   },
 ];
@@ -39,8 +43,16 @@ const signalGuides = [
     body: '오랫동안 잠자던 코인이 다시 움직이는지 보여줍니다. 급증이 며칠 이어질수록 해석 강도가 높아집니다.',
   },
   {
-    title: 'Flow Pressure',
-    body: '상위 라벨 엔티티의 순유입/순유출입니다. 거래소 라벨 비중이 높을수록 매도 압력 해석력이 좋아집니다.',
+    title: 'Exchange Inflow / Netflow',
+    body: '거래소 라벨이 있을 때는 실제 거래소 유입/유출로 읽고, 없으면 labeled entity proxy로 동작합니다.',
+  },
+  {
+    title: 'Age-band Cohort',
+    body: '최근 30일과 90일 활동 공급을 나눠 단기 회전이 강한지, 장기 보유가 우세한지 보여줍니다.',
+  },
+  {
+    title: 'Support / Resistance Proxy',
+    body: '진짜 IOMAP은 아니고, 최근 30일 가격 범위에 현재 온체인 압력을 얹은 참고 레벨입니다.',
   },
   {
     title: 'Fee Regime History',
@@ -63,7 +75,7 @@ export default function OnchainGuideCard() {
     <GuideCard
       title="온체인 읽는 법"
       storageKey={GUIDE_STORAGE_KEY}
-      maxHeight={760}
+      maxHeight={980}
       intro={(
         <>
           온체인 데이터는 가격처럼 직관적이지 않습니다. 이 페이지는 거래량 자체보다
@@ -72,7 +84,7 @@ export default function OnchainGuideCard() {
         </>
       )}
     >
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
         {readingSteps.map((step) => (
           <div key={step.title} className="border border-dot-border/60 p-3 dot-grid-sparse">
             <p className="text-[10px] text-dot-muted uppercase tracking-wider">{step.title}</p>

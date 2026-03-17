@@ -1,9 +1,11 @@
 import {
   deriveFeeRegimeHistory,
+  deriveOnchainAgeBands,
   deriveOnchainBriefing,
   deriveOnchainDormancyPulse,
   deriveOnchainFlowPressure,
   deriveOnchainRegime,
+  deriveOnchainSupportResistance,
   deriveOnchainWhaleSummary,
   getOnchainAlertAmountBtc,
 } from './onchain-monitor';
@@ -158,7 +160,7 @@ describe('deriveOnchainDormancyPulse', () => {
 });
 
 describe('deriveOnchainFlowPressure', () => {
-  it('labels inflow when tracked entities receive more than they send', () => {
+  it('prefers exchange labels when available and labels inflow correctly', () => {
     const flow = deriveOnchainFlowPressure([
       {
         day: '2026-03-17',
@@ -180,8 +182,25 @@ describe('deriveOnchainFlowPressure', () => {
 
     expect(flow?.tone).toBe('inflow');
     expect(flow?.label).toBe('순유입 우세');
+    expect(flow?.scope).toBe('exchange');
+    expect(flow?.exchangeEntityCount).toBe(2);
     expect(flow?.leaders[0]?.entitySlug).toBe('binance');
     expect(flow?.netflowBtc).toBeCloseTo(900);
+  });
+});
+
+describe('deriveOnchainAgeBands', () => {
+  it('creates activity supply bands from 30D and 90D active supply', () => {
+    const summary = deriveOnchainAgeBands([
+      makeMetric('active_supply_ratio_30d', 15.2, 14.6, 'percent'),
+      makeMetric('active_supply_ratio_90d', 27.8, 27.1, 'percent'),
+      makeMetric('dormant_reactivated_btc', 85, 80, 'btc'),
+    ]);
+
+    expect(summary?.tone).toBe('rotation');
+    expect(summary?.hotShare).toBeCloseTo(15.2);
+    expect(summary?.warmShare).toBeCloseTo(12.6);
+    expect(summary?.coldShare).toBeCloseTo(72.2);
   });
 });
 
@@ -198,6 +217,72 @@ describe('deriveFeeRegimeHistory', () => {
     expect(history.trend).toBe('상승');
     expect(history.points).toHaveLength(4);
     expect(history.latestMedianFee).toBeCloseTo(6.8);
+  });
+});
+
+describe('deriveOnchainSupportResistance', () => {
+  it('builds proxy levels from price context and on-chain tone', () => {
+    const levels = deriveOnchainSupportResistance(
+      {
+        currentPriceUsd: 74_000,
+        windowDays: 30,
+        history: [
+          { time: '2026-02-17T00:00:00.000Z', priceUsd: 68_000 },
+          { time: '2026-02-24T00:00:00.000Z', priceUsd: 70_500 },
+          { time: '2026-03-03T00:00:00.000Z', priceUsd: 73_000 },
+          { time: '2026-03-10T00:00:00.000Z', priceUsd: 75_500 },
+          { time: '2026-03-17T00:00:00.000Z', priceUsd: 74_000 },
+        ],
+      },
+      {
+        label: '확장',
+        tone: 'expansion',
+        score: 1.8,
+        summary: 'summary',
+        drivers: [],
+        factors: [],
+      },
+      deriveOnchainWhaleSummary(
+        [
+          makeAlert({
+            alertType: 'mempool_large_tx',
+            detectedAt: '2026-03-17T01:00:00.000Z',
+            context: { amount_btc: 600 },
+          }),
+        ],
+        new Date('2026-03-17T04:00:00.000Z')
+      ),
+      {
+        tone: 'calm',
+        label: '차분',
+        summary: 'summary',
+        latestDay: '2026-03-17',
+        latestValue: 80,
+        baselineValue: 90,
+        ratio: 0.9,
+        changePercent: -10,
+        active30dRatio: 15,
+        active90dRatio: 27,
+        series: [],
+      },
+      {
+        tone: 'outflow',
+        scope: 'exchange',
+        label: '순유출 우세',
+        summary: 'summary',
+        latestDay: '2026-03-17',
+        trackedEntityCount: 2,
+        exchangeEntityCount: 2,
+        totalReceivedBtc: 120,
+        totalSentBtc: 210,
+        netflowBtc: -90,
+        leaders: [],
+      }
+    );
+
+    expect(levels).not.toBeNull();
+    expect(levels?.supportUsd).toBeGreaterThan(levels?.periodLowUsd ?? 0);
+    expect(levels?.resistanceUsd).toBeLessThan(levels?.periodHighUsd ?? Number.MAX_SAFE_INTEGER);
   });
 });
 
@@ -251,14 +336,43 @@ describe('deriveOnchainBriefing', () => {
       },
       flowPressure: {
         tone: 'balanced',
+        scope: 'labeled',
         label: '균형',
         summary: 'summary',
         latestDay: '2026-03-17',
         trackedEntityCount: 4,
+        exchangeEntityCount: 0,
         totalReceivedBtc: 500,
         totalSentBtc: 480,
         netflowBtc: 20,
         leaders: [],
+      },
+      ageBands: {
+        tone: 'balanced',
+        label: '균형',
+        summary: 'summary',
+        latestDay: '2026-03-17',
+        hotShare: 12,
+        warmShare: 10,
+        coldShare: 78,
+        active30d: 12,
+        active90d: 22,
+        dormantMovedBtc: 120,
+        segments: [],
+      },
+      levels: {
+        tone: 'neutral',
+        label: '중립',
+        summary: 'summary',
+        currentPriceUsd: 74_000,
+        periodLowUsd: 68_000,
+        periodAverageUsd: 72_000,
+        periodHighUsd: 76_000,
+        supportUsd: 70_000,
+        resistanceUsd: 75_000,
+        supportDistancePercent: 5.4,
+        resistanceDistancePercent: 1.3,
+        windowDays: 30,
       },
     });
 

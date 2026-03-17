@@ -223,6 +223,49 @@ function truncateTxid(txid: string | null): string {
   return `${txid.slice(0, 12)}…${txid.slice(-10)}`;
 }
 
+function getAlertAmountBtc(alert: OnchainSummaryData['alerts'][number]): number | null {
+  const value = alert.context.amount_btc;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+
+  return null;
+}
+
+function formatBtcAmount(value: number | null): string {
+  if (value === null) return 'N/A';
+
+  return `${value.toLocaleString('en-US', {
+    minimumFractionDigits: value >= 100 ? 0 : 1,
+    maximumFractionDigits: value >= 100 ? 0 : 1,
+  })} BTC`;
+}
+
+function getAlertInterpretation(alert: OnchainSummaryData['alerts'][number]): string {
+  if (alert.alertType === 'large_confirmed_spend') {
+    return '확정된 대형 이동입니다. 실제 자금 이동이 블록에 포함됐다는 뜻이라 해석 강도가 높습니다.';
+  }
+
+  if (alert.alertType === 'mempool_large_tx') {
+    return '아직 블록에 포함되지 않은 대형 이동입니다. 취소되거나 경로가 달라질 수 있어 확인 강도는 한 단계 낮습니다.';
+  }
+
+  if (alert.alertType === 'dormant_reactivation') {
+    return '오랫동안 잠자던 코인이 다시 움직였습니다. 내부 재배치일 수도 있지만 장기 보유자 행동 변화로도 읽힙니다.';
+  }
+
+  if (alert.alertType === 'new_block') {
+    return '운영성 이벤트입니다. 시장 해석보다 파이프라인 동작 확인에 더 가깝습니다.';
+  }
+
+  return '이 이벤트는 추가 라벨 정보가 붙을수록 더 정확하게 해석할 수 있습니다.';
+}
+
 function StatusCard({
   label,
   value,
@@ -338,52 +381,108 @@ function RecentAlertsPanel({ summary }: { summary: OnchainSummaryData }) {
           </p>
         ) : (
           <div className="space-y-3">
-            {summary.alerts.map((alert) => {
+            {summary.alerts.map((alert, index) => {
               const meta = severityMeta(alert.severity);
+              const amountBtc = getAlertAmountBtc(alert);
+              const explorerUrl = alert.relatedTxid
+                ? `https://mempool.space/tx/${alert.relatedTxid}`
+                : null;
 
               return (
-                <article
+                <details
                   key={`${alert.detectedAt}-${alert.alertType}-${alert.relatedTxid ?? 'none'}`}
                   className="rounded-sm border border-dot-border/40 bg-white/75 px-3 py-3 sm:px-4"
+                  open={index === 0}
                 >
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="min-w-0 space-y-2">
-                      <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono uppercase tracking-[0.14em]">
-                        <span className={`rounded-sm border px-2 py-1 ${meta.chipClass}`}>
-                          {meta.label}
-                        </span>
-                        <span className="text-dot-muted">{formatDateTime(alert.detectedAt)}</span>
-                        <span className="text-dot-muted break-all">
-                          {formatAlertType(alert.alertType)}
-                        </span>
+                  <summary className="list-none cursor-pointer">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono uppercase tracking-[0.14em]">
+                          <span className={`rounded-sm border px-2 py-1 ${meta.chipClass}`}>
+                            {meta.label}
+                          </span>
+                          <span className="text-dot-muted">{formatDateTime(alert.detectedAt)}</span>
+                          <span className="text-dot-muted break-all">
+                            {formatAlertType(alert.alertType)}
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-dot-text break-words">
+                            {alert.title}
+                          </p>
+                          <p className="text-xs text-dot-sub leading-relaxed break-words">
+                            {alert.body}
+                          </p>
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-dot-text break-words">
-                          {alert.title}
+                      <div className="min-w-0 rounded-sm border border-dot-border/30 bg-stone-50/80 px-3 py-2 text-[11px] font-mono text-dot-muted lg:w-[260px]">
+                        <p className="text-[10px] uppercase tracking-[0.14em] text-dot-muted">
+                          Related Tx
                         </p>
-                        <p className="text-xs text-dot-sub leading-relaxed break-words">
-                          {alert.body}
+                        <p className="mt-1 break-all text-dot-sub">
+                          {truncateTxid(alert.relatedTxid)}
                         </p>
+                        <p className="mt-3 text-[10px] uppercase tracking-[0.14em] text-dot-muted">
+                          Amount
+                        </p>
+                        <p className="mt-1 break-all text-dot-sub">{formatBtcAmount(amountBtc)}</p>
                       </div>
                     </div>
-                    <div className="min-w-0 rounded-sm border border-dot-border/30 bg-stone-50/80 px-3 py-2 text-[11px] font-mono text-dot-muted lg:w-[240px]">
-                      <p className="text-[10px] uppercase tracking-[0.14em] text-dot-muted">
-                        Related Tx
-                      </p>
-                      <p className="mt-1 break-all text-dot-sub">
-                        {truncateTxid(alert.relatedTxid)}
-                      </p>
-                      {alert.relatedEntitySlug ? (
-                        <>
-                          <p className="mt-3 text-[10px] uppercase tracking-[0.14em] text-dot-muted">
-                            Entity
+                  </summary>
+
+                  <div className="mt-3 grid gap-3 border-t border-dashed border-dot-border/40 pt-3 lg:grid-cols-[1.15fr_0.85fr]">
+                    <div className="space-y-3">
+                      <div className="rounded-sm border border-dot-border/30 bg-white/80 px-3 py-3">
+                        <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-dot-muted">
+                          Interpretation
+                        </p>
+                        <p className="mt-2 text-[11px] leading-relaxed text-dot-sub">
+                          {getAlertInterpretation(alert)}
+                        </p>
+                      </div>
+                      {explorerUrl ? (
+                        <div className="rounded-sm border border-dot-border/30 bg-white/80 px-3 py-3">
+                          <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-dot-muted">
+                            Explorer
                           </p>
-                          <p className="mt-1 break-all text-dot-sub">{alert.relatedEntitySlug}</p>
-                        </>
+                          <a
+                            href={explorerUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-2 inline-flex text-[11px] font-mono text-dot-accent underline underline-offset-2"
+                          >
+                            mempool.space에서 보기
+                          </a>
+                        </div>
                       ) : null}
                     </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                      <div className="rounded-sm border border-dot-border/30 bg-white/80 px-3 py-3">
+                        <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-dot-muted">
+                          Raw Type
+                        </p>
+                        <p className="mt-2 text-[11px] break-all text-dot-sub">{alert.alertType}</p>
+                      </div>
+                      <div className="rounded-sm border border-dot-border/30 bg-white/80 px-3 py-3">
+                        <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-dot-muted">
+                          Entity
+                        </p>
+                        <p className="mt-2 text-[11px] break-all text-dot-sub">
+                          {alert.relatedEntitySlug ?? '라벨 없음'}
+                        </p>
+                      </div>
+                      <div className="rounded-sm border border-dot-border/30 bg-white/80 px-3 py-3">
+                        <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-dot-muted">
+                          Source
+                        </p>
+                        <p className="mt-2 text-[11px] break-all text-dot-sub">
+                          {typeof alert.context.source === 'string' ? alert.context.source : 'bitflow_onchain'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </article>
+                </details>
               );
             })}
           </div>

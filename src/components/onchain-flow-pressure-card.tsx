@@ -46,6 +46,7 @@ export default function OnchainFlowPressureCard({ data }: OnchainFlowPressureCar
   const totalFlow = Math.max(data.totalReceivedBtc + data.totalSentBtc, 1);
   const receivedWidth = Math.max((data.totalReceivedBtc / totalFlow) * 100, data.totalReceivedBtc > 0 ? 8 : 0);
   const sentWidth = Math.max((data.totalSentBtc / totalFlow) * 100, data.totalSentBtc > 0 ? 8 : 0);
+  const scopeLabel = data.scope === 'exchange' ? 'exchange labels' : 'labeled entities';
 
   return (
     <article className="dot-card h-full p-4 sm:p-5">
@@ -53,7 +54,7 @@ export default function OnchainFlowPressureCard({ data }: OnchainFlowPressureCar
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">
-              Flow Pressure
+              Exchange Inflow / Netflow
             </p>
             <h2 className={`text-lg font-semibold tracking-tight ${tone.tone}`}>
               {data.netflowBtc > 0 ? '+' : ''}
@@ -68,12 +69,14 @@ export default function OnchainFlowPressureCard({ data }: OnchainFlowPressureCar
           </div>
         </div>
 
-        <p className="text-xs leading-relaxed text-dot-sub">{data.summary}</p>
+        <p className="text-xs leading-relaxed text-dot-sub">
+          {data.summary}
+        </p>
 
         <div className="rounded-sm border border-dot-border/30 bg-white/70 px-3 py-3 space-y-3">
           <div className="space-y-2">
             <div className="flex items-center justify-between text-[10px] font-mono text-dot-muted">
-              <span>상위 라벨 엔티티 흐름</span>
+              <span>{data.scope === 'exchange' ? '거래소 라벨 흐름' : '라벨 엔티티 흐름'}</span>
               <span>{data.trackedEntityCount} entities</span>
             </div>
             <div className="flex h-3 overflow-hidden rounded-full bg-stone-100">
@@ -110,7 +113,7 @@ export default function OnchainFlowPressureCard({ data }: OnchainFlowPressureCar
         </div>
 
         <p className="dot-insight">
-          이 카드는 최신일 상위 라벨 엔티티만 기준으로 계산합니다. 거래소 라벨 비중이 높을수록 해석력이 좋아집니다.
+          현재 범위는 {scopeLabel} 기준입니다. 거래소 라벨이 채워질수록 실제 매도 대기 물량 해석력이 더 좋아집니다.
         </p>
       </div>
     </article>

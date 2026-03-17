@@ -1,12 +1,14 @@
 import type {
   OnchainAlertEvent,
   OnchainAlertStats,
+  OnchainAgeBandSummary,
   OnchainBlockTempoData,
   OnchainBriefingData,
   OnchainDormancyPulseData,
   OnchainEntityFlowEntry,
   OnchainFeePressureData,
   OnchainFeeRegimeHistoryData,
+  OnchainMarketContextData,
   OnchainRegimeFactor,
   OnchainMetricId,
   OnchainMetricSummary,
@@ -14,13 +16,16 @@ import type {
   OnchainProjectedBlock,
   OnchainFlowPressureData,
   OnchainRegimeSummary,
+  OnchainSupportResistanceSummary,
   OnchainWhaleSummary,
 } from './types';
 
 const MEMPOOL_SPACE_API_BASE = 'https://mempool.space/api';
+const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WHALE_BUCKET_HOURS = 3;
 const WHALE_BUCKET_COUNT = 8;
+const SUPPORT_RESISTANCE_WINDOW_DAYS = 30;
 
 interface RecommendedFeesResponse {
   fastestFee: number;
@@ -60,6 +65,20 @@ interface RecentBlockResponse {
   };
 }
 
+interface MempoolPriceResponse {
+  USD?: number;
+}
+
+interface CoinbaseSpotPriceResponse {
+  data?: {
+    amount?: string;
+  };
+}
+
+interface CoinGeckoMarketChartResponse {
+  prices: [number, number][];
+}
+
 async function fetchJson<T>(path: string): Promise<T> {
   const response = await fetch(`${MEMPOOL_SPACE_API_BASE}${path}`, {
     next: { revalidate: 30 },
@@ -67,6 +86,19 @@ async function fetchJson<T>(path: string): Promise<T> {
 
   if (!response.ok) {
     throw new Error(`mempool.space request failed: ${path} (${response.status})`);
+  }
+
+  return (await response.json()) as T;
+}
+
+async function fetchCoinGeckoJson<T>(path: string): Promise<T> {
+  const response = await fetch(`${COINGECKO_API_BASE}${path}`, {
+    next: { revalidate: 300 },
+    headers: { 'User-Agent': 'bitflow/1.0' },
+  });
+
+  if (!response.ok) {
+    throw new Error(`CoinGecko request failed: ${path} (${response.status})`);
   }
 
   return (await response.json()) as T;
@@ -94,6 +126,49 @@ function formatCompactBtc(value: number): string {
     minimumFractionDigits: value >= 100 ? 0 : 1,
     maximumFractionDigits: value >= 100 ? 0 : 1,
   })} BTC`;
+}
+
+async function fetchCurrentBtcPriceUsd(): Promise<number> {
+  try {
+    const mempoolPrice = await fetchJson<MempoolPriceResponse>('/v1/prices');
+    if (typeof mempoolPrice.USD === 'number' && Number.isFinite(mempoolPrice.USD)) {
+      return mempoolPrice.USD;
+    }
+  } catch {
+    // Fall through to Coinbase.
+  }
+
+  const coinbaseResponse = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot', {
+    next: { revalidate: 30 },
+    headers: { 'User-Agent': 'bitflow/1.0' },
+  });
+
+  if (!coinbaseResponse.ok) {
+    throw new Error(`Coinbase spot request failed (${coinbaseResponse.status})`);
+  }
+
+  const coinbasePayload = (await coinbaseResponse.json()) as CoinbaseSpotPriceResponse;
+  const amount = Number(coinbasePayload.data?.amount);
+  if (!Number.isFinite(amount)) {
+    throw new Error('Coinbase spot request returned invalid BTC price');
+  }
+
+  return amount;
+}
+
+async function fetchBtcPriceHistory(
+  windowDays: number = SUPPORT_RESISTANCE_WINDOW_DAYS
+): Promise<OnchainMarketContextData['history']> {
+  const payload = await fetchCoinGeckoJson<CoinGeckoMarketChartResponse>(
+    `/coins/bitcoin/market_chart?vs_currency=usd&days=${windowDays}&interval=daily`
+  );
+
+  return payload.prices
+    .map(([time, priceUsd]) => ({
+      time: new Date(time).toISOString(),
+      priceUsd,
+    }))
+    .filter((point) => Number.isFinite(point.priceUsd));
 }
 
 export function getOnchainAlertAmountBtc(alert: OnchainAlertEvent): number {
@@ -427,15 +502,38 @@ export function deriveOnchainFlowPressure(
     return null;
   }
 
-  const totalReceivedBtc = latestFlows.reduce(
+  const exchangeSlugs = [
+    'binance',
+    'coinbase',
+    'kraken',
+    'bitfinex',
+    'okx',
+    'okex',
+    'bybit',
+    'kucoin',
+    'upbit',
+    'bithumb',
+    'bitstamp',
+    'gemini',
+    'gate',
+    'mexc',
+    'robinhood',
+    'bitflyer',
+  ];
+  const exchangeFlows = latestFlows.filter((entry) =>
+    exchangeSlugs.some((slug) => entry.entitySlug.toLowerCase().includes(slug))
+  );
+  const scopedFlows = exchangeFlows.length > 0 ? exchangeFlows : latestFlows;
+
+  const totalReceivedBtc = scopedFlows.reduce(
     (sum, entry) => sum + entry.receivedSats / 100_000_000,
     0
   );
-  const totalSentBtc = latestFlows.reduce(
+  const totalSentBtc = scopedFlows.reduce(
     (sum, entry) => sum + entry.sentSats / 100_000_000,
     0
   );
-  const netflowBtc = latestFlows.reduce(
+  const netflowBtc = scopedFlows.reduce(
     (sum, entry) => sum + entry.netflowSats / 100_000_000,
     0
   );
@@ -445,21 +543,27 @@ export function deriveOnchainFlowPressure(
   let tone: OnchainFlowPressureData['tone'] = 'balanced';
   let label = '균형';
   let summary =
-    '상위 라벨 엔티티 기준 순유입과 순유출이 비슷해 한쪽 방향으로 크게 기울지 않았습니다.';
+    exchangeFlows.length > 0
+      ? '거래소 라벨 기준 순유입과 순유출이 비슷해 단기 매도 압력이 한쪽으로 크게 기울지 않았습니다.'
+      : '상위 라벨 엔티티 기준 순유입과 순유출이 비슷해 한쪽 방향으로 크게 기울지 않았습니다.';
 
   if (balanceRatio >= 0.08) {
     tone = 'inflow';
     label = '순유입 우세';
     summary =
-      '상위 라벨 엔티티로 코인이 더 많이 들어오고 있습니다. 거래소 라벨 비중이 높다면 매도 대기 물량으로 해석할 수 있습니다.';
+      exchangeFlows.length > 0
+        ? '거래소 라벨로 코인이 더 많이 들어오고 있습니다. 단기적으로는 매도 대기 물량이 늘어나는 쪽으로 해석합니다.'
+        : '상위 라벨 엔티티로 코인이 더 많이 들어오고 있습니다. 거래소 라벨 비중이 높다면 매도 대기 물량으로 해석할 수 있습니다.';
   } else if (balanceRatio <= -0.08) {
     tone = 'outflow';
     label = '순유출 우세';
     summary =
-      '상위 라벨 엔티티에서 코인이 더 많이 빠져나가고 있습니다. 보관 이동이나 외부 이체 수요가 커진 구간일 수 있습니다.';
+      exchangeFlows.length > 0
+        ? '거래소 라벨에서 코인이 더 많이 빠져나가고 있습니다. 축적 또는 외부 보관 이동 수요가 커지는 구간으로 읽을 수 있습니다.'
+        : '상위 라벨 엔티티에서 코인이 더 많이 빠져나가고 있습니다. 보관 이동이나 외부 이체 수요가 커진 구간일 수 있습니다.';
   }
 
-  const leaders = [...latestFlows]
+  const leaders = [...scopedFlows]
     .sort((left, right) => Math.abs(right.netflowSats) - Math.abs(left.netflowSats))
     .slice(0, 3)
     .map((entry) => {
@@ -478,14 +582,82 @@ export function deriveOnchainFlowPressure(
 
   return {
     tone,
+    scope: exchangeFlows.length > 0 ? 'exchange' : 'labeled',
     label,
     summary,
     latestDay,
-    trackedEntityCount: latestFlows.length,
+    trackedEntityCount: scopedFlows.length,
+    exchangeEntityCount: exchangeFlows.length,
     totalReceivedBtc,
     totalSentBtc,
     netflowBtc,
     leaders,
+  };
+}
+
+export function deriveOnchainAgeBands(
+  metrics: OnchainMetricSummary[]
+): OnchainAgeBandSummary | null {
+  const active30d = getMetric(metrics, 'active_supply_ratio_30d');
+  const active90d = getMetric(metrics, 'active_supply_ratio_90d');
+  const dormant = getMetric(metrics, 'dormant_reactivated_btc');
+
+  if (!active30d || !active90d || active30d.latestValue === null || active90d.latestValue === null) {
+    return null;
+  }
+
+  const hotShare = clamp(active30d.latestValue, 0, 100);
+  const warmShare = clamp(active90d.latestValue - active30d.latestValue, 0, 100);
+  const coldShare = clamp(100 - active90d.latestValue, 0, 100);
+
+  let tone: OnchainAgeBandSummary['tone'] = 'balanced';
+  let label = '균형';
+  let summary =
+    '최근 30일과 90일 활동 공급이 균형적으로 분포해 있습니다. 단기와 중기 참여가 모두 과도하지 않은 구간입니다.';
+
+  if (hotShare >= 14 || (active30d.changeValue ?? 0) >= 0.35) {
+    tone = 'rotation';
+    label = '회전 강화';
+    summary =
+      '최근 30일 활동 공급 비중이 높아져 단기 회전율이 커졌습니다. 투기성 유동성이 늘었는지 함께 봐야 합니다.';
+  } else if (coldShare >= 78 && (dormant?.latestValue ?? 0) <= (dormant?.previousValue ?? dormant?.latestValue ?? 0) * 1.1) {
+    tone = 'dormant';
+    label = '장기 보유 우세';
+    summary =
+      '90일 이상 잠자던 공급 비중이 높고 휴면 코인 이동도 차분해, 장기 보유 성격이 강한 구간으로 읽힙니다.';
+  }
+
+  return {
+    tone,
+    label,
+    summary,
+    latestDay: active90d.latestDay ?? active30d.latestDay,
+    hotShare,
+    warmShare,
+    coldShare,
+    active30d: active30d.latestValue,
+    active90d: active90d.latestValue,
+    dormantMovedBtc: dormant?.latestValue ?? null,
+    segments: [
+      {
+        key: 'hot',
+        label: '0-30D 활동 공급',
+        share: hotShare,
+        description: '최근 30일 안에 움직인 비교적 뜨거운 공급입니다.',
+      },
+      {
+        key: 'warm',
+        label: '31-90D 활동 공급',
+        share: warmShare,
+        description: '단기 투기보다는 중기 회전 성격이 강한 공급입니다.',
+      },
+      {
+        key: 'cold',
+        label: '90D+ 비활성 공급',
+        share: coldShare,
+        description: '최근 90일 넘게 움직이지 않은 장기 보유 성격의 공급입니다.',
+      },
+    ],
   };
 }
 
@@ -495,9 +667,11 @@ export function deriveOnchainBriefing(input: {
   feePressure: OnchainFeePressureData | null;
   dormancyPulse: OnchainDormancyPulseData | null;
   flowPressure: OnchainFlowPressureData | null;
+  ageBands?: OnchainAgeBandSummary | null;
+  levels?: OnchainSupportResistanceSummary | null;
 }): OnchainBriefingData | null {
-  const { regime, whaleSummary, feePressure, dormancyPulse, flowPressure } = input;
-  if (!regime && !whaleSummary && !feePressure && !dormancyPulse && !flowPressure) {
+  const { regime, whaleSummary, feePressure, dormancyPulse, flowPressure, ageBands, levels } = input;
+  if (!regime && !whaleSummary && !feePressure && !dormancyPulse && !flowPressure && !ageBands && !levels) {
     return null;
   }
 
@@ -574,12 +748,101 @@ export function deriveOnchainBriefing(input: {
     );
   }
 
+  if (ageBands) {
+    bullets.push(
+      `활동 공급 밴드는 ${ageBands.label}입니다. 30D ${ageBands.hotShare.toFixed(1)}% / 90D ${ageBands.active90d.toFixed(1)}% 수준입니다.`
+    );
+  }
+
+  if (levels) {
+    bullets.push(
+      `price proxy 상단은 $${levels.resistanceUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })}, 하단은 $${levels.supportUsd.toLocaleString('en-US', { maximumFractionDigits: 0 })} 입니다.`
+    );
+  }
+
   return {
     tone,
     headline,
     summary,
     bullets: bullets.slice(0, 4),
     watchLabel,
+  };
+}
+
+export function deriveOnchainSupportResistance(
+  marketContext: OnchainMarketContextData | null,
+  regime: OnchainRegimeSummary | null,
+  whaleSummary: OnchainWhaleSummary | null,
+  dormancyPulse: OnchainDormancyPulseData | null,
+  flowPressure: OnchainFlowPressureData | null
+): OnchainSupportResistanceSummary | null {
+  if (!marketContext || marketContext.history.length < 5) {
+    return null;
+  }
+
+  const prices = marketContext.history.map((point) => point.priceUsd);
+  const periodLowUsd = Math.min(...prices);
+  const periodHighUsd = Math.max(...prices);
+  const periodAverageUsd = average(prices);
+
+  let supportWeight = regime?.tone === 'expansion' ? 0.68 : regime?.tone === 'contraction' ? 0.36 : 0.52;
+  let resistanceWeight = regime?.tone === 'contraction' ? 0.68 : regime?.tone === 'expansion' ? 0.36 : 0.52;
+
+  if (flowPressure?.tone === 'outflow') {
+    supportWeight += 0.06;
+  } else if (flowPressure?.tone === 'inflow') {
+    resistanceWeight += 0.05;
+  }
+
+  if (dormancyPulse?.tone === 'spike') {
+    resistanceWeight += 0.05;
+  }
+
+  if (whaleSummary && whaleSummary.totalMovedBtc >= 1_500) {
+    resistanceWeight += 0.04;
+  }
+
+  supportWeight = clamp(supportWeight, 0.25, 0.82);
+  resistanceWeight = clamp(resistanceWeight, 0.25, 0.82);
+
+  const supportUsd = periodLowUsd + (periodAverageUsd - periodLowUsd) * supportWeight;
+  const resistanceUsd = periodAverageUsd + (periodHighUsd - periodAverageUsd) * resistanceWeight;
+  const supportDistancePercent = ((marketContext.currentPriceUsd - supportUsd) / marketContext.currentPriceUsd) * 100;
+  const resistanceDistancePercent = ((resistanceUsd - marketContext.currentPriceUsd) / marketContext.currentPriceUsd) * 100;
+
+  let tone: OnchainSupportResistanceSummary['tone'] = 'neutral';
+  let label = '중립';
+  let summary =
+    '실제 IOMAP이 아니라 최근 30일 가격 범위에 현재 온체인 활동성을 얹은 참고 레벨입니다.';
+
+  if (regime?.tone === 'expansion' && supportDistancePercent <= 6) {
+    tone = 'supportive';
+    label = '하단 지지 우세';
+    summary =
+      '확장 레짐과 비교적 가까운 하단 지지 레벨 조합입니다. 눌림 구간에서 수요가 붙는지 확인할 때 쓰는 proxy입니다.';
+  } else if (
+    (regime?.tone === 'contraction' || dormancyPulse?.tone === 'spike') &&
+    resistanceDistancePercent <= 6
+  ) {
+    tone = 'capped';
+    label = '상단 부담';
+    summary =
+      '위축 또는 장기 코인 이동 증가 구간에서 상단 레벨이 가까워졌습니다. 반등 시 매물 부담을 체크하는 proxy입니다.';
+  }
+
+  return {
+    tone,
+    label,
+    summary,
+    currentPriceUsd: marketContext.currentPriceUsd,
+    periodLowUsd,
+    periodAverageUsd,
+    periodHighUsd,
+    supportUsd,
+    resistanceUsd,
+    supportDistancePercent,
+    resistanceDistancePercent,
+    windowDays: marketContext.windowDays,
   };
 }
 
@@ -717,12 +980,14 @@ function deriveBlockTempo(
 
 export async function fetchOnchainNetworkPulse(): Promise<OnchainNetworkPulseData | null> {
   try {
-    const [fees, mempool, projectedBlocks, difficulty, recentBlocks] = await Promise.all([
+    const [fees, mempool, projectedBlocks, difficulty, recentBlocks, currentPriceUsd, priceHistory] = await Promise.all([
       fetchJson<RecommendedFeesResponse>('/v1/fees/recommended'),
       fetchJson<MempoolResponse>('/mempool'),
       fetchJson<MempoolProjectedBlockResponse[]>('/v1/fees/mempool-blocks'),
       fetchJson<DifficultyAdjustmentResponse>('/v1/difficulty-adjustment'),
       fetchJson<RecentBlockResponse[]>('/v1/blocks'),
+      fetchCurrentBtcPriceUsd(),
+      fetchBtcPriceHistory(),
     ]);
 
     if (!recentBlocks.length) {
@@ -736,6 +1001,11 @@ export async function fetchOnchainNetworkPulse(): Promise<OnchainNetworkPulseDat
     }));
 
     return {
+      marketContext: {
+        currentPriceUsd,
+        windowDays: SUPPORT_RESISTANCE_WINDOW_DAYS,
+        history: priceHistory,
+      },
       feePressure: deriveFeePressure(fees, mempool, projected),
       feeHistory: deriveFeeRegimeHistory(recentBlocks),
       blockTempo: deriveBlockTempo(recentBlocks.slice(0, 8), difficulty),

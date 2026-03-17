@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import HalvingCountdown from '@/components/halving-countdown';
+import OnchainAgeBandCard from '@/components/onchain-age-band-card';
 import OnchainBlockTempoCard from '@/components/onchain-block-tempo-card';
 import OnchainBriefingCard from '@/components/onchain-briefing-card';
 import OnchainDormancyPulseCard from '@/components/onchain-dormancy-pulse-card';
@@ -11,14 +12,17 @@ import OnchainFlowPressureCard from '@/components/onchain-flow-pressure-card';
 import OnchainGuideCard from '@/components/onchain-guide-card';
 import OnchainMetricCard from '@/components/onchain-metric-card';
 import OnchainRegimeCard from '@/components/onchain-regime-card';
+import OnchainSupportResistanceCard from '@/components/onchain-support-resistance-card';
 import OnchainWhaleSummaryCard from '@/components/onchain-whale-summary-card';
 import PageHeader from '@/components/page-header';
 import { fetchOnchainSummary } from '@/lib/onchain';
 import {
+  deriveOnchainAgeBands,
   deriveOnchainBriefing,
   deriveOnchainDormancyPulse,
   deriveOnchainFlowPressure,
   deriveOnchainRegime,
+  deriveOnchainSupportResistance,
   deriveOnchainWhaleSummary,
   fetchOnchainNetworkPulse,
 } from '@/lib/onchain-monitor';
@@ -50,7 +54,7 @@ export default async function OnchainPage() {
     fetchOnchainSummary({
       metricLookbackDays: 30,
       alertLimit: 60,
-      entityLimit: 6,
+      entityLimit: 18,
     }),
     fetchOnchainNetworkPulse(),
   ]);
@@ -60,15 +64,26 @@ export default async function OnchainPage() {
   const whaleSummary = summary.status === 'available' ? deriveOnchainWhaleSummary(summary.alerts) : null;
   const dormancyPulse = deriveOnchainDormancyPulse(summary.metrics);
   const flowPressure = deriveOnchainFlowPressure(summary.entityFlows);
+  const ageBands = deriveOnchainAgeBands(summary.metrics);
+  const supportResistance = deriveOnchainSupportResistance(
+    networkPulse?.marketContext ?? null,
+    regime,
+    whaleSummary,
+    dormancyPulse,
+    flowPressure
+  );
   const briefing = deriveOnchainBriefing({
     regime,
     whaleSummary,
     feePressure: networkPulse?.feePressure ?? null,
     dormancyPulse,
     flowPressure,
+    ageBands,
+    levels: supportResistance,
   });
   const feeHistory = networkPulse?.feeHistory ?? null;
   const hasNarrativeCards = Boolean(regime || whaleSummary);
+  const visibleEntityFlows = summary.entityFlows.slice(0, 6);
   const freshnessLabel = summary.latestDay
     ? new Date(`${summary.latestDay}T00:00:00Z`).toLocaleDateString('ko-KR', {
         month: 'short',
@@ -125,6 +140,15 @@ export default async function OnchainPage() {
         </DotAssemblyReveal>
       ) : null}
 
+      {ageBands || supportResistance ? (
+        <DotAssemblyReveal delay={190} duration={750}>
+          <div className="grid gap-3 xl:grid-cols-2">
+            {ageBands ? <OnchainAgeBandCard data={ageBands} /> : null}
+            {supportResistance ? <OnchainSupportResistanceCard data={supportResistance} /> : null}
+          </div>
+        </DotAssemblyReveal>
+      ) : null}
+
       <DotAssemblyReveal delay={210} duration={760}>
         <div className={`grid gap-3 ${networkPulse ? 'md:grid-cols-2 2xl:grid-cols-4' : 'xl:grid-cols-1'}`}>
           <HalvingCountdown />
@@ -147,7 +171,7 @@ export default async function OnchainPage() {
       {hasFlows && (
         <DotAssemblyReveal delay={290} duration={840}>
           <div className="grid gap-3">
-            <OnchainEntityFlowCard flows={summary.entityFlows} />
+            <OnchainEntityFlowCard flows={visibleEntityFlows} />
           </div>
         </DotAssemblyReveal>
       )}
