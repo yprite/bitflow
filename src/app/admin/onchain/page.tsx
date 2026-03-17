@@ -1,6 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import {
+  AdminLoadingPanel,
+  AdminLoginPanel,
+} from '@/components/admin-auth-panel';
 import type { OnchainSummaryData } from '@/lib/types';
 
 interface AdminOnchainData {
@@ -493,13 +497,13 @@ function RecentAlertsPanel({ summary }: { summary: OnchainSummaryData }) {
 }
 
 export default function AdminOnchainPage() {
+  const [authState, setAuthState] = useState<'checking' | 'guest' | 'authed'>('checking');
   const [secret, setSecret] = useState('');
-  const [authed, setAuthed] = useState(false);
   const [data, setData] = useState<AdminOnchainData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const fetchData = useCallback(async (token: string) => {
+  const fetchData = useCallback(async (token: string, fallbackToGuest: boolean) => {
     setLoading(true);
     setError('');
     try {
@@ -508,7 +512,10 @@ export default function AdminOnchainPage() {
       });
 
       if (res.status === 401) {
-        setAuthed(false);
+        sessionStorage.removeItem('admin_token');
+        setSecret('');
+        setData(null);
+        setAuthState('guest');
         setError('인증 실패');
         return;
       }
@@ -519,8 +526,14 @@ export default function AdminOnchainPage() {
 
       const json: AdminOnchainData = await res.json();
       setData(json);
-      setAuthed(true);
+      setAuthState('authed');
     } catch {
+      if (fallbackToGuest) {
+        sessionStorage.removeItem('admin_token');
+        setSecret('');
+        setData(null);
+        setAuthState('guest');
+      }
       setError('온체인 관리자 데이터를 불러올 수 없습니다.');
     } finally {
       setLoading(false);
@@ -530,41 +543,40 @@ export default function AdminOnchainPage() {
   const handleLogin = () => {
     if (!secret.trim()) return;
     sessionStorage.setItem('admin_token', secret);
-    fetchData(secret);
+    setAuthState('checking');
+    fetchData(secret, true);
   };
 
   useEffect(() => {
     const saved = sessionStorage.getItem('admin_token');
     if (saved) {
       setSecret(saved);
-      fetchData(saved);
+      setAuthState('checking');
+      fetchData(saved, true);
+      return;
     }
+
+    setAuthState('guest');
   }, [fetchData]);
 
-  if (!authed) {
+  if (authState === 'checking') {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="dot-card p-6 w-full max-w-xs space-y-4 dot-entrance dot-grid-sparse">
-          <h1 className="text-xs font-semibold text-dot-accent uppercase tracking-wider text-center">
-            Admin On-chain
-          </h1>
-          {error && <p className="text-dot-red text-xs text-center">{error}</p>}
-          <input
-            type="password"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-            placeholder="관리자 비밀키"
-            className="w-full border border-dot-border px-3 py-2 text-xs focus:border-dot-accent outline-none font-mono bg-white"
-          />
-          <button
-            onClick={handleLogin}
-            className="w-full bg-dot-accent text-white py-2 text-xs font-semibold hover:bg-dot-accent/90 transition font-mono uppercase tracking-wider"
-          >
-            로그인
-          </button>
-        </div>
-      </div>
+      <AdminLoadingPanel
+        title="Admin On-chain"
+        description="저장된 관리자 세션을 확인하고 온체인 파이프라인 화면을 준비하고 있습니다."
+      />
+    );
+  }
+
+  if (authState === 'guest') {
+    return (
+      <AdminLoginPanel
+        title="Admin On-chain"
+        error={error}
+        secret={secret}
+        onSecretChange={setSecret}
+        onSubmit={handleLogin}
+      />
     );
   }
 
@@ -586,7 +598,7 @@ export default function AdminOnchainPage() {
           </p>
         </div>
         <button
-          onClick={() => secret && fetchData(secret)}
+          onClick={() => secret && fetchData(secret, false)}
           disabled={loading}
           className="text-xs text-dot-sub hover:text-dot-accent transition px-2 py-1 border-2 border-dot-border hover:border-dot-accent disabled:opacity-50"
         >

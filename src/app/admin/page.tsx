@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import {
+  AdminLoadingPanel,
+  AdminLoginPanel,
+} from '@/components/admin-auth-panel';
 
 interface Totals {
   total_events: number;
@@ -267,14 +271,14 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 
 // ─── Main Admin Page ────────────────────────────────────────────
 export default function AdminPage() {
+  const [authState, setAuthState] = useState<'checking' | 'guest' | 'authed'>('checking');
   const [secret, setSecret] = useState('');
-  const [authed, setAuthed] = useState(false);
   const [data, setData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [days, setDays] = useState(30);
 
-  const fetchData = useCallback(async (token: string, d: number) => {
+  const fetchData = useCallback(async (token: string, d: number, fallbackToGuest: boolean) => {
     setLoading(true);
     setError('');
     try {
@@ -282,15 +286,24 @@ export default function AdminPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 401) {
-        setAuthed(false);
+        sessionStorage.removeItem('admin_token');
+        setSecret('');
+        setData(null);
+        setAuthState('guest');
         setError('인증 실패');
         return;
       }
       if (!res.ok) throw new Error('API 오류');
       const json: AdminData = await res.json();
       setData(json);
-      setAuthed(true);
+      setAuthState('authed');
     } catch {
+      if (fallbackToGuest) {
+        sessionStorage.removeItem('admin_token');
+        setSecret('');
+        setData(null);
+        setAuthState('guest');
+      }
       setError('데이터를 불러올 수 없습니다.');
     } finally {
       setLoading(false);
@@ -300,53 +313,49 @@ export default function AdminPage() {
   const handleLogin = () => {
     if (!secret.trim()) return;
     sessionStorage.setItem('admin_token', secret);
-    fetchData(secret, days);
+    setAuthState('checking');
+    fetchData(secret, days, true);
   };
 
-  // Auto-login if token was saved
   useEffect(() => {
     const saved = sessionStorage.getItem('admin_token');
     if (saved) {
       setSecret(saved);
-      fetchData(saved, days);
+      setAuthState('checking');
+      fetchData(saved, days, true);
+      return;
     }
-  }, []);
+
+    setAuthState('guest');
+  }, [fetchData]);
 
   useEffect(() => {
-    if (authed && secret) {
-      fetchData(secret, days);
+    if (authState === 'authed' && secret) {
+      fetchData(secret, days, false);
     }
   }, [days]);
 
-  // ── Login screen ──
-  if (!authed) {
+  if (authState === 'checking') {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="dot-card p-6 w-full max-w-xs space-y-4 dot-entrance dot-grid-sparse">
-          <h1 className="text-xs font-semibold text-dot-accent uppercase tracking-wider text-center">
-            Admin
-          </h1>
-          {error && <p className="text-dot-red text-xs text-center">{error}</p>}
-          <input
-            type="password"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-            placeholder="관리자 비밀키"
-            className="w-full border border-dot-border px-3 py-2 text-xs focus:border-dot-accent outline-none font-mono bg-white"
-          />
-          <button
-            onClick={handleLogin}
-            className="w-full bg-dot-accent text-white py-2 text-xs font-semibold hover:bg-dot-accent/90 transition font-mono uppercase tracking-wider"
-          >
-            로그인
-          </button>
-        </div>
-      </div>
+      <AdminLoadingPanel
+        title="Admin"
+        description="저장된 관리자 세션을 확인하고 이벤트 대시보드를 준비하고 있습니다."
+      />
     );
   }
 
-  // ── Dashboard ──
+  if (authState === 'guest') {
+    return (
+      <AdminLoginPanel
+        title="Admin"
+        error={error}
+        secret={secret}
+        onSecretChange={setSecret}
+        onSubmit={handleLogin}
+      />
+    );
+  }
+
   const totals = data?.totals;
   const growthOverview = data?.growthOverview;
 
@@ -370,7 +379,7 @@ export default function AdminPage() {
             <option value={90}>90일</option>
           </select>
           <button
-            onClick={() => fetchData(secret, days)}
+            onClick={() => fetchData(secret, days, false)}
             disabled={loading}
             className="text-xs text-dot-sub hover:text-dot-accent transition px-2 py-1 border-2 border-dot-border hover:border-dot-accent disabled:opacity-50"
           >
@@ -549,7 +558,7 @@ export default function AdminPage() {
         <button
           onClick={() => {
             sessionStorage.removeItem('admin_token');
-            setAuthed(false);
+            setAuthState('guest');
             setData(null);
             setSecret('');
           }}
