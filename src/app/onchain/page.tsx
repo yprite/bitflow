@@ -150,7 +150,7 @@ export default async function OnchainPage() {
       ) : null}
 
       <DotAssemblyReveal delay={210} duration={760}>
-        <div className={`grid gap-3 ${networkPulse ? 'md:grid-cols-2 2xl:grid-cols-4' : 'xl:grid-cols-1'}`}>
+        <div className={`grid gap-3 ${networkPulse ? 'md:grid-cols-2' : 'xl:grid-cols-1'}`}>
           <HalvingCountdown />
           {networkPulse ? <OnchainFeePressureCard data={networkPulse.feePressure} /> : null}
           {feeHistory ? <OnchainFeeRegimeHistoryCard data={feeHistory} /> : null}
