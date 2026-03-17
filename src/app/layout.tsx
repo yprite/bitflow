@@ -12,6 +12,14 @@ export const metadata: Metadata = {
     default: `${SITE_NAME} | 실시간 김치프리미엄 · 펀딩비 · 공포탐욕지수`,
     template: `%s | ${SITE_NAME}`,
   },
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    shortcut: [{ url: '/favicon-32.png', type: 'image/png' }],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
   description:
     '실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에. 50개 이상 코인 프리미엄 히트맵, 복합 시그널, 텔레그램 알림까지.',
   keywords: [
