@@ -9,13 +9,40 @@ export const dynamic = 'force-dynamic';
 
 const execFileAsync = promisify(execFile);
 
-async function readNodeTipHeight(): Promise<number | null> {
+async function readNodeStatus(): Promise<{
+  nodeTipHeight: number | null;
+  headerHeight: number | null;
+  initialBlockDownload: boolean | null;
+  pruned: boolean | null;
+  pruneHeight: number | null;
+}> {
   try {
     const { stdout } = await execFileAsync('bitcoin-cli', ['getblockchaininfo']);
-    const payload = JSON.parse(stdout) as { blocks?: number };
-    return typeof payload.blocks === 'number' ? payload.blocks : null;
+    const payload = JSON.parse(stdout) as {
+      blocks?: number;
+      headers?: number;
+      initialblockdownload?: boolean;
+      pruned?: boolean;
+      pruneheight?: number;
+    };
+    return {
+      nodeTipHeight: typeof payload.blocks === 'number' ? payload.blocks : null,
+      headerHeight: typeof payload.headers === 'number' ? payload.headers : null,
+      initialBlockDownload:
+        typeof payload.initialblockdownload === 'boolean'
+          ? payload.initialblockdownload
+          : null,
+      pruned: typeof payload.pruned === 'boolean' ? payload.pruned : null,
+      pruneHeight: typeof payload.pruneheight === 'number' ? payload.pruneheight : null,
+    };
   } catch {
-    return null;
+    return {
+      nodeTipHeight: null,
+      headerHeight: null,
+      initialBlockDownload: null,
+      pruned: null,
+      pruneHeight: null,
+    };
   }
 }
 
@@ -65,35 +92,42 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const [summary, nodeTipHeight, indexedStatus] = await Promise.all([
+    const [summary, nodeStatus, indexedStatus] = await Promise.all([
       fetchOnchainSummary({
-        metricLookbackDays: 30,
-        alertLimit: 20,
-        entityLimit: 10,
+        metricLookbackDays: 2,
+        alertLimit: 12,
+        entityLimit: 1,
       }),
-      readNodeTipHeight(),
+      readNodeStatus(),
       readIndexedStatus(),
     ]);
 
     const lagBlocks =
-      nodeTipHeight !== null && indexedStatus.indexedHeight !== null
-        ? Math.max(nodeTipHeight - indexedStatus.indexedHeight, 0)
+      nodeStatus.nodeTipHeight !== null && indexedStatus.indexedHeight !== null
+        ? Math.max(nodeStatus.nodeTipHeight - indexedStatus.indexedHeight, 0)
         : null;
     const syncPercent =
-      nodeTipHeight !== null &&
+      nodeStatus.nodeTipHeight !== null &&
       indexedStatus.indexedHeight !== null &&
-      nodeTipHeight > 0
-        ? Math.min((indexedStatus.indexedHeight / nodeTipHeight) * 100, 100)
+      nodeStatus.nodeTipHeight > 0
+        ? Math.min((indexedStatus.indexedHeight / nodeStatus.nodeTipHeight) * 100, 100)
         : null;
 
     return NextResponse.json({
       summary,
       pipeline: {
-        nodeTipHeight,
+        nodeTipHeight: nodeStatus.nodeTipHeight,
+        headerHeight: nodeStatus.headerHeight,
         indexedHeight: indexedStatus.indexedHeight,
         lagBlocks,
         syncPercent,
         latestIndexedDay: indexedStatus.latestIndexedDay,
+        publishedSource: summary.source,
+        publishedLatestDay: summary.latestDay,
+        alertTotal: summary.alertStats.total,
+        initialBlockDownload: nodeStatus.initialBlockDownload,
+        pruned: nodeStatus.pruned,
+        pruneHeight: nodeStatus.pruneHeight,
         updatedAt: new Date().toISOString(),
       },
     });
