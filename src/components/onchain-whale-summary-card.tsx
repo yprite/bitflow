@@ -129,7 +129,7 @@ export default function OnchainWhaleSummaryCard({
               <span>최근 24시간 활동 히스토그램</span>
               <span>3h bins</span>
             </div>
-            <div className="flex h-24 items-end gap-1">
+            <div className="flex items-end gap-1">
               {summary.buckets.map((bucket) => {
                 const height =
                   bucket.movedBtc > 0
@@ -138,8 +138,11 @@ export default function OnchainWhaleSummaryCard({
                 const active = bucket.alertCount > 0;
 
                 return (
-                  <div key={bucket.startAt} className="flex flex-1 flex-col items-center justify-end gap-1">
-                    <div className="group relative flex w-full justify-center">
+                  <div
+                    key={bucket.startAt}
+                    className="flex flex-1 flex-col items-center justify-end gap-1"
+                  >
+                    <div className="group relative flex h-20 w-full items-end justify-center">
                       <div className="absolute -top-8 rounded-sm bg-dot-accent px-1.5 py-0.5 text-[9px] font-mono text-white opacity-0 transition group-hover:opacity-100">
                         {bucket.alertCount}건 · {formatBtc(bucket.movedBtc)}
                       </div>
