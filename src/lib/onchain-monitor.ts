@@ -3,6 +3,7 @@ import type {
   OnchainAlertStats,
   OnchainBlockTempoData,
   OnchainFeePressureData,
+  OnchainRegimeFactor,
   OnchainMetricId,
   OnchainMetricSummary,
   OnchainNetworkPulseData,
@@ -13,6 +14,8 @@ import type {
 
 const MEMPOOL_SPACE_API_BASE = 'https://mempool.space/api';
 const DAY_MS = 24 * 60 * 60 * 1000;
+const WHALE_BUCKET_HOURS = 3;
+const WHALE_BUCKET_COUNT = 8;
 
 interface RecommendedFeesResponse {
   fastestFee: number;
@@ -108,6 +111,18 @@ export function deriveOnchainWhaleSummary(
   let dormantMovedBtc = 0;
   let largestMoveBtc = 0;
   let latestDetectedAt: string | null = null;
+  const bucketMs = WHALE_BUCKET_HOURS * 60 * 60 * 1000;
+  const bucketFloor = Math.floor(now.getTime() / bucketMs) * bucketMs;
+  const firstBucketStartMs = bucketFloor - (WHALE_BUCKET_COUNT - 1) * bucketMs;
+  const buckets = Array.from({ length: WHALE_BUCKET_COUNT }, (_, index) => {
+    const startMs = firstBucketStartMs + index * bucketMs;
+    return {
+      startAt: new Date(startMs).toISOString(),
+      endAt: new Date(startMs + bucketMs).toISOString(),
+      movedBtc: 0,
+      alertCount: 0,
+    };
+  });
 
   for (const alert of recentAlerts) {
     const amountBtc = getOnchainAlertAmountBtc(alert);
@@ -118,6 +133,13 @@ export function deriveOnchainWhaleSummary(
       detectedAtMs > new Date(latestDetectedAt).getTime()
         ? alert.detectedAt
         : latestDetectedAt;
+
+    const bucketIndex = Math.floor((detectedAtMs - firstBucketStartMs) / bucketMs);
+
+    if (bucketIndex >= 0 && bucketIndex < buckets.length) {
+      buckets[bucketIndex].movedBtc += amountBtc;
+      buckets[bucketIndex].alertCount += 1;
+    }
 
     if (alert.alertType === 'large_confirmed_spend') {
       confirmedCount += 1;
@@ -136,6 +158,26 @@ export function deriveOnchainWhaleSummary(
     { type: 'mempool_large_tx', moved: pendingMovedBtc },
     { type: 'dormant_reactivation', moved: dormantMovedBtc },
   ].sort((a, b) => b.moved - a.moved);
+  const slices = [
+    {
+      key: 'confirmed' as const,
+      label: '확정',
+      movedBtc: confirmedMovedBtc,
+      count: confirmedCount,
+    },
+    {
+      key: 'pending' as const,
+      label: '미확정',
+      movedBtc: pendingMovedBtc,
+      count: pendingCount,
+    },
+    {
+      key: 'dormant' as const,
+      label: '휴면',
+      movedBtc: dormantMovedBtc,
+      count: dormantCount,
+    },
+  ];
 
   return {
     windowHours: 24,
@@ -150,6 +192,8 @@ export function deriveOnchainWhaleSummary(
     largestMoveBtc,
     dominantAlertType: candidates[0]?.moved > 0 ? candidates[0].type : null,
     latestDetectedAt,
+    slices,
+    buckets,
   };
 }
 
@@ -172,44 +216,62 @@ export function deriveOnchainRegime(
 
   let score = 0;
   const drivers: string[] = [];
+  const factors: OnchainRegimeFactor[] = [];
+  const pushFactor = (label: string, contribution: number, detail: string) => {
+    score += contribution;
+    drivers.push(detail);
+    factors.push({
+      label,
+      contribution: Number(contribution.toFixed(1)),
+      detail,
+    });
+  };
 
   if (active30d && active30d.latestValue !== null && active30d.changeValue !== null) {
     if (active30d.changeValue >= 0.2) {
-      score += 1.2;
-      drivers.push(`30일 활성 공급이 ${active30d.changeValue.toFixed(2)}%p 늘었습니다.`);
+      pushFactor(
+        '30D 활성 공급',
+        1.2,
+        `30일 활성 공급이 ${active30d.changeValue.toFixed(2)}%p 늘었습니다.`
+      );
     } else if (active30d.changeValue <= -0.2) {
-      score -= 1.2;
-      drivers.push(`30일 활성 공급이 ${Math.abs(active30d.changeValue).toFixed(2)}%p 줄었습니다.`);
+      pushFactor(
+        '30D 활성 공급',
+        -1.2,
+        `30일 활성 공급이 ${Math.abs(active30d.changeValue).toFixed(2)}%p 줄었습니다.`
+      );
     }
   }
 
   if (active90d && active90d.latestValue !== null && active90d.changeValue !== null) {
     if (active90d.changeValue >= 0.15) {
-      score += 0.7;
-      drivers.push(`90일 활성 공급도 동반 상승 중입니다.`);
+      pushFactor('90D 활성 공급', 0.7, '90일 활성 공급도 동반 상승 중입니다.');
     } else if (active90d.changeValue <= -0.15) {
-      score -= 0.7;
-      drivers.push(`90일 활성 공급도 둔화되고 있습니다.`);
+      pushFactor('90D 활성 공급', -0.7, '90일 활성 공급도 둔화되고 있습니다.');
     }
   }
 
   if (spentBtc && spentBtc.changePercent !== null) {
     if (spentBtc.changePercent >= 12) {
-      score += 0.9;
-      drivers.push(`일간 이동 BTC가 전일 대비 ${spentBtc.changePercent.toFixed(1)}% 늘었습니다.`);
+      pushFactor(
+        '일간 이동 BTC',
+        0.9,
+        `일간 이동 BTC가 전일 대비 ${spentBtc.changePercent.toFixed(1)}% 늘었습니다.`
+      );
     } else if (spentBtc.changePercent <= -12) {
-      score -= 0.9;
-      drivers.push(`일간 이동 BTC가 전일 대비 ${Math.abs(spentBtc.changePercent).toFixed(1)}% 줄었습니다.`);
+      pushFactor(
+        '일간 이동 BTC',
+        -0.9,
+        `일간 이동 BTC가 전일 대비 ${Math.abs(spentBtc.changePercent).toFixed(1)}% 줄었습니다.`
+      );
     }
   }
 
   if (createdUtxo && createdUtxo.changePercent !== null) {
     if (createdUtxo.changePercent >= 8) {
-      score += 0.5;
-      drivers.push(`신규 UTXO가 늘어 신규 활동이 유입되고 있습니다.`);
+      pushFactor('신규 UTXO', 0.5, '신규 UTXO가 늘어 신규 활동이 유입되고 있습니다.');
     } else if (createdUtxo.changePercent <= -8) {
-      score -= 0.5;
-      drivers.push(`신규 UTXO 증가세가 둔화됐습니다.`);
+      pushFactor('신규 UTXO', -0.5, '신규 UTXO 증가세가 둔화됐습니다.');
     }
   }
 
@@ -220,16 +282,13 @@ export function deriveOnchainRegime(
     dormant.previousValue > 0 &&
     dormant.latestValue >= dormant.previousValue * 1.5
   ) {
-    score -= 0.8;
-    drivers.push('장기 휴면 코인 이동이 늘어 분배 압력이 커졌습니다.');
+    pushFactor('휴면 코인 이동', -0.8, '장기 휴면 코인 이동이 늘어 분배 압력이 커졌습니다.');
   }
 
   if (alertStats.high >= 4) {
-    score -= 0.4;
-    drivers.push(`강한 온체인 이벤트가 ${alertStats.high}건으로 늘었습니다.`);
+    pushFactor('강한 이벤트 빈도', -0.4, `강한 온체인 이벤트가 ${alertStats.high}건으로 늘었습니다.`);
   } else if (alertStats.medium >= 4) {
-    score += 0.2;
-    drivers.push(`미확정 대형 이동이 늘어 네트워크 활동이 살아 있습니다.`);
+    pushFactor('미확정 대형 이동', 0.2, '미확정 대형 이동이 늘어 네트워크 활동이 살아 있습니다.');
   }
 
   const roundedScore = Number(score.toFixed(1));
@@ -243,12 +302,21 @@ export function deriveOnchainRegime(
       ? '활동 지표 둔화와 장기 코인 이동이 겹쳐 보수적으로 해석할 구간입니다.'
       : '활동과 분배 신호가 엇갈려 뚜렷한 방향성보다 균형 구간에 가깝습니다.';
 
+  if (factors.length === 0) {
+    factors.push({
+      label: '중립 구간',
+      contribution: 0,
+      detail: '주요 활동 지표가 모두 중립 범위에 머물고 있습니다.',
+    });
+  }
+
   return {
     label,
     tone,
     score: roundedScore,
     summary,
     drivers: drivers.slice(0, 3),
+    factors: factors.slice(0, 5),
   };
 }
 

@@ -33,9 +33,39 @@ function formatDominantType(value: string | null): string {
   return '대형 이동 감지 없음';
 }
 
+function formatHourLabel(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+
+  return parsed.toLocaleString('ko-KR', {
+    hour: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Seoul',
+  });
+}
+
+const SLICE_META = {
+  confirmed: {
+    bar: 'bg-dot-accent',
+    tone: 'text-dot-accent',
+  },
+  pending: {
+    bar: 'bg-dot-yellow/80',
+    tone: 'text-dot-yellow',
+  },
+  dormant: {
+    bar: 'bg-dot-red/80',
+    tone: 'text-dot-red',
+  },
+} as const;
+
 export default function OnchainWhaleSummaryCard({
   summary,
 }: OnchainWhaleSummaryCardProps) {
+  const totalMoved = Math.max(summary.totalMovedBtc, 0);
+  const maxBucketValue = Math.max(...summary.buckets.map((bucket) => bucket.movedBtc), 1);
+  const largestMoveShare = totalMoved > 0 ? (summary.largestMoveBtc / totalMoved) * 100 : 0;
+
   return (
     <article className="dot-card p-4 sm:p-5">
       <div className="dot-card-inner space-y-4">
@@ -57,41 +87,98 @@ export default function OnchainWhaleSummaryCard({
           확정 이동, mempool 대기 이동, 휴면 재활성 중 어떤 흐름이 우세한지 빠르게 보여줍니다.
         </p>
 
-        <div className="grid grid-cols-3 gap-2 text-[11px] font-mono">
-          <div className="rounded-sm border border-dot-border/30 bg-white/70 px-3 py-2">
-            <p className="text-[10px] text-dot-muted">확정</p>
-            <p className="mt-1 text-dot-accent">{summary.confirmedCount}건</p>
-            <p className="text-[10px] text-dot-muted">{formatBtc(summary.confirmedMovedBtc)}</p>
-          </div>
-          <div className="rounded-sm border border-dot-border/30 bg-white/70 px-3 py-2">
-            <p className="text-[10px] text-dot-muted">미확정</p>
-            <p className="mt-1 text-dot-accent">{summary.pendingCount}건</p>
-            <p className="text-[10px] text-dot-muted">{formatBtc(summary.pendingMovedBtc)}</p>
-          </div>
-          <div className="rounded-sm border border-dot-border/30 bg-white/70 px-3 py-2">
-            <p className="text-[10px] text-dot-muted">휴면</p>
-            <p className="mt-1 text-dot-accent">{summary.dormantCount}건</p>
-            <p className="text-[10px] text-dot-muted">{formatBtc(summary.dormantMovedBtc)}</p>
-          </div>
-        </div>
+        <div className="rounded-sm border border-dot-border/30 bg-white/70 px-3 py-3 space-y-3">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[10px] font-mono text-dot-muted">
+              <span>이동 비중</span>
+              <span>{summary.totalAlerts} alerts</span>
+            </div>
+            <div className="flex h-3 overflow-hidden rounded-full bg-stone-100">
+              {summary.slices.map((slice) => {
+                const meta = SLICE_META[slice.key];
+                const width = totalMoved > 0 ? (slice.movedBtc / totalMoved) * 100 : 0;
 
-        <div className="rounded-sm border border-dot-border/30 bg-white/70 px-3 py-3 space-y-2">
-          <div className="flex items-center justify-between gap-3 text-[11px] font-mono">
-            <span className="text-dot-muted">largest move</span>
-            <span className="text-dot-accent">{formatBtc(summary.largestMoveBtc)}</span>
+                return (
+                  <div
+                    key={slice.key}
+                    className={meta.bar}
+                    style={{ width: `${width}%`, minWidth: width > 0 ? '6px' : '0px' }}
+                  />
+                );
+              })}
+            </div>
           </div>
-          <div className="flex items-center justify-between gap-3 text-[11px] font-mono">
-            <span className="text-dot-muted">dominant flow</span>
-            <span className="text-dot-sub">{formatDominantType(summary.dominantAlertType)}</span>
+
+          <div className="grid grid-cols-3 gap-2 text-[11px] font-mono">
+            {summary.slices.map((slice) => {
+              const meta = SLICE_META[slice.key];
+              const share = totalMoved > 0 ? (slice.movedBtc / totalMoved) * 100 : 0;
+
+              return (
+                <div key={slice.key} className="rounded-sm border border-dot-border/30 bg-white/80 px-3 py-2">
+                  <p className="text-[10px] text-dot-muted">{slice.label}</p>
+                  <p className={`mt-1 ${meta.tone}`}>{share.toFixed(0)}%</p>
+                  <p className="text-[10px] text-dot-muted">{slice.count}건 · {formatBtc(slice.movedBtc)}</p>
+                </div>
+              );
+            })}
           </div>
-          <div className="flex items-center justify-between gap-3 text-[11px] font-mono">
-            <span className="text-dot-muted">latest</span>
-            <span className="text-dot-sub">{formatDateTime(summary.latestDetectedAt)}</span>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[10px] font-mono text-dot-muted">
+              <span>최근 24시간 활동 히스토그램</span>
+              <span>3h bins</span>
+            </div>
+            <div className="flex h-24 items-end gap-1">
+              {summary.buckets.map((bucket) => {
+                const height =
+                  bucket.movedBtc > 0
+                    ? Math.max((bucket.movedBtc / maxBucketValue) * 100, 8)
+                    : 6;
+                const active = bucket.alertCount > 0;
+
+                return (
+                  <div key={bucket.startAt} className="flex flex-1 flex-col items-center justify-end gap-1">
+                    <div className="group relative flex w-full justify-center">
+                      <div className="absolute -top-8 rounded-sm bg-dot-accent px-1.5 py-0.5 text-[9px] font-mono text-white opacity-0 transition group-hover:opacity-100">
+                        {bucket.alertCount}건 · {formatBtc(bucket.movedBtc)}
+                      </div>
+                      <div
+                        className={`w-full rounded-t-sm ${active ? 'bg-dot-accent/85' : 'bg-dot-border/25'}`}
+                        style={{ height: `${height}%` }}
+                      />
+                    </div>
+                    <span className="text-[9px] font-mono text-dot-muted">{formatHourLabel(bucket.startAt)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-2 rounded-sm border border-dot-border/30 bg-white/80 px-3 py-3">
+            <div className="flex items-center justify-between gap-3 text-[11px] font-mono">
+              <span className="text-dot-muted">largest move</span>
+              <span className="text-dot-accent">{formatBtc(summary.largestMoveBtc)}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-stone-100">
+              <div
+                className="h-full rounded-full bg-dot-accent"
+                style={{ width: `${Math.max(largestMoveShare, summary.largestMoveBtc > 0 ? 6 : 0)}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3 text-[11px] font-mono">
+              <span className="text-dot-muted">dominant flow</span>
+              <span className="text-dot-sub">{formatDominantType(summary.dominantAlertType)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3 text-[11px] font-mono">
+              <span className="text-dot-muted">latest</span>
+              <span className="text-dot-sub">{formatDateTime(summary.latestDetectedAt)}</span>
+            </div>
           </div>
         </div>
 
         <p className="dot-insight">
-          대형 이동은 단독 시그널보다 활동 지표와 함께 볼 때 해석력이 높습니다.
+          스택 바는 이동 비중을, 히스토그램은 최근 24시간 동안 활동이 어느 구간에 몰렸는지 보여줍니다.
         </p>
       </div>
     </article>

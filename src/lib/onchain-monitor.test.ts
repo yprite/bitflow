@@ -75,6 +75,8 @@ describe('deriveOnchainWhaleSummary', () => {
     expect(summary.pendingCount).toBe(1);
     expect(summary.dormantCount).toBe(1);
     expect(summary.dominantAlertType).toBe('large_confirmed_spend');
+    expect(summary.slices).toHaveLength(3);
+    expect(summary.buckets).toHaveLength(8);
   });
 });
 
@@ -94,6 +96,7 @@ describe('deriveOnchainRegime', () => {
     expect(regime?.label).toBe('확장');
     expect(regime?.tone).toBe('expansion');
     expect(regime?.drivers.length).toBeGreaterThan(0);
+    expect(regime?.factors.length).toBeGreaterThan(0);
   });
 
   it('labels contraction when long-term activity slows and dormant supply spikes', () => {
@@ -110,5 +113,6 @@ describe('deriveOnchainRegime', () => {
 
     expect(regime?.label).toBe('위축');
     expect(regime?.tone).toBe('contraction');
+    expect(regime?.factors.some((factor) => factor.contribution < 0)).toBe(true);
   });
 });

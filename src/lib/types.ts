@@ -277,6 +277,22 @@ export interface OnchainWhaleSummary {
   largestMoveBtc: number;
   dominantAlertType: string | null;
   latestDetectedAt: string | null;
+  slices: OnchainWhaleSlice[];
+  buckets: OnchainWhaleBucket[];
+}
+
+export interface OnchainWhaleSlice {
+  key: 'confirmed' | 'pending' | 'dormant';
+  label: string;
+  movedBtc: number;
+  count: number;
+}
+
+export interface OnchainWhaleBucket {
+  startAt: string;
+  endAt: string;
+  movedBtc: number;
+  alertCount: number;
 }
 
 export interface OnchainRegimeSummary {
@@ -285,6 +301,13 @@ export interface OnchainRegimeSummary {
   score: number;
   summary: string;
   drivers: string[];
+  factors: OnchainRegimeFactor[];
+}
+
+export interface OnchainRegimeFactor {
+  label: string;
+  contribution: number;
+  detail: string;
 }
 
 export interface DashboardData {
