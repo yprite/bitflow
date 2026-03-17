@@ -11,7 +11,6 @@ const PUBLIC_NAV_ITEMS = [
   { href: '/onchain', label: '온체인' },
   { href: '/indicators', label: '히스토리' },
   { href: '/tools', label: '도구' },
-  { href: '/alert', label: '알림' },
 ] as const;
 
 const ADMIN_NAV_ITEMS = [
