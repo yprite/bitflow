@@ -1,5 +1,6 @@
 import BitcoinFeeCalculator from '@/components/bitcoin-fee-calculator';
 import BitcoinStuckTxRescue from '@/components/bitcoin-stuck-tx-rescue';
+import BitcoinTxStatusTracker from '@/components/bitcoin-tx-status-tracker';
 import BitcoinTxSizeEstimator from '@/components/bitcoin-tx-size-estimator';
 import BitcoinUnitConverter from '@/components/bitcoin-unit-converter';
 import BitcoinUtxoConsolidationPlanner from '@/components/bitcoin-utxo-consolidation-planner';
@@ -20,7 +21,7 @@ export default async function ToolsPage() {
         <PageHeader
           eyebrow="Bitcoin Utility Deck"
           title="도구"
-          description="비트코인 전송 수수료 계산, stuck tx 복구, UTXO 정리, 단위 환산, 재정거래 판단까지 실전에 바로 쓰는 도구만 모았습니다."
+          description="비트코인 전송 수수료 계산, stuck tx 추적·복구, UTXO 정리, 단위 환산, 재정거래 판단까지 실전에 바로 쓰는 도구만 모았습니다."
           action={(
             <div className="rounded-sm border border-dot-border/50 bg-white/70 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.16em] text-dot-sub">
               BTC ops toolkit
@@ -55,9 +56,9 @@ export default async function ToolsPage() {
               </p>
             </div>
             <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-              <p className="text-[10px] text-dot-muted uppercase tracking-wider">Converter + Arbitrage</p>
+              <p className="text-[10px] text-dot-muted uppercase tracking-wider">Tracker + Market</p>
               <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
-                BTC, sats, 달러 체감치를 맞춘 뒤 국내외 호가 차이와 총비용을 반영해 실제 수익성을 계산합니다.
+                txid로 mempool과 confirmations를 확인하고, BTC·sats 체감치를 맞춘 뒤 재정거래 계산까지 이어집니다.
               </p>
             </div>
           </div>
@@ -90,18 +91,22 @@ export default async function ToolsPage() {
       </DotAssemblyReveal>
 
       <DotAssemblyReveal delay={300} duration={740}>
-        <section className="grid gap-3 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <section className={`grid gap-3 ${networkPulse ? 'xl:grid-cols-2' : 'xl:grid-cols-1'}`}>
+          <BitcoinTxStatusTracker />
           {networkPulse ? (
             <BitcoinUtxoConsolidationPlanner
               feePressure={networkPulse.feePressure}
               btcPriceUsd={networkPulse.marketContext.currentPriceUsd}
             />
           ) : null}
-          <ToolsArbitrageSection />
         </section>
       </DotAssemblyReveal>
 
-      <DotAssemblyReveal delay={360} duration={620} density="low">
+      <DotAssemblyReveal delay={360} duration={740}>
+        <ToolsArbitrageSection />
+      </DotAssemblyReveal>
+
+      <DotAssemblyReveal delay={420} duration={620} density="low">
         <section className="dot-card p-5 sm:p-6 space-y-3">
           <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">
             비트코인 도구 사용 순서
@@ -117,11 +122,15 @@ export default async function ToolsPage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-dot-muted/50 font-mono">03</span>
-              <span>UTXO Consolidation Planner로 현재 fee 구간이 정리하기 좋은지 보고, 큰 정리는 혼잡하지 않을 때 미리 처리하세요.</span>
+              <span>보낸 거래가 있다면 TX Status Tracker에서 mempool 대기인지, 이미 블록에 들어갔는지, confirmations가 몇 개인지 먼저 확인하세요.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-dot-muted/50 font-mono">04</span>
-              <span>금액 감이 애매하면 BTC / sats Converter로 단위 체감치를 맞춘 뒤, 재정거래 계산기로 마지막 실행 판단을 하세요.</span>
+              <span>UTXO Consolidation Planner로 현재 fee 구간이 정리하기 좋은지 보고, 금액 감이 애매하면 BTC / sats Converter로 단위 체감치를 맞추세요.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-dot-muted/50 font-mono">05</span>
+              <span>재정거래는 마지막 단계입니다. 호가 괴리보다 총비용과 예상 체결 시간을 먼저 확인한 뒤 실행 여부를 판단하세요.</span>
             </li>
           </ul>
         </section>
