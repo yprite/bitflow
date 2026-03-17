@@ -2,14 +2,22 @@ import type { Metadata } from 'next';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import HalvingCountdown from '@/components/halving-countdown';
 import OnchainBlockTempoCard from '@/components/onchain-block-tempo-card';
+import OnchainBriefingCard from '@/components/onchain-briefing-card';
+import OnchainDormancyPulseCard from '@/components/onchain-dormancy-pulse-card';
 import OnchainEntityFlowCard from '@/components/onchain-entity-flow-card';
 import OnchainFeePressureCard from '@/components/onchain-fee-pressure-card';
+import OnchainFeeRegimeHistoryCard from '@/components/onchain-fee-regime-history-card';
+import OnchainFlowPressureCard from '@/components/onchain-flow-pressure-card';
+import OnchainGuideCard from '@/components/onchain-guide-card';
 import OnchainMetricCard from '@/components/onchain-metric-card';
 import OnchainRegimeCard from '@/components/onchain-regime-card';
 import OnchainWhaleSummaryCard from '@/components/onchain-whale-summary-card';
 import PageHeader from '@/components/page-header';
 import { fetchOnchainSummary } from '@/lib/onchain';
 import {
+  deriveOnchainBriefing,
+  deriveOnchainDormancyPulse,
+  deriveOnchainFlowPressure,
   deriveOnchainRegime,
   deriveOnchainWhaleSummary,
   fetchOnchainNetworkPulse,
@@ -50,6 +58,16 @@ export default async function OnchainPage() {
   const hasFlows = summary.entityFlows.length > 0;
   const regime = deriveOnchainRegime(summary.metrics, summary.alertStats);
   const whaleSummary = summary.status === 'available' ? deriveOnchainWhaleSummary(summary.alerts) : null;
+  const dormancyPulse = deriveOnchainDormancyPulse(summary.metrics);
+  const flowPressure = deriveOnchainFlowPressure(summary.entityFlows);
+  const briefing = deriveOnchainBriefing({
+    regime,
+    whaleSummary,
+    feePressure: networkPulse?.feePressure ?? null,
+    dormancyPulse,
+    flowPressure,
+  });
+  const feeHistory = networkPulse?.feeHistory ?? null;
   const hasNarrativeCards = Boolean(regime || whaleSummary);
   const freshnessLabel = summary.latestDay
     ? new Date(`${summary.latestDay}T00:00:00Z`).toLocaleDateString('ko-KR', {
@@ -79,8 +97,18 @@ export default async function OnchainPage() {
         />
       </DotAssemblyReveal>
 
+      <DotAssemblyReveal delay={70} duration={660}>
+        <OnchainGuideCard />
+      </DotAssemblyReveal>
+
+      {briefing ? (
+        <DotAssemblyReveal delay={100} duration={680}>
+          <OnchainBriefingCard briefing={briefing} />
+        </DotAssemblyReveal>
+      ) : null}
+
       {hasNarrativeCards ? (
-        <DotAssemblyReveal delay={120} duration={700}>
+        <DotAssemblyReveal delay={130} duration={700}>
           <div className="grid gap-3 xl:grid-cols-[1.15fr_0.85fr]">
             {regime ? <OnchainRegimeCard regime={regime} /> : null}
             {whaleSummary ? <OnchainWhaleSummaryCard summary={whaleSummary} /> : null}
@@ -88,20 +116,26 @@ export default async function OnchainPage() {
         </DotAssemblyReveal>
       ) : null}
 
-      <DotAssemblyReveal delay={160} duration={720}>
-        <div className={`grid gap-3 ${networkPulse ? 'xl:grid-cols-3' : 'xl:grid-cols-1'}`}>
+      {dormancyPulse || flowPressure ? (
+        <DotAssemblyReveal delay={170} duration={740}>
+          <div className="grid gap-3 xl:grid-cols-2">
+            {dormancyPulse ? <OnchainDormancyPulseCard data={dormancyPulse} /> : null}
+            {flowPressure ? <OnchainFlowPressureCard data={flowPressure} /> : null}
+          </div>
+        </DotAssemblyReveal>
+      ) : null}
+
+      <DotAssemblyReveal delay={210} duration={760}>
+        <div className={`grid gap-3 ${networkPulse ? 'md:grid-cols-2 2xl:grid-cols-4' : 'xl:grid-cols-1'}`}>
           <HalvingCountdown />
-          {networkPulse ? (
-            <>
-              <OnchainFeePressureCard data={networkPulse.feePressure} />
-              <OnchainBlockTempoCard data={networkPulse.blockTempo} />
-            </>
-          ) : null}
+          {networkPulse ? <OnchainFeePressureCard data={networkPulse.feePressure} /> : null}
+          {feeHistory ? <OnchainFeeRegimeHistoryCard data={feeHistory} /> : null}
+          {networkPulse ? <OnchainBlockTempoCard data={networkPulse.blockTempo} /> : null}
         </div>
       </DotAssemblyReveal>
 
       {visibleMetrics.length > 0 ? (
-        <DotAssemblyReveal delay={200} duration={760}>
+        <DotAssemblyReveal delay={250} duration={800}>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {visibleMetrics.map((metric) => (
               <OnchainMetricCard key={metric.id} metric={metric} />
@@ -111,7 +145,7 @@ export default async function OnchainPage() {
       ) : null}
 
       {hasFlows && (
-        <DotAssemblyReveal delay={240} duration={800}>
+        <DotAssemblyReveal delay={290} duration={840}>
           <div className="grid gap-3">
             <OnchainEntityFlowCard flows={summary.entityFlows} />
           </div>

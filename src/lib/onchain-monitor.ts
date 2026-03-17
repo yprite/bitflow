@@ -2,12 +2,17 @@ import type {
   OnchainAlertEvent,
   OnchainAlertStats,
   OnchainBlockTempoData,
+  OnchainBriefingData,
+  OnchainDormancyPulseData,
+  OnchainEntityFlowEntry,
   OnchainFeePressureData,
+  OnchainFeeRegimeHistoryData,
   OnchainRegimeFactor,
   OnchainMetricId,
   OnchainMetricSummary,
   OnchainNetworkPulseData,
   OnchainProjectedBlock,
+  OnchainFlowPressureData,
   OnchainRegimeSummary,
   OnchainWhaleSummary,
 } from './types';
@@ -48,6 +53,11 @@ interface RecentBlockResponse {
   height: number;
   timestamp: number;
   tx_count: number;
+  extras?: {
+    medianFee?: number;
+    avgFeeRate?: number;
+    totalFees?: number;
+  };
 }
 
 async function fetchJson<T>(path: string): Promise<T> {
@@ -66,8 +76,24 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+function average(values: number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
 function getMetric(metrics: OnchainMetricSummary[], id: OnchainMetricId): OnchainMetricSummary | null {
   return metrics.find((metric) => metric.id === id) ?? null;
+}
+
+function formatSigned(value: number, fractionDigits = 1): string {
+  return `${value > 0 ? '+' : ''}${value.toFixed(fractionDigits)}`;
+}
+
+function formatCompactBtc(value: number): string {
+  return `${value.toLocaleString('en-US', {
+    minimumFractionDigits: value >= 100 ? 0 : 1,
+    maximumFractionDigits: value >= 100 ? 0 : 1,
+  })} BTC`;
 }
 
 export function getOnchainAlertAmountBtc(alert: OnchainAlertEvent): number {
@@ -320,6 +346,312 @@ export function deriveOnchainRegime(
   };
 }
 
+export function deriveOnchainDormancyPulse(
+  metrics: OnchainMetricSummary[]
+): OnchainDormancyPulseData | null {
+  const dormant = getMetric(metrics, 'dormant_reactivated_btc');
+  if (!dormant || dormant.latestValue === null) {
+    return null;
+  }
+
+  const active30d = getMetric(metrics, 'active_supply_ratio_30d');
+  const active90d = getMetric(metrics, 'active_supply_ratio_90d');
+  const active30dValue = active30d?.latestValue ?? null;
+  const active90dValue = active90d?.latestValue ?? null;
+  const series = dormant.series.slice(-7).map((point) => ({
+    day: point.day,
+    value: point.value,
+  }));
+  const priorValues = dormant.series.slice(-8, -1).map((point) => point.value);
+  const baselineValue =
+    priorValues.length > 0
+      ? average(priorValues)
+      : dormant.previousValue ?? dormant.latestValue;
+  const ratio =
+    baselineValue > 0
+      ? dormant.latestValue / baselineValue
+      : dormant.latestValue > 0
+      ? 2
+      : 1;
+  const changePercent = dormant.changePercent ?? null;
+
+  let tone: OnchainDormancyPulseData['tone'] = 'calm';
+  let label = '차분';
+  let summary =
+    '장기 휴면 코인 이동이 최근 평균 부근에 머물러 있어 장기 보유자 분배 압력은 크지 않습니다.';
+
+  if (ratio >= 1.8 || (changePercent !== null && changePercent >= 80)) {
+    tone = 'spike';
+    label = '급증';
+    summary =
+      active30dValue !== null && active30dValue >= 14
+        ? '장기 휴면 코인 이동이 평균보다 크게 늘었고 단기 활성 공급도 높아 유통 회전이 빨라지고 있습니다.'
+        : '장기 휴면 코인 이동이 평균보다 크게 늘어 내부 재배치인지 분배 신호인지 추가 확인이 필요한 구간입니다.';
+  } else if (ratio >= 1.25 || (changePercent !== null && changePercent >= 25)) {
+    tone = 'watch';
+    label = '주의';
+    summary =
+      '휴면 코인 이동이 최근 평균보다 높아졌습니다. 추세로 이어지는지 며칠 더 확인할 필요가 있습니다.';
+  }
+
+  return {
+    tone,
+    label,
+    summary,
+    latestDay: dormant.latestDay,
+    latestValue: dormant.latestValue,
+    baselineValue,
+    ratio,
+    changePercent,
+    active30dRatio: active30dValue,
+    active90dRatio: active90dValue,
+    series,
+  };
+}
+
+export function deriveOnchainFlowPressure(
+  entityFlows: OnchainEntityFlowEntry[]
+): OnchainFlowPressureData | null {
+  if (entityFlows.length === 0) {
+    return null;
+  }
+
+  const latestDay =
+    Array.from(new Set(entityFlows.map((entry) => entry.day)))
+      .sort()
+      .at(-1) ?? null;
+  const latestFlows = latestDay
+    ? entityFlows.filter((entry) => entry.day === latestDay)
+    : entityFlows;
+  if (latestFlows.length === 0) {
+    return null;
+  }
+
+  const totalReceivedBtc = latestFlows.reduce(
+    (sum, entry) => sum + entry.receivedSats / 100_000_000,
+    0
+  );
+  const totalSentBtc = latestFlows.reduce(
+    (sum, entry) => sum + entry.sentSats / 100_000_000,
+    0
+  );
+  const netflowBtc = latestFlows.reduce(
+    (sum, entry) => sum + entry.netflowSats / 100_000_000,
+    0
+  );
+  const grossFlow = Math.max(totalReceivedBtc + totalSentBtc, 1);
+  const balanceRatio = netflowBtc / grossFlow;
+
+  let tone: OnchainFlowPressureData['tone'] = 'balanced';
+  let label = '균형';
+  let summary =
+    '상위 라벨 엔티티 기준 순유입과 순유출이 비슷해 한쪽 방향으로 크게 기울지 않았습니다.';
+
+  if (balanceRatio >= 0.08) {
+    tone = 'inflow';
+    label = '순유입 우세';
+    summary =
+      '상위 라벨 엔티티로 코인이 더 많이 들어오고 있습니다. 거래소 라벨 비중이 높다면 매도 대기 물량으로 해석할 수 있습니다.';
+  } else if (balanceRatio <= -0.08) {
+    tone = 'outflow';
+    label = '순유출 우세';
+    summary =
+      '상위 라벨 엔티티에서 코인이 더 많이 빠져나가고 있습니다. 보관 이동이나 외부 이체 수요가 커진 구간일 수 있습니다.';
+  }
+
+  const leaders = [...latestFlows]
+    .sort((left, right) => Math.abs(right.netflowSats) - Math.abs(left.netflowSats))
+    .slice(0, 3)
+    .map((entry) => {
+      const direction: 'inflow' | 'outflow' =
+        entry.netflowSats >= 0 ? 'inflow' : 'outflow';
+
+      return {
+        entitySlug: entry.entitySlug,
+        netflowBtc: entry.netflowSats / 100_000_000,
+        receivedBtc: entry.receivedSats / 100_000_000,
+        sentBtc: entry.sentSats / 100_000_000,
+        txCount: entry.txCount,
+        direction,
+      };
+    });
+
+  return {
+    tone,
+    label,
+    summary,
+    latestDay,
+    trackedEntityCount: latestFlows.length,
+    totalReceivedBtc,
+    totalSentBtc,
+    netflowBtc,
+    leaders,
+  };
+}
+
+export function deriveOnchainBriefing(input: {
+  regime: OnchainRegimeSummary | null;
+  whaleSummary: OnchainWhaleSummary | null;
+  feePressure: OnchainFeePressureData | null;
+  dormancyPulse: OnchainDormancyPulseData | null;
+  flowPressure: OnchainFlowPressureData | null;
+}): OnchainBriefingData | null {
+  const { regime, whaleSummary, feePressure, dormancyPulse, flowPressure } = input;
+  if (!regime && !whaleSummary && !feePressure && !dormancyPulse && !flowPressure) {
+    return null;
+  }
+
+  const tone =
+    regime?.tone ??
+    (dormancyPulse?.tone === 'spike'
+      ? 'contraction'
+      : feePressure?.pressure === '혼잡'
+      ? 'expansion'
+      : 'neutral');
+
+  let headline = '온체인 신호가 엇갈려 단일 방향보다 조합 해석이 중요한 구간입니다.';
+  let summary = '레짐, 대형 이동, 수수료 혼잡도를 함께 보면 현재 네트워크 온도를 더 안정적으로 읽을 수 있습니다.';
+  let watchLabel = '같은 방향의 신호가 2~3일 이어지는지 확인';
+
+  if (regime?.tone === 'expansion' && feePressure?.pressure === '혼잡') {
+    headline = '활동은 확장 중이고 블록 공간 경쟁도 함께 올라오고 있습니다.';
+    summary =
+      '네트워크 참여 강도와 수수료 경쟁이 같이 상승하는 조합입니다. 단기 과열이라기보다 트래픽이 살아나는 구간에 가깝습니다.';
+    watchLabel = '수수료 혼잡이 며칠 지속되는지 확인';
+  } else if (regime?.tone === 'expansion') {
+    headline = '온체인 활동은 확장 쪽이지만 과열로 단정할 정도는 아닙니다.';
+    summary =
+      '활성 공급과 이동량이 개선되고 있습니다. 대형 이동이 차분하다면 비교적 건강한 확장으로 읽을 수 있습니다.';
+    watchLabel = '고래 이동이 확장 흐름을 방해하는지 확인';
+  } else if (regime?.tone === 'contraction' && dormancyPulse?.tone === 'spike') {
+    headline = '활동은 둔화됐고 장기 코인 이동은 늘어 보수적으로 볼 구간입니다.';
+    summary =
+      '참여 강도는 약해지는데 휴면 코인 이동은 커지고 있어 분배 가능성을 조금 더 경계해야 하는 조합입니다.';
+    watchLabel = '휴면 코인 이동이 일시적인지 확인';
+  } else if (regime?.tone === 'contraction') {
+    headline = '활동은 식어 있고 강한 확장 신호는 아직 보이지 않습니다.';
+    summary =
+      '수수료와 대형 이동이 빠르게 살아나지 않는다면 네트워크는 당분간 차분한 구간에 머물 수 있습니다.';
+    watchLabel = '활성 공급 회복 여부 확인';
+  } else if (whaleSummary && whaleSummary.totalMovedBtc >= 1_000) {
+    headline = '기조는 중립이지만 대형 자금 이동이 커져 단기 노이즈가 늘 수 있습니다.';
+    summary =
+      '지표 전체는 균형이지만 고래 이동이 커졌습니다. 해석은 거래소 유입인지, 내부 재배치인지에 따라 달라집니다.';
+    watchLabel = '대형 이동 유형과 다음 24시간 흐름 확인';
+  }
+
+  const bullets: string[] = [];
+
+  if (regime) {
+    bullets.push(
+      `레짐은 ${regime.label} 구간입니다. score ${formatSigned(regime.score)}로 ${regime.summary}`
+    );
+  }
+
+  if (whaleSummary) {
+    bullets.push(
+      whaleSummary.totalAlerts > 0
+        ? `최근 24시간 ${whaleSummary.totalAlerts}건, 총 ${formatCompactBtc(whaleSummary.totalMovedBtc)} 규모의 대형 이동이 감지됐습니다.`
+        : '최근 24시간 대형 이동은 두드러지지 않았습니다.'
+    );
+  }
+
+  if (dormancyPulse) {
+    bullets.push(
+      `휴면 코인 이동은 ${dormancyPulse.label} 단계입니다. 최근 평균 대비 ${dormancyPulse.ratio.toFixed(1)}배입니다.`
+    );
+  }
+
+  if (feePressure) {
+    bullets.push(
+      `수수료 혼잡도는 ${feePressure.pressure}입니다. 빠른 확정 기준 ${feePressure.fastestFee.toFixed(0)} sat/vB입니다.`
+    );
+  }
+
+  if (flowPressure) {
+    bullets.push(
+      `상위 라벨 엔티티 흐름은 ${flowPressure.label}입니다. 순흐름 ${formatSigned(flowPressure.netflowBtc)} BTC입니다.`
+    );
+  }
+
+  return {
+    tone,
+    headline,
+    summary,
+    bullets: bullets.slice(0, 4),
+    watchLabel,
+  };
+}
+
+export function deriveFeeRegimeHistory(
+  recentBlocks: RecentBlockResponse[]
+): OnchainFeeRegimeHistoryData {
+  const points = recentBlocks
+    .slice(0, 12)
+    .reverse()
+    .map((block) => ({
+      height: block.height,
+      timestamp: new Date(block.timestamp * 1000).toISOString(),
+      medianFee:
+        typeof block.extras?.medianFee === 'number'
+          ? block.extras.medianFee
+          : typeof block.extras?.avgFeeRate === 'number'
+          ? block.extras.avgFeeRate
+          : 0,
+      avgFeeRate:
+        typeof block.extras?.avgFeeRate === 'number'
+          ? block.extras.avgFeeRate
+          : typeof block.extras?.medianFee === 'number'
+          ? block.extras.medianFee
+          : 0,
+      txCount: block.tx_count,
+      totalFeesBtc:
+        typeof block.extras?.totalFees === 'number'
+          ? block.extras.totalFees / 100_000_000
+          : 0,
+    }))
+    .filter((point) => point.medianFee > 0 || point.avgFeeRate > 0);
+
+  const medianValues = points.map((point) => point.medianFee);
+  const latestMedianFee = points.at(-1)?.medianFee ?? 0;
+  const averageMedianFee = average(medianValues);
+  const peakMedianFee = medianValues.length > 0 ? Math.max(...medianValues) : 0;
+  const previousAverage = average(points.slice(0, Math.max(points.length - 3, 1)).map((point) => point.medianFee));
+  const recentAverage = average(points.slice(-3).map((point) => point.medianFee));
+
+  let trend: OnchainFeeRegimeHistoryData['trend'] = '안정';
+  if (recentAverage > previousAverage * 1.35 || recentAverage - previousAverage >= 1) {
+    trend = '상승';
+  } else if (previousAverage > recentAverage * 1.35 || previousAverage - recentAverage >= 1) {
+    trend = '완화';
+  }
+
+  let tone: OnchainFeeRegimeHistoryData['tone'] = 'relief';
+  let label = '완화';
+  let summary = '최근 블록들의 중간 수수료가 낮아 급한 거래 경쟁은 크지 않습니다.';
+
+  if (latestMedianFee >= 6 || peakMedianFee >= 10) {
+    tone = 'hot';
+    label = '혼잡';
+    summary = '최근 블록들에서 높은 수수료 구간이 반복돼, 급한 거래가 블록 공간을 두고 경쟁하고 있습니다.';
+  } else if (latestMedianFee >= 2 || peakMedianFee >= 4) {
+    tone = 'balanced';
+    label = '균형';
+    summary = '수수료 경쟁이 과열되진 않았지만, 블록마다 체감 수수료가 조금씩 흔들리는 구간입니다.';
+  }
+
+  return {
+    tone,
+    label,
+    trend,
+    summary,
+    latestMedianFee,
+    averageMedianFee,
+    peakMedianFee,
+    points,
+  };
+}
+
 function deriveFeePressure(
   fees: RecommendedFeesResponse,
   mempool: MempoolResponse,
@@ -405,6 +737,7 @@ export async function fetchOnchainNetworkPulse(): Promise<OnchainNetworkPulseDat
 
     return {
       feePressure: deriveFeePressure(fees, mempool, projected),
+      feeHistory: deriveFeeRegimeHistory(recentBlocks),
       blockTempo: deriveBlockTempo(recentBlocks.slice(0, 8), difficulty),
     };
   } catch {

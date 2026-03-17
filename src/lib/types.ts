@@ -261,7 +261,28 @@ export interface OnchainBlockTempoData {
 
 export interface OnchainNetworkPulseData {
   feePressure: OnchainFeePressureData;
+  feeHistory: OnchainFeeRegimeHistoryData;
   blockTempo: OnchainBlockTempoData;
+}
+
+export interface OnchainFeeRegimeHistoryPoint {
+  height: number;
+  timestamp: string;
+  medianFee: number;
+  avgFeeRate: number;
+  txCount: number;
+  totalFeesBtc: number;
+}
+
+export interface OnchainFeeRegimeHistoryData {
+  tone: 'relief' | 'balanced' | 'hot';
+  label: string;
+  trend: '상승' | '완화' | '안정';
+  summary: string;
+  latestMedianFee: number;
+  averageMedianFee: number;
+  peakMedianFee: number;
+  points: OnchainFeeRegimeHistoryPoint[];
 }
 
 export interface OnchainWhaleSummary {
@@ -308,6 +329,54 @@ export interface OnchainRegimeFactor {
   label: string;
   contribution: number;
   detail: string;
+}
+
+export interface OnchainDormancyPulsePoint {
+  day: string;
+  value: number;
+}
+
+export interface OnchainDormancyPulseData {
+  tone: 'calm' | 'watch' | 'spike';
+  label: string;
+  summary: string;
+  latestDay: string | null;
+  latestValue: number;
+  baselineValue: number;
+  ratio: number;
+  changePercent: number | null;
+  active30dRatio: number | null;
+  active90dRatio: number | null;
+  series: OnchainDormancyPulsePoint[];
+}
+
+export interface OnchainFlowPressureEntry {
+  entitySlug: string;
+  netflowBtc: number;
+  receivedBtc: number;
+  sentBtc: number;
+  txCount: number;
+  direction: 'inflow' | 'outflow';
+}
+
+export interface OnchainFlowPressureData {
+  tone: 'inflow' | 'outflow' | 'balanced';
+  label: string;
+  summary: string;
+  latestDay: string | null;
+  trackedEntityCount: number;
+  totalReceivedBtc: number;
+  totalSentBtc: number;
+  netflowBtc: number;
+  leaders: OnchainFlowPressureEntry[];
+}
+
+export interface OnchainBriefingData {
+  tone: OnchainRegimeTone;
+  headline: string;
+  summary: string;
+  bullets: string[];
+  watchLabel: string;
 }
 
 export interface DashboardData {
