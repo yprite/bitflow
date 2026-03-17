@@ -21,14 +21,22 @@ function formatDateTime(value: string): string {
 
 function severityMeta(severity: string) {
   if (severity === 'high') {
-    return { label: 'HIGH', dot: '#d63939', tone: 'text-dot-red' };
+    return { label: '확정 강한 이벤트', dot: '#d63939', tone: 'text-dot-red' };
   }
 
   if (severity === 'medium') {
-    return { label: 'MED', dot: '#f59e0b', tone: 'text-dot-yellow' };
+    return { label: '미확정 큰 거래', dot: '#f59e0b', tone: 'text-dot-yellow' };
   }
 
-  return { label: 'INFO', dot: '#275649', tone: 'text-dot-green' };
+  return { label: '운영 알림', dot: '#275649', tone: 'text-dot-green' };
+}
+
+function formatAlertType(alertType: string): string {
+  if (alertType === 'large_confirmed_spend') return '확정 대형 이동';
+  if (alertType === 'dormant_reactivation') return '휴면 코인 재활성';
+  if (alertType === 'mempool_large_tx') return '미확정 대형 이동';
+  if (alertType === 'new_block') return '새 블록';
+  return alertType;
 }
 
 function truncateTxid(txid: string | null): string {
@@ -54,7 +62,7 @@ export default function OnchainAlertFeed({
           </div>
           <div className="text-right text-[10px] font-mono text-dot-muted">
             <p>{stats.total} events</p>
-            <p>H {stats.high} / M {stats.medium} / I {stats.info}</p>
+            <p>확정 {stats.high} / 미확정 {stats.medium} / 운영 {stats.info}</p>
           </div>
         </div>
 
@@ -88,7 +96,7 @@ export default function OnchainAlertFeed({
                       <p className="text-xs text-dot-sub leading-relaxed">{alert.body}</p>
                     </div>
                     <div className="shrink-0 text-right text-[10px] font-mono text-dot-muted">
-                      <p>{alert.alertType}</p>
+                      <p>{formatAlertType(alert.alertType)}</p>
                       {alert.relatedTxid ? <p>{truncateTxid(alert.relatedTxid)}</p> : null}
                     </div>
                   </div>

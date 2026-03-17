@@ -70,22 +70,30 @@ function formatBoolean(value: boolean | null, truthy: string, falsy: string): st
 function severityMeta(severity: string) {
   if (severity === 'high') {
     return {
-      label: 'HIGH',
+      label: '확정 강한 이벤트',
       chipClass: 'border-dot-red/30 bg-dot-red/10 text-dot-red',
     };
   }
 
   if (severity === 'medium') {
     return {
-      label: 'MED',
+      label: '미확정 큰 거래',
       chipClass: 'border-dot-yellow/30 bg-dot-yellow/10 text-dot-yellow',
     };
   }
 
   return {
-    label: 'INFO',
+    label: '운영 알림',
     chipClass: 'border-dot-green/30 bg-dot-green/10 text-dot-green',
   };
+}
+
+function formatAlertType(alertType: string): string {
+  if (alertType === 'large_confirmed_spend') return '확정 대형 이동';
+  if (alertType === 'dormant_reactivation') return '휴면 코인 재활성';
+  if (alertType === 'mempool_large_tx') return '미확정 대형 이동';
+  if (alertType === 'new_block') return '새 블록';
+  return alertType;
 }
 
 function truncateTxid(txid: string | null): string {
@@ -178,13 +186,13 @@ function RecentAlertsPanel({ summary }: { summary: OnchainSummaryData }) {
               Total {summary.alertStats.total}
             </span>
             <span className="rounded-sm border border-dot-red/30 bg-dot-red/10 px-2 py-1 text-dot-red">
-              High {summary.alertStats.high}
+              확정 강한 이벤트 {summary.alertStats.high}
             </span>
             <span className="rounded-sm border border-dot-yellow/30 bg-dot-yellow/10 px-2 py-1 text-dot-yellow">
-              Med {summary.alertStats.medium}
+              미확정 큰 거래 {summary.alertStats.medium}
             </span>
             <span className="rounded-sm border border-dot-green/30 bg-dot-green/10 px-2 py-1 text-dot-green">
-              Info {summary.alertStats.info}
+              운영 알림 {summary.alertStats.info}
             </span>
           </div>
         </div>
@@ -210,7 +218,9 @@ function RecentAlertsPanel({ summary }: { summary: OnchainSummaryData }) {
                           {meta.label}
                         </span>
                         <span className="text-dot-muted">{formatDateTime(alert.detectedAt)}</span>
-                        <span className="text-dot-muted break-all">{alert.alertType}</span>
+                        <span className="text-dot-muted break-all">
+                          {formatAlertType(alert.alertType)}
+                        </span>
                       </div>
                       <div className="space-y-1">
                         <p className="text-sm font-semibold text-dot-text break-words">
