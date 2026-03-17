@@ -86,7 +86,7 @@ export default function HalvingCountdown() {
         : `다음 반감기: ${formatEstimatedDate(halving.estimatedDate)} 예상`;
 
   return (
-    <article className="dot-card p-4 sm:p-5">
+    <article className="dot-card h-full p-4 sm:p-5">
       <div className="dot-card-inner space-y-3">
         {/* Header — same layout as OnchainMetricCard */}
         <div className="flex items-start justify-between gap-3">

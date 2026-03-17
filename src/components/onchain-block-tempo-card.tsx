@@ -30,7 +30,7 @@ export default function OnchainBlockTempoCard({ data }: OnchainBlockTempoCardPro
     data.difficultyChange >= 0 ? 'text-dot-green' : data.difficultyChange <= -5 ? 'text-dot-red' : 'text-dot-yellow';
 
   return (
-    <article className="dot-card p-4 sm:p-5">
+    <article className="dot-card h-full p-4 sm:p-5">
       <div className="dot-card-inner space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">

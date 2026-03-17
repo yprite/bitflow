@@ -45,7 +45,7 @@ export default function OnchainFeePressureCard({ data }: OnchainFeePressureCardP
   const maxProjectedFee = Math.max(...data.projectedBlocks.map((block) => block.medianFee), 1);
 
   return (
-    <article className="dot-card p-4 sm:p-5">
+    <article className="dot-card h-full p-4 sm:p-5">
       <div className="dot-card-inner space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">

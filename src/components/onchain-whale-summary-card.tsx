@@ -67,7 +67,7 @@ export default function OnchainWhaleSummaryCard({
   const largestMoveShare = totalMoved > 0 ? (summary.largestMoveBtc / totalMoved) * 100 : 0;
 
   return (
-    <article className="dot-card p-4 sm:p-5">
+    <article className="dot-card h-full p-4 sm:p-5">
       <div className="dot-card-inner space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
