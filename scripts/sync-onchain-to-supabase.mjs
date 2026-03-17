@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 
+import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 
 const { Client } = pg;
+const execFileAsync = promisify(execFile);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
@@ -110,6 +113,81 @@ async function insertInBatches(relativePath, rows, batchSize = 500) {
   }
 }
 
+function toIsoDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
+function latestPublishedDay(metricRows, alertRows) {
+  const values = [];
+
+  for (const row of metricRows) {
+    values.push(toIsoDate(row.collected_at));
+  }
+
+  for (const row of alertRows) {
+    values.push(toIsoDate(row.timestamp));
+  }
+
+  const filtered = values.filter(Boolean).sort();
+  return filtered.at(-1) ?? null;
+}
+
+async function readNodeStatus() {
+  try {
+    const { stdout } = await execFileAsync('bitcoin-cli', ['getblockchaininfo']);
+    const payload = JSON.parse(stdout);
+    return {
+      state: 'ok',
+      nodeTipHeight: typeof payload.blocks === 'number' ? payload.blocks : null,
+      headerHeight: typeof payload.headers === 'number' ? payload.headers : null,
+      initialBlockDownload:
+        typeof payload.initialblockdownload === 'boolean'
+          ? payload.initialblockdownload
+          : null,
+      pruned: typeof payload.pruned === 'boolean' ? payload.pruned : null,
+      pruneHeight: typeof payload.pruneheight === 'number' ? payload.pruneheight : null,
+    };
+  } catch {
+    return {
+      state: 'rpc_error',
+      nodeTipHeight: null,
+      headerHeight: null,
+      initialBlockDownload: null,
+      pruned: null,
+      pruneHeight: null,
+    };
+  }
+}
+
+async function readIndexedStatus(client) {
+  try {
+    const result = await client.query(`
+      SELECT
+        MAX(height) AS indexed_height,
+        MAX(block_time::date)::text AS latest_indexed_day
+      FROM btc_blocks
+    `);
+    const indexedHeight =
+      result.rows[0]?.indexed_height === null || result.rows[0]?.indexed_height === undefined
+        ? null
+        : Number(result.rows[0].indexed_height);
+
+    return {
+      state: indexedHeight === null ? 'empty' : 'ok',
+      indexedHeight,
+      latestIndexedDay: result.rows[0]?.latest_indexed_day ?? null,
+    };
+  } catch {
+    return {
+      state: 'query_error',
+      indexedHeight: null,
+      latestIndexedDay: null,
+    };
+  }
+}
+
 const METRIC_NAME_MAP = new Map([
   ['created_utxo_count:all', 'created_utxo_count'],
   ['spent_utxo_count:all', 'spent_utxo_count'],
@@ -130,6 +208,11 @@ async function main() {
   await client.connect();
 
   try {
+    const [nodeStatus, indexedStatus] = await Promise.all([
+      readNodeStatus(),
+      readIndexedStatus(client),
+    ]);
+
     const metricResult = await client.query(`
       SELECT day::text AS day, metric_name, metric_value, unit, dimension_key
       FROM btc_daily_metrics
@@ -196,11 +279,64 @@ async function main() {
     await supabaseDelete('/rest/v1/whale_transactions?from_type=eq.bitflow_onchain');
     await insertInBatches('/rest/v1/whale_transactions', alertRows, 200);
 
+    const lagBlocks =
+      nodeStatus.state === 'ok' &&
+      indexedStatus.state === 'ok' &&
+      nodeStatus.nodeTipHeight !== null &&
+      indexedStatus.indexedHeight !== null
+        ? Math.max(nodeStatus.nodeTipHeight - indexedStatus.indexedHeight, 0)
+        : null;
+    const syncPercent =
+      nodeStatus.state === 'ok' &&
+      indexedStatus.state === 'ok' &&
+      nodeStatus.nodeTipHeight !== null &&
+      indexedStatus.indexedHeight !== null &&
+      nodeStatus.nodeTipHeight > 0
+        ? Number(
+            Math.min((indexedStatus.indexedHeight / nodeStatus.nodeTipHeight) * 100, 100).toFixed(
+              2
+            )
+          )
+        : null;
+    const publishedLatestDay = latestPublishedDay(metricRows, alertRows);
+    const publishedState = metricRows.length > 0 || alertRows.length > 0 ? 'ok' : 'empty';
+
+    await supabaseDelete('/rest/v1/onchain_metrics?metric_name=eq.pipeline_status&resolution=eq.status');
+    await supabaseInsert('/rest/v1/onchain_metrics', [
+      {
+        collected_at: new Date().toISOString(),
+        metric_name: 'pipeline_status',
+        value: syncPercent ?? 0,
+        resolution: 'status',
+        metadata: {
+          source: 'bitflow-local-worker',
+          node_state: nodeStatus.state,
+          indexer_state: indexedStatus.state,
+          published_state: publishedState,
+          node_tip_height: nodeStatus.nodeTipHeight,
+          header_height: nodeStatus.headerHeight,
+          indexed_height: indexedStatus.indexedHeight,
+          lag_blocks: lagBlocks,
+          sync_percent: syncPercent,
+          latest_indexed_day: indexedStatus.latestIndexedDay,
+          published_source: 'supabase',
+          published_latest_day: publishedLatestDay,
+          alert_total: alertRows.length,
+          initial_block_download: nodeStatus.initialBlockDownload,
+          pruned: nodeStatus.pruned,
+          prune_height: nodeStatus.pruneHeight,
+        },
+      },
+    ]);
+
     console.log(
       JSON.stringify(
         {
           syncedMetricRows: metricRows.length,
           syncedAlertRows: alertRows.length,
+          nodeState: nodeStatus.state,
+          indexerState: indexedStatus.state,
+          publishedState,
         },
         null,
         2
