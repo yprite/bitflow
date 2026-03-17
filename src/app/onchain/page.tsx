@@ -1,10 +1,19 @@
 import type { Metadata } from 'next';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import HalvingCountdown from '@/components/halving-countdown';
+import OnchainBlockTempoCard from '@/components/onchain-block-tempo-card';
 import OnchainEntityFlowCard from '@/components/onchain-entity-flow-card';
+import OnchainFeePressureCard from '@/components/onchain-fee-pressure-card';
 import OnchainMetricCard from '@/components/onchain-metric-card';
+import OnchainRegimeCard from '@/components/onchain-regime-card';
+import OnchainWhaleSummaryCard from '@/components/onchain-whale-summary-card';
 import PageHeader from '@/components/page-header';
 import { fetchOnchainSummary } from '@/lib/onchain';
+import {
+  deriveOnchainRegime,
+  deriveOnchainWhaleSummary,
+  fetchOnchainNetworkPulse,
+} from '@/lib/onchain-monitor';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,13 +38,18 @@ function formatTimestamp(value: string): string {
 }
 
 export default async function OnchainPage() {
-  const summary = await fetchOnchainSummary({
-    metricLookbackDays: 30,
-    alertLimit: 8,
-    entityLimit: 6,
-  });
+  const [summary, networkPulse] = await Promise.all([
+    fetchOnchainSummary({
+      metricLookbackDays: 30,
+      alertLimit: 60,
+      entityLimit: 6,
+    }),
+    fetchOnchainNetworkPulse(),
+  ]);
   const visibleMetrics = summary.metrics.filter((metric) => metric.latestValue !== null);
   const hasFlows = summary.entityFlows.length > 0;
+  const regime = deriveOnchainRegime(summary.metrics, summary.alertStats);
+  const whaleSummary = summary.status === 'available' ? deriveOnchainWhaleSummary(summary.alerts) : null;
   const freshnessLabel = summary.latestDay
     ? new Date(`${summary.latestDay}T00:00:00Z`).toLocaleDateString('ko-KR', {
         month: 'short',
@@ -65,8 +79,24 @@ export default async function OnchainPage() {
       </DotAssemblyReveal>
 
       <DotAssemblyReveal delay={120} duration={700}>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 xl:grid-cols-2">
           <HalvingCountdown />
+          {regime ? <OnchainRegimeCard regime={regime} /> : null}
+        </div>
+      </DotAssemblyReveal>
+
+      {networkPulse ? (
+        <DotAssemblyReveal delay={160} duration={720}>
+          <div className="grid gap-3 xl:grid-cols-2">
+            <OnchainFeePressureCard data={networkPulse.feePressure} />
+            <OnchainBlockTempoCard data={networkPulse.blockTempo} />
+          </div>
+        </DotAssemblyReveal>
+      ) : null}
+
+      <DotAssemblyReveal delay={200} duration={760}>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {whaleSummary ? <OnchainWhaleSummaryCard summary={whaleSummary} /> : null}
           {visibleMetrics.length > 0
             ? visibleMetrics.map((metric) => (
                 <OnchainMetricCard key={metric.id} metric={metric} />
@@ -76,7 +106,7 @@ export default async function OnchainPage() {
       </DotAssemblyReveal>
 
       {hasFlows && (
-        <DotAssemblyReveal delay={180} duration={750}>
+        <DotAssemblyReveal delay={240} duration={800}>
           <div className="grid gap-3">
             <OnchainEntityFlowCard flows={summary.entityFlows} />
           </div>

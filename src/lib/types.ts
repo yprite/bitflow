@@ -224,6 +224,69 @@ export interface OnchainSummaryData {
   updatedAt: string;
 }
 
+export type OnchainPressureLevel = '완화' | '균형' | '혼잡';
+export type OnchainRegimeLabel = '확장' | '중립' | '위축';
+export type OnchainRegimeTone = 'expansion' | 'neutral' | 'contraction';
+
+export interface OnchainProjectedBlock {
+  blockVSize: number;
+  txCount: number;
+  medianFee: number;
+}
+
+export interface OnchainFeePressureData {
+  pressure: OnchainPressureLevel;
+  fastestFee: number;
+  halfHourFee: number;
+  hourFee: number;
+  economyFee: number;
+  minimumFee: number;
+  mempoolTxCount: number;
+  mempoolVsize: number;
+  totalFeeBtc: number;
+  projectedBlocks: OnchainProjectedBlock[];
+}
+
+export interface OnchainBlockTempoData {
+  currentHeight: number;
+  latestBlockAt: string;
+  latestBlockTxCount: number;
+  minutesSinceLastBlock: number;
+  averageBlockMinutes: number;
+  difficultyChange: number;
+  difficultyProgress: number;
+  remainingBlocksToAdjustment: number;
+  estimatedRetargetAt: string | null;
+}
+
+export interface OnchainNetworkPulseData {
+  feePressure: OnchainFeePressureData;
+  blockTempo: OnchainBlockTempoData;
+}
+
+export interface OnchainWhaleSummary {
+  windowHours: number;
+  totalAlerts: number;
+  confirmedCount: number;
+  pendingCount: number;
+  dormantCount: number;
+  totalMovedBtc: number;
+  confirmedMovedBtc: number;
+  pendingMovedBtc: number;
+  dormantMovedBtc: number;
+  largestMoveBtc: number;
+  dominantAlertType: string | null;
+  latestDetectedAt: string | null;
+}
+
+export interface OnchainRegimeSummary {
+  label: OnchainRegimeLabel;
+  tone: OnchainRegimeTone;
+  score: number;
+  summary: string;
+  drivers: string[];
+}
+
 export interface DashboardData {
   kimp: KimpData;
   fundingRate: FundingRateData;
