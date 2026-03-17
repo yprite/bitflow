@@ -8,7 +8,6 @@ import EventTracker from '@/components/event-tracker';
 import { SITE_NAME } from '@/lib/site';
 
 const PUBLIC_NAV_ITEMS = [
-  { href: '/realtime', label: '실시간' },
   { href: '/onchain', label: '온체인' },
   { href: '/indicators', label: '히스토리' },
   { href: '/tools', label: '도구' },

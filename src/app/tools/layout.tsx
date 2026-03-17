@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: '프리미엄 히트맵 · 재정거래 계산기',
+  title: '비트코인 도구 · mempool · fee 계산기',
   description:
-    '50개 이상 암호화폐 김치프리미엄 히트맵과 재정거래 수익률 계산기. 실시간 차익거래 기회를 확인하세요.',
+    '비트코인 mempool, fee 계산기, BTC·sats 변환기, 블록 템포와 반감기 카운트다운을 한 화면에서 확인하세요.',
   openGraph: {
-    title: '프리미엄 히트맵 · 재정거래 계산기 | 비트코인 기상청',
+    title: '비트코인 도구 · mempool · fee 계산기 | 비트코인 기상청',
     description:
-      '50개 이상 암호화폐 김치프리미엄 히트맵과 재정거래 수익률 계산기. 실시간 차익거래 기회를 확인하세요.',
+      '비트코인 mempool, fee 계산기, BTC·sats 변환기, 블록 템포와 반감기 카운트다운을 한 화면에서 확인하세요.',
   },
 };
 
