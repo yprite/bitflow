@@ -1,4 +1,4 @@
-import { KimpData, FundingRateData, FearGreedData, UsdtPremiumData, BtcDominanceData, LongShortRatioData, OpenInterestData, LiquidationData, StablecoinMcapData, VolumeChangeData, CompositeSignal, SignalFactor, CoinPremium, MultiCoinKimpData, ArbitrageResult, FundingRateHistoryPoint, FearGreedHistoryPoint, TrendDirection } from './types';
+import { KimpData, FundingRateData, FearGreedData, UsdtPremiumData, BtcDominanceData, LongShortRatioData, OpenInterestData, LiquidationData, StablecoinMcapData, VolumeChangeData, StrategyBtcData, CompositeSignal, SignalFactor, CoinPremium, MultiCoinKimpData, ArbitrageResult, FundingRateHistoryPoint, FearGreedHistoryPoint, TrendDirection } from './types';
 
 interface OkxResponse<T> {
   code: string;
@@ -640,6 +640,78 @@ export async function fetchVolumeChange(): Promise<VolumeChangeData> {
   }
 }
 
+let previousStrategyHoldings: number | null = null;
+
+export async function fetchStrategyBtc(): Promise<StrategyBtcData> {
+  try {
+    const res = await fetch(
+      'https://api.coingecko.com/api/v3/companies/public_treasury/bitcoin',
+      {
+        next: { revalidate: 600 },
+        headers: { 'User-Agent': 'bitflow/1.0' },
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error(`CoinGecko treasury API error: ${res.status}`);
+    }
+
+    const data = await res.json() as {
+      companies: Array<{
+        name: string;
+        symbol: string;
+        total_holdings: number;
+        total_entry_value_usd: number;
+        total_current_value_usd: number;
+        percentage_of_total_supply: number;
+      }>;
+    };
+
+    const strategy = data.companies.find(
+      (company) =>
+        company.symbol === 'MSTR.US' ||
+        company.name.toLowerCase().includes('strategy') ||
+        company.name.toLowerCase().includes('microstrategy')
+    );
+
+    if (!strategy) {
+      throw new Error('Strategy not found in treasury data');
+    }
+
+    const holdingsChange =
+      previousStrategyHoldings !== null
+        ? strategy.total_holdings - previousStrategyHoldings
+        : 0;
+    const changeRate =
+      previousStrategyHoldings !== null && previousStrategyHoldings > 0
+        ? (holdingsChange / previousStrategyHoldings) * 100
+        : 0;
+
+    previousStrategyHoldings = strategy.total_holdings;
+
+    return {
+      totalHoldings: strategy.total_holdings,
+      totalEntryValueUsd: strategy.total_entry_value_usd,
+      currentValueUsd: strategy.total_current_value_usd,
+      supplyPercentage: strategy.percentage_of_total_supply,
+      holdingsChange,
+      changeRate,
+      timestamp: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('Strategy BTC fetch failed:', error);
+    return {
+      totalHoldings: 0,
+      totalEntryValueUsd: 0,
+      currentValueUsd: 0,
+      supplyPercentage: 0,
+      holdingsChange: 0,
+      changeRate: 0,
+      timestamp: new Date().toISOString(),
+    };
+  }
+}
+
 // USDT 프리미엄 (Upbit USDT/KRW vs 실제 환율)
 export async function fetchUsdtPremium(usdKrw?: number): Promise<UsdtPremiumData> {
   try {
@@ -762,6 +834,48 @@ function formatCompactUsdMillions(value: number): string {
   return `$${value.toFixed(0)}`;
 }
 
+function getStrategyBtcScore(strategyHoldings: number, strategyChangeRate: number): number {
+  if (strategyHoldings <= 0) return 0;
+  if (strategyChangeRate > 1) return 2;
+  if (strategyChangeRate > 0.1) return 1;
+  if (strategyChangeRate < -0.5) return -2;
+  if (strategyChangeRate < 0) return -1;
+  return 0;
+}
+
+function getStrategyCapitalRawScore(
+  strategyWeeklyEstimatedBtc: number,
+  strategyLatestNetProceedsUsd: number,
+  strategyDistanceToThreshold: number
+): number {
+  if (strategyWeeklyEstimatedBtc >= 3000 || strategyLatestNetProceedsUsd >= 250_000_000) return 2;
+  if (strategyWeeklyEstimatedBtc >= 500 || strategyLatestNetProceedsUsd >= 50_000_000) return 1;
+  if (strategyDistanceToThreshold <= -1.5) return -2;
+  if (strategyDistanceToThreshold < 0) return -1;
+  return 0;
+}
+
+function formatMicroStrategyFactorValue(
+  strategyHoldings: number,
+  strategyChangeRate: number,
+  strategyWeeklyEstimatedBtc: number,
+  strategyLatestNetProceedsUsd: number,
+  strategyDistanceToThreshold: number
+): string {
+  const mstrValue =
+    strategyHoldings > 0
+      ? `M${strategyChangeRate >= 0 ? '+' : ''}${strategyChangeRate.toFixed(2)}%`
+      : 'MN/A';
+  const strcValue =
+    strategyWeeklyEstimatedBtc > 0
+      ? `S${formatCompactBtc(strategyWeeklyEstimatedBtc).replace(' BTC', '')}`
+      : strategyLatestNetProceedsUsd > 0
+        ? `S${formatCompactUsdMillions(strategyLatestNetProceedsUsd)}`
+        : `S${strategyDistanceToThreshold >= 0 ? '+' : ''}${strategyDistanceToThreshold.toFixed(2)}$`;
+
+  return `${mstrValue} / ${strcValue}`;
+}
+
 // 지표별 가중치: 시장 과열/침체 판단에 대한 영향력 차등
 const FACTOR_WEIGHTS = {
   kimp: 1.5,        // 김프 - 한국 시장 고유 과열 지표로 중요
@@ -774,7 +888,7 @@ const FACTOR_WEIGHTS = {
   liquidation: 1.0, // 청산비율 - 후행 지표
   stablecoin: 0.75, // 스테이블코인 - 느린 자금 흐름
   volume: 0.75,     // 거래량 - 확인 지표
-  strategy: 1.25,   // STRC 자본엔진 - Strategy 자금 조달 강도
+  strategy: 1.25,   // MSTR 보유 변화 + STRC 자본엔진 통합 팩터
 } as const;
 
 // 이전 점수를 저장하여 추세 계산에 사용
@@ -792,6 +906,8 @@ export function getCompositeSignal(
   liqRatio: number = 0.5,
   stablecoinChange: number = 0,
   volumeChangeRate: number = 0,
+  strategyHoldings: number = 0,
+  strategyChangeRate: number = 0,
   strategyWeeklyEstimatedBtc: number = 0,
   strategyLatestNetProceedsUsd: number = 0,
   strategyDistanceToThreshold: number = 0,
@@ -868,15 +984,14 @@ export function getCompositeSignal(
   else if (volumeChangeRate < -50) volScore = -2;
   else if (volumeChangeRate < -20) volScore = -1;
 
-  // STRC 자본엔진: 추정 ATM 발행량과 최신 확정 filing을 함께 반영
-  // 다이버전스 조건부 로직: 다른 지표들이 침체인데 STRC만 매수 중이면 매수 신호로 해석
-  let strategyRawScore = 0;
-  if (strategyWeeklyEstimatedBtc >= 3000 || strategyLatestNetProceedsUsd >= 250_000_000) strategyRawScore = 2;
-  else if (strategyWeeklyEstimatedBtc >= 500 || strategyLatestNetProceedsUsd >= 50_000_000) strategyRawScore = 1;
-  else if (strategyDistanceToThreshold <= -1.5) strategyRawScore = -2;
-  else if (strategyDistanceToThreshold < 0) strategyRawScore = -1;
+  const strategyBtcScore = getStrategyBtcScore(strategyHoldings, strategyChangeRate);
+  const strategyCapitalRawScore = getStrategyCapitalRawScore(
+    strategyWeeklyEstimatedBtc,
+    strategyLatestNetProceedsUsd,
+    strategyDistanceToThreshold
+  );
 
-  // STRC 외 10개 지표의 평균 방향을 계산하여 시장 컨센서스 판단
+  // 마이크로스트레티지 외 10개 지표의 평균 방향을 계산하여 STRC 다이버전스 판단
   const otherScores = [kimpScore, fundingScore, fgScore, usdtScore, domScore, lsScore, oiScore, liqScore, stableScore, volScore];
   const otherWeights = [
     FACTOR_WEIGHTS.kimp, FACTOR_WEIGHTS.funding, FACTOR_WEIGHTS.fearGreed,
@@ -888,27 +1003,29 @@ export function getCompositeSignal(
   const otherMaxPossible = otherWeights.reduce((sum, w) => sum + 2 * w, 0);
   const marketConsensus = (otherWeightedSum / otherMaxPossible) * 100; // -100 ~ +100
 
-  let strategyScore = strategyRawScore;
-  if (strategyRawScore > 0 && marketConsensus <= -30) {
+  let strategyCapitalScore = strategyCapitalRawScore;
+  if (strategyCapitalRawScore > 0 && marketConsensus <= -30) {
     // 다이버전스: 시장은 침체인데 STRC가 적극 매수 → 공급 흡수 = 매수 신호
-    strategyScore = -strategyRawScore;
-  } else if (strategyRawScore < 0 && marketConsensus >= 30) {
+    strategyCapitalScore = -strategyCapitalRawScore;
+  } else if (strategyCapitalRawScore < 0 && marketConsensus >= 30) {
     // 역다이버전스: 시장은 과열인데 STRC가 매수 중단 → 스마트머니 이탈 = 매도 신호
-    strategyScore = -strategyRawScore;
+    strategyCapitalScore = -strategyCapitalRawScore;
   }
-  // 그 외(시장과 STRC 방향 일치): 기존 로직 유지
+  // MSTR 보유 변화와 STRC 엔진 점수를 하나의 마이크로스트레티지 팩터로 합산한다.
+  const microStrategyScore = strategyBtcScore + strategyCapitalScore;
 
   // 가중 점수 계산
-  const rawScores = [kimpScore, fundingScore, fgScore, usdtScore, domScore, lsScore, oiScore, liqScore, stableScore, volScore, strategyScore];
+  const rawScores = [kimpScore, fundingScore, fgScore, usdtScore, domScore, lsScore, oiScore, liqScore, stableScore, volScore, microStrategyScore];
   const weights = [
     FACTOR_WEIGHTS.kimp, FACTOR_WEIGHTS.funding, FACTOR_WEIGHTS.fearGreed,
     FACTOR_WEIGHTS.usdt, FACTOR_WEIGHTS.dominance, FACTOR_WEIGHTS.longShort,
     FACTOR_WEIGHTS.oi, FACTOR_WEIGHTS.liquidation, FACTOR_WEIGHTS.stablecoin,
     FACTOR_WEIGHTS.volume, FACTOR_WEIGHTS.strategy,
   ];
+  const maxRawScores = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4];
 
   const weightedScore = rawScores.reduce((sum, s, i) => sum + s * weights[i], 0);
-  const maxPossibleScore = weights.reduce((sum, w) => sum + 2 * w, 0); // 각 지표 최대 ±2
+  const maxPossibleScore = weights.reduce((sum, w, i) => sum + maxRawScores[i] * w, 0);
 
   // -100 ~ +100 정규화
   const normalizedScore = Math.round((weightedScore / maxPossibleScore) * 100);
@@ -942,15 +1059,17 @@ export function getCompositeSignal(
     { label: '스테이블', value: `${stablecoinChange >= 0 ? '+' : ''}${stablecoinChange.toFixed(2)}%`, direction: getFactorDirection(stableScore), weight: FACTOR_WEIGHTS.stablecoin, weightedScore: stableScore * FACTOR_WEIGHTS.stablecoin },
     { label: '거래량', value: `${volumeChangeRate >= 0 ? '+' : ''}${volumeChangeRate.toFixed(0)}%`, direction: getFactorDirection(volScore), weight: FACTOR_WEIGHTS.volume, weightedScore: volScore * FACTOR_WEIGHTS.volume },
     {
-      label: 'STRC엔진',
-      value: strategyWeeklyEstimatedBtc > 0
-        ? formatCompactBtc(strategyWeeklyEstimatedBtc)
-        : strategyLatestNetProceedsUsd > 0
-          ? formatCompactUsdMillions(strategyLatestNetProceedsUsd)
-          : `${strategyDistanceToThreshold >= 0 ? '+' : ''}${strategyDistanceToThreshold.toFixed(2)}$`,
-      direction: getFactorDirection(strategyScore),
+      label: '마이크로스트레티지',
+      value: formatMicroStrategyFactorValue(
+        strategyHoldings,
+        strategyChangeRate,
+        strategyWeeklyEstimatedBtc,
+        strategyLatestNetProceedsUsd,
+        strategyDistanceToThreshold
+      ),
+      direction: getFactorDirection(microStrategyScore),
       weight: FACTOR_WEIGHTS.strategy,
-      weightedScore: strategyScore * FACTOR_WEIGHTS.strategy,
+      weightedScore: microStrategyScore * FACTOR_WEIGHTS.strategy,
     },
   ];
 

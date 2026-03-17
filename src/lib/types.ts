@@ -104,6 +104,16 @@ export interface VolumeChangeData {
   timestamp: string;
 }
 
+export interface StrategyBtcData {
+  totalHoldings: number;
+  totalEntryValueUsd: number;
+  currentValueUsd: number;
+  supplyPercentage: number;
+  holdingsChange: number;
+  changeRate: number;
+  timestamp: string;
+}
+
 export type StrategyCapitalStatus = 'active' | 'standby' | 'unavailable';
 
 export interface StrategyCapitalEstimateDay {
@@ -440,6 +450,7 @@ export interface DashboardData {
   liquidation: LiquidationData;
   stablecoinMcap: StablecoinMcapData;
   volumeChange: VolumeChangeData;
+  strategyBtc: StrategyBtcData;
   strategyCapital: StrategyCapitalData;
   signal: CompositeSignal;
   avg30d: number | null;

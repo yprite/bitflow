@@ -43,29 +43,29 @@ function extractTopDrivers(data: DashboardData): MarketDriver[] {
 const riskDescriptions: Record<string, string> = {
   '김프': '김프가 과열 상태 — 한국 프리미엄 급등으로 역프 전환 리스크 주의',
   '펀딩비': '펀딩비가 과열 상태 — 레버리지 과부하 주의',
-  'USDT 프리미엄': 'USDT 프리미엄이 과열 상태 — 원화 자금 과도 유입 주의',
+  'USDT프리미엄': 'USDT 프리미엄이 과열 상태 — 원화 자금 과도 유입 주의',
   '공포탐욕': '탐욕 지수 과열 — 시장 낙관 과잉, 조정 가능성 경계',
-  'BTC 도미넌스': 'BTC 도미넌스 과열 — 알트코인 약세 지속 가능성',
-  '롱숏비율': '롱숏비율 과열 — 롱 포지션 과밀, 청산 연쇄 주의',
+  'BTC도미넌스': 'BTC 도미넌스 과열 — 알트코인 약세 지속 가능성',
+  '롱비율': '롱 비율 과열 — 롱 포지션 과밀, 청산 연쇄 주의',
   '미결제약정': '미결제약정 과열 — 레버리지 누적으로 급변동 리스크 증가',
-  '청산': '청산 비율 과열 — 롱 청산 집중, 추가 하락 촉발 가능',
-  '스테이블코인': '스테이블코인 유입 과열 — 단기 과열 후 조정 주의',
+  '청산비율': '청산 비율 과열 — 롱 청산 집중, 추가 하락 촉발 가능',
+  '스테이블': '스테이블코인 유입 과열 — 단기 과열 후 조정 주의',
   '거래량': '거래량 급증 과열 — 과매수 구간, 단기 되돌림 주의',
-  'STRC엔진': 'STRC 자본엔진 과열 — Strategy 자금 조달 가속 신호 점검',
+  '마이크로스트레티지': 'MSTR 보유 증가와 STRC 자본엔진 가속이 동시에 포착됨 — 기관 수요 과열 여부 점검',
 };
 
 const reliefDescriptions: Record<string, string> = {
   '김프': '김프 침체 — 역프 구간으로 해외 대비 할인 매수 기회',
   '펀딩비': '펀딩비 침체 — 숏 과밀로 반등 가능성 존재',
-  'USDT 프리미엄': 'USDT 프리미엄 침체 — 자금 이탈 우려, 바닥 확인 필요',
+  'USDT프리미엄': 'USDT 프리미엄 침체 — 자금 이탈 우려, 바닥 확인 필요',
   '공포탐욕': '공포 지수 극단적 — 역발상 매수 기회 탐색 가능',
-  'BTC 도미넌스': 'BTC 도미넌스 하락 — 알트코인 순환매 가능성',
-  '롱숏비율': '롱숏비율 침체 — 숏 과밀, 숏스퀴즈 반등 가능성',
+  'BTC도미넌스': 'BTC 도미넌스 하락 — 알트코인 순환매 가능성',
+  '롱비율': '롱 비율 침체 — 숏 과밀, 숏스퀴즈 반등 가능성',
   '미결제약정': '미결제약정 감소 — 레버리지 해소, 변동성 축소 기대',
-  '청산': '청산 비율 안정 — 시장 스트레스 완화 신호',
-  '스테이블코인': '스테이블코인 감소 — 자금 이탈 중, 추가 하락 주의',
+  '청산비율': '청산 비율 안정 — 시장 스트레스 완화 신호',
+  '스테이블': '스테이블코인 감소 — 자금 이탈 중, 추가 하락 주의',
   '거래량': '거래량 급감 — 관망세 진입, 방향성 돌파 대기',
-  'STRC엔진': 'STRC 자본엔진 둔화 — ATM 발행 둔화 구간 확인',
+  '마이크로스트레티지': 'MSTR 보유 변화가 멈추고 STRC 엔진도 둔화 — 기관 매수 모멘텀 약화 구간 확인',
 };
 
 function extractKeyRisk(data: DashboardData): MarketInsight['keyRisk'] {
@@ -106,6 +106,7 @@ function detectScenario(data: DashboardData): MarketScenario | null {
     openInterest,
     longShortRatio,
     liquidation,
+    strategyBtc,
     strategyCapital,
     btcDominance,
     stablecoinMcap,
@@ -158,15 +159,16 @@ function detectScenario(data: DashboardData): MarketScenario | null {
 
   if (
     (
+      strategyBtc.holdingsChange > 0 ||
       strategyCapital.currentWeekEstimatedBtc > 1000 ||
       (strategyCapital.latestConfirmed?.netProceedsUsd ?? 0) > 100_000_000
     ) &&
     btcDominance.dominance > 58
   ) {
     return {
-      name: '자본엔진 가동',
+      name: '마이크로스트레티지 가동',
       description:
-        'STRC 자본조달 활성 + 높은 BTC 도미넌스 — Strategy 매수 재원 확대 신호',
+        'MSTR 보유 증가 또는 STRC 자본조달 활성 + 높은 BTC 도미넌스 — Strategy 매수 모멘텀 확대 신호',
       severity: 'neutral',
     };
   }

@@ -3,7 +3,7 @@ import {
   getKimpData, fetchFundingRate, fetchFearGreed,
   fetchUsdtPremium, fetchBtcDominance, fetchLongShortRatio,
   fetchOpenInterest, fetchLiquidation, fetchStablecoinMcap, fetchVolumeChange,
-  getCompositeSignal,
+  fetchStrategyBtc, getCompositeSignal,
 } from '@/lib/kimp';
 import { loadKimpHistorySnapshot } from '@/lib/kimp-history';
 import { fetchStrategyCapital } from '@/lib/strategy-capital';
@@ -16,7 +16,7 @@ export async function GET() {
     const [
       kimpResult, fundingRateResult, fearGreedResult,
       usdtPremiumResult, btcDominanceResult, longShortResult,
-      oiResult, liqResult, stableResult, volResult, strategyResult,
+      oiResult, liqResult, stableResult, volResult, strategyBtcResult, strategyResult,
     ] = await Promise.allSettled([
       getKimpData(),
       fetchFundingRate(),
@@ -28,6 +28,7 @@ export async function GET() {
       fetchLiquidation(),
       fetchStablecoinMcap(),
       fetchVolumeChange(),
+      fetchStrategyBtc(),
       fetchStrategyCapital(),
     ]);
 
@@ -64,6 +65,17 @@ export async function GET() {
     const volumeChange = volResult.status === 'fulfilled'
       ? volResult.value
       : { volume24h: 0, volumeAvg7d: 0, changeRate: 0, binanceVolume24h: 0, binanceVolumeAvg7d: 0, binanceChangeRate: 0, timestamp: new Date().toISOString() };
+    const strategyBtc = strategyBtcResult.status === 'fulfilled'
+      ? strategyBtcResult.value
+      : {
+        totalHoldings: 0,
+        totalEntryValueUsd: 0,
+        currentValueUsd: 0,
+        supplyPercentage: 0,
+        holdingsChange: 0,
+        changeRate: 0,
+        timestamp: new Date().toISOString(),
+      };
     const strategyCapital = strategyResult.status === 'fulfilled'
       ? strategyResult.value
       : {
@@ -98,6 +110,8 @@ export async function GET() {
       liquidation.ratio,
       stablecoinMcap.change24h,
       volumeChange.binanceChangeRate || volumeChange.changeRate,
+      strategyBtc.totalHoldings,
+      strategyBtc.changeRate,
       strategyCapital.currentWeekEstimatedBtc,
       strategyCapital.latestConfirmed?.netProceedsUsd ?? 0,
       strategyCapital.distanceToThreshold,
@@ -114,6 +128,7 @@ export async function GET() {
       liquidation,
       stablecoinMcap,
       volumeChange,
+      strategyBtc,
       strategyCapital,
       signal,
       avg30d,

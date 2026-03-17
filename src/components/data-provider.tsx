@@ -23,6 +23,7 @@ interface DataContextType {
   liqRange: DayRange | null;
   stableRange: DayRange | null;
   volumeRange: DayRange | null;
+  strategyBtcRange: DayRange | null;
   capitalRange: DayRange | null;
   error: string | null;
   loading: boolean;
@@ -54,6 +55,7 @@ export default function DataProvider({ children }: { children: ReactNode }) {
   const [liqRange, setLiqRange] = useState<DayRange | null>(null);
   const [stableRange, setStableRange] = useState<DayRange | null>(null);
   const [volumeRange, setVolumeRange] = useState<DayRange | null>(null);
+  const [strategyBtcRange, setStrategyBtcRange] = useState<DayRange | null>(null);
   const [capitalRange, setCapitalRange] = useState<DayRange | null>(null);
 
   const fetchData = async () => {
@@ -138,6 +140,17 @@ export default function DataProvider({ children }: { children: ReactNode }) {
         return { min: Math.min(prev.min, volVal), max: Math.max(prev.max, volVal), current: volVal };
       });
 
+      // Track daily range for Strategy BTC holdings change rate
+      const strategyBtcVal = json.strategyBtc.changeRate;
+      setStrategyBtcRange((prev) => {
+        if (!prev) return { min: strategyBtcVal, max: strategyBtcVal, current: strategyBtcVal };
+        return {
+          min: Math.min(prev.min, strategyBtcVal),
+          max: Math.max(prev.max, strategyBtcVal),
+          current: strategyBtcVal,
+        };
+      });
+
       // Track daily range for Strategy capital engine estimate
       const capitalVal = json.strategyCapital.currentWeekEstimatedBtc;
       setCapitalRange((prev) => {
@@ -171,7 +184,7 @@ export default function DataProvider({ children }: { children: ReactNode }) {
   const chartData = data && data.history.length > 0 ? data.history : sessionHistory;
 
   return (
-    <DataContext.Provider value={{ data, multiCoinData, sessionHistory, chartData, fundingRange, fearGreedRange, usdtPremiumRange, btcDominanceRange, longShortRange, oiRange, liqRange, stableRange, volumeRange, capitalRange, error, loading, lastUpdated, fetchData }}>
+    <DataContext.Provider value={{ data, multiCoinData, sessionHistory, chartData, fundingRange, fearGreedRange, usdtPremiumRange, btcDominanceRange, longShortRange, oiRange, liqRange, stableRange, volumeRange, strategyBtcRange, capitalRange, error, loading, lastUpdated, fetchData }}>
       {children}
     </DataContext.Provider>
   );
