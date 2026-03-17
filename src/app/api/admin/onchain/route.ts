@@ -9,7 +9,12 @@ export const dynamic = 'force-dynamic';
 
 const execFileAsync = promisify(execFile);
 
+type NodeRuntimeState = 'ok' | 'rpc_error';
+type IndexerRuntimeState = 'ok' | 'dsn_missing' | 'empty' | 'query_error';
+type PublishedRuntimeState = 'ok' | 'empty' | 'local_only' | 'fallback';
+
 async function readNodeStatus(): Promise<{
+  state: NodeRuntimeState;
   nodeTipHeight: number | null;
   headerHeight: number | null;
   initialBlockDownload: boolean | null;
@@ -26,6 +31,7 @@ async function readNodeStatus(): Promise<{
       pruneheight?: number;
     };
     return {
+      state: 'ok',
       nodeTipHeight: typeof payload.blocks === 'number' ? payload.blocks : null,
       headerHeight: typeof payload.headers === 'number' ? payload.headers : null,
       initialBlockDownload:
@@ -37,6 +43,7 @@ async function readNodeStatus(): Promise<{
     };
   } catch {
     return {
+      state: 'rpc_error',
       nodeTipHeight: null,
       headerHeight: null,
       initialBlockDownload: null,
@@ -47,11 +54,13 @@ async function readNodeStatus(): Promise<{
 }
 
 async function readIndexedStatus(): Promise<{
+  state: IndexerRuntimeState;
   indexedHeight: number | null;
   latestIndexedDay: string | null;
 }> {
   if (!hasBitflowPgDsn()) {
     return {
+      state: 'dsn_missing',
       indexedHeight: null,
       latestIndexedDay: null,
     };
@@ -71,19 +80,35 @@ async function readIndexedStatus(): Promise<{
       `
     );
 
+    const indexedHeight =
+      result.rows[0]?.indexed_height === null || result.rows[0]?.indexed_height === undefined
+        ? null
+        : Number(result.rows[0].indexed_height);
+    const latestIndexedDay = result.rows[0]?.latest_indexed_day ?? null;
+
     return {
+      state: indexedHeight === null ? 'empty' : 'ok',
       indexedHeight:
-        result.rows[0]?.indexed_height === null || result.rows[0]?.indexed_height === undefined
-          ? null
-          : Number(result.rows[0].indexed_height),
-      latestIndexedDay: result.rows[0]?.latest_indexed_day ?? null,
+        indexedHeight,
+      latestIndexedDay,
     };
   } catch {
     return {
+      state: 'query_error',
       indexedHeight: null,
       latestIndexedDay: null,
     };
   }
+}
+
+function derivePublishedState(
+  source: 'supabase' | 'local-postgres' | 'fallback',
+  status: 'available' | 'unavailable'
+): PublishedRuntimeState {
+  if (source === 'fallback') return 'fallback';
+  if (source === 'local-postgres') return 'local_only';
+  if (status === 'available') return 'ok';
+  return 'empty';
 }
 
 export async function GET(req: NextRequest) {
@@ -101,12 +126,18 @@ export async function GET(req: NextRequest) {
       readNodeStatus(),
       readIndexedStatus(),
     ]);
+    const publishedState = derivePublishedState(summary.source, summary.status);
 
     const lagBlocks =
-      nodeStatus.nodeTipHeight !== null && indexedStatus.indexedHeight !== null
+      nodeStatus.state === 'ok' &&
+      indexedStatus.state === 'ok' &&
+      nodeStatus.nodeTipHeight !== null &&
+      indexedStatus.indexedHeight !== null
         ? Math.max(nodeStatus.nodeTipHeight - indexedStatus.indexedHeight, 0)
         : null;
     const syncPercent =
+      nodeStatus.state === 'ok' &&
+      indexedStatus.state === 'ok' &&
       nodeStatus.nodeTipHeight !== null &&
       indexedStatus.indexedHeight !== null &&
       nodeStatus.nodeTipHeight > 0
@@ -116,6 +147,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       summary,
       pipeline: {
+        states: {
+          node: nodeStatus.state,
+          indexer: indexedStatus.state,
+          published: publishedState,
+        },
         nodeTipHeight: nodeStatus.nodeTipHeight,
         headerHeight: nodeStatus.headerHeight,
         indexedHeight: indexedStatus.indexedHeight,
@@ -123,7 +159,7 @@ export async function GET(req: NextRequest) {
         syncPercent,
         latestIndexedDay: indexedStatus.latestIndexedDay,
         publishedSource: summary.source,
-        publishedLatestDay: summary.latestDay,
+        publishedLatestDay: publishedState === 'ok' ? summary.latestDay : null,
         alertTotal: summary.alertStats.total,
         initialBlockDownload: nodeStatus.initialBlockDownload,
         pruned: nodeStatus.pruned,

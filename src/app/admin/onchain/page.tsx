@@ -6,6 +6,11 @@ import type { OnchainSummaryData } from '@/lib/types';
 interface AdminOnchainData {
   summary: OnchainSummaryData;
   pipeline: {
+    states: {
+      node: 'ok' | 'rpc_error';
+      indexer: 'ok' | 'dsn_missing' | 'empty' | 'query_error';
+      published: 'ok' | 'empty' | 'local_only' | 'fallback';
+    };
     nodeTipHeight: number | null;
     headerHeight: number | null;
     indexedHeight: number | null;
@@ -23,17 +28,17 @@ interface AdminOnchainData {
 }
 
 function formatCount(value: number | null): string {
-  if (value === null) return '—';
+  if (value === null) return '';
   return value.toLocaleString('ko-KR');
 }
 
 function formatPercent(value: number | null): string {
-  if (value === null) return '—';
+  if (value === null) return '';
   return `${value.toFixed(2)}%`;
 }
 
 function formatDay(value: string | null): string {
-  if (!value) return '—';
+  if (!value) return '';
 
   return new Date(`${value}T00:00:00Z`).toLocaleDateString('ko-KR', {
     month: 'short',
@@ -63,8 +68,125 @@ function formatSource(value: AdminOnchainData['pipeline']['publishedSource']): s
 }
 
 function formatBoolean(value: boolean | null, truthy: string, falsy: string): string {
-  if (value === null) return '—';
+  if (value === null) return '';
   return value ? truthy : falsy;
+}
+
+function indexerStateLabel(
+  state: AdminOnchainData['pipeline']['states']['indexer']
+): string {
+  if (state === 'dsn_missing') return 'DSN 미설정';
+  if (state === 'query_error') return '조회 실패';
+  if (state === 'empty') return '미적재';
+  return '정상';
+}
+
+function publishedStateLabel(
+  state: AdminOnchainData['pipeline']['states']['published']
+): string {
+  if (state === 'fallback') return 'Fallback 사용 중';
+  if (state === 'local_only') return 'Local만 사용 중';
+  if (state === 'empty') return '미적재';
+  return '정상';
+}
+
+function fieldFallbackLabel(
+  kind: 'node' | 'indexer' | 'published',
+  state:
+    | AdminOnchainData['pipeline']['states']['node']
+    | AdminOnchainData['pipeline']['states']['indexer']
+    | AdminOnchainData['pipeline']['states']['published']
+): string {
+  if (kind === 'node') {
+    return state === 'rpc_error' ? 'RPC 실패' : '정보 없음';
+  }
+
+  if (kind === 'indexer') {
+    return indexerStateLabel(
+      state as AdminOnchainData['pipeline']['states']['indexer']
+    );
+  }
+
+  return publishedStateLabel(
+    state as AdminOnchainData['pipeline']['states']['published']
+  );
+}
+
+function valueOrFallback(
+  value: string,
+  fallback: string
+): string {
+  return value.length > 0 ? value : fallback;
+}
+
+function panelStatusMeta(
+  kind: 'node' | 'indexer' | 'published',
+  state:
+    | AdminOnchainData['pipeline']['states']['node']
+    | AdminOnchainData['pipeline']['states']['indexer']
+    | AdminOnchainData['pipeline']['states']['published']
+) {
+  if (kind === 'node') {
+    if (state === 'ok') {
+      return {
+        label: 'RPC 정상',
+        className: 'border-dot-green/30 bg-dot-green/10 text-dot-green',
+      };
+    }
+
+    return {
+      label: 'RPC 실패',
+      className: 'border-dot-red/30 bg-dot-red/10 text-dot-red',
+    };
+  }
+
+  if (kind === 'indexer') {
+    if (state === 'ok') {
+      return {
+        label: '인덱서 정상',
+        className: 'border-dot-green/30 bg-dot-green/10 text-dot-green',
+      };
+    }
+    if (state === 'dsn_missing') {
+      return {
+        label: 'DSN 미설정',
+        className: 'border-dot-yellow/30 bg-dot-yellow/10 text-dot-yellow',
+      };
+    }
+    if (state === 'empty') {
+      return {
+        label: '미적재',
+        className: 'border-dot-yellow/30 bg-dot-yellow/10 text-dot-yellow',
+      };
+    }
+    return {
+      label: '조회 실패',
+      className: 'border-dot-red/30 bg-dot-red/10 text-dot-red',
+    };
+  }
+
+  if (state === 'ok') {
+    return {
+      label: 'Published 정상',
+      className: 'border-dot-green/30 bg-dot-green/10 text-dot-green',
+    };
+  }
+  if (state === 'local_only') {
+    return {
+      label: 'Local만 사용',
+      className: 'border-dot-yellow/30 bg-dot-yellow/10 text-dot-yellow',
+    };
+  }
+  if (state === 'fallback') {
+    return {
+      label: 'Fallback 사용',
+      className: 'border-dot-yellow/30 bg-dot-yellow/10 text-dot-yellow',
+    };
+  }
+  return {
+    label: '미적재',
+    className: 'border-dot-yellow/30 bg-dot-yellow/10 text-dot-yellow',
+  };
 }
 
 function severityMeta(severity: string) {
@@ -122,20 +244,33 @@ function StatusCard({
 function OpsPanel({
   title,
   description,
+  statusLabel,
+  statusClassName,
   children,
 }: {
   title: string;
   description: string;
+  statusLabel?: string;
+  statusClassName?: string;
   children: ReactNode;
 }) {
   return (
     <section className="dot-card p-4 sm:p-5">
       <div className="space-y-4">
-        <div className="space-y-1">
-          <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">
-            {title}
-          </p>
-          <p className="text-xs text-dot-sub leading-relaxed">{description}</p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">
+              {title}
+            </p>
+            <p className="text-xs text-dot-sub leading-relaxed">{description}</p>
+          </div>
+          {statusLabel ? (
+            <span
+              className={`rounded-sm border px-2 py-1 text-[10px] font-mono uppercase tracking-[0.14em] ${statusClassName ?? 'border-dot-border/40 text-dot-muted'}`}
+            >
+              {statusLabel}
+            </span>
+          ) : null}
         </div>
         {children}
       </div>
@@ -334,6 +469,12 @@ export default function AdminOnchainPage() {
     );
   }
 
+  const nodePanelStatus = data ? panelStatusMeta('node', data.pipeline.states.node) : null;
+  const indexerPanelStatus = data ? panelStatusMeta('indexer', data.pipeline.states.indexer) : null;
+  const publishedPanelStatus = data
+    ? panelStatusMeta('published', data.pipeline.states.published)
+    : null;
+
   return (
     <div className="space-y-3 sm:space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -361,23 +502,43 @@ export default function AdminOnchainPage() {
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <StatusCard
               label="Node Tip"
-              value={formatCount(data.pipeline.nodeTipHeight)}
+              value={valueOrFallback(
+                formatCount(data.pipeline.nodeTipHeight),
+                fieldFallbackLabel('node', data.pipeline.states.node)
+              )}
               hint="bitcoind가 검증한 최신 블록 높이"
             />
             <StatusCard
               label="Headers"
-              value={formatCount(data.pipeline.headerHeight)}
+              value={valueOrFallback(
+                formatCount(data.pipeline.headerHeight),
+                fieldFallbackLabel('node', data.pipeline.states.node)
+              )}
               hint="피어 네트워크에서 수신한 최신 헤더 높이"
             />
             <StatusCard
               label="Indexed Height"
-              value={formatCount(data.pipeline.indexedHeight)}
+              value={valueOrFallback(
+                formatCount(data.pipeline.indexedHeight),
+                fieldFallbackLabel('indexer', data.pipeline.states.indexer)
+              )}
               hint="로컬 인덱서가 적재한 마지막 블록 높이"
             />
             <StatusCard
               label="Sync Progress"
-              value={formatPercent(data.pipeline.syncPercent)}
-              hint={`lag ${formatCount(data.pipeline.lagBlocks)} blocks`}
+              value={valueOrFallback(
+                formatPercent(data.pipeline.syncPercent),
+                data.pipeline.states.node !== 'ok'
+                  ? fieldFallbackLabel('node', data.pipeline.states.node)
+                  : fieldFallbackLabel('indexer', data.pipeline.states.indexer)
+              )}
+              hint={
+                data.pipeline.lagBlocks !== null
+                  ? `lag ${formatCount(data.pipeline.lagBlocks)} blocks`
+                  : data.pipeline.states.node !== 'ok'
+                  ? 'node RPC를 읽지 못해 계산하지 못했습니다.'
+                  : '인덱서 상태를 읽지 못해 계산하지 못했습니다.'
+              }
             />
           </div>
 
@@ -385,24 +546,38 @@ export default function AdminOnchainPage() {
             <OpsPanel
               title="Node Runtime"
               description="현재 비트코인 노드의 동기화와 실행 모드를 확인합니다."
+              statusLabel={nodePanelStatus?.label}
+              statusClassName={nodePanelStatus?.className}
             >
               <KeyValueGrid
                 items={[
                   {
                     label: 'IBD',
-                    value: formatBoolean(
-                      data.pipeline.initialBlockDownload,
-                      '초기 동기화 중',
-                      '동기화 완료'
+                    value: valueOrFallback(
+                      formatBoolean(
+                        data.pipeline.initialBlockDownload,
+                        '초기 동기화 중',
+                        '동기화 완료'
+                      ),
+                      fieldFallbackLabel('node', data.pipeline.states.node)
                     ),
                   },
                   {
                     label: 'Storage Mode',
-                    value: formatBoolean(data.pipeline.pruned, 'Pruned Node', 'Full Node'),
+                    value: valueOrFallback(
+                      formatBoolean(data.pipeline.pruned, 'Pruned Node', 'Full Node'),
+                      fieldFallbackLabel('node', data.pipeline.states.node)
+                    ),
                   },
                   {
                     label: 'Prune Height',
-                    value: formatCount(data.pipeline.pruneHeight),
+                    value:
+                      data.pipeline.pruned === false
+                        ? '해당 없음'
+                        : valueOrFallback(
+                            formatCount(data.pipeline.pruneHeight),
+                            fieldFallbackLabel('node', data.pipeline.states.node)
+                          ),
                   },
                   {
                     label: 'Last Refresh',
@@ -415,16 +590,26 @@ export default function AdminOnchainPage() {
             <OpsPanel
               title="Indexer"
               description="로컬 인덱서가 체인을 얼마나 따라왔는지 보여줍니다."
+              statusLabel={indexerPanelStatus?.label}
+              statusClassName={indexerPanelStatus?.className}
             >
               <KeyValueGrid
                 items={[
                   {
                     label: 'Indexed Day',
-                    value: formatDay(data.pipeline.latestIndexedDay),
+                    value: valueOrFallback(
+                      formatDay(data.pipeline.latestIndexedDay),
+                      fieldFallbackLabel('indexer', data.pipeline.states.indexer)
+                    ),
                   },
                   {
                     label: 'Lag Blocks',
-                    value: formatCount(data.pipeline.lagBlocks),
+                    value: valueOrFallback(
+                      formatCount(data.pipeline.lagBlocks),
+                      data.pipeline.states.node !== 'ok'
+                        ? fieldFallbackLabel('node', data.pipeline.states.node)
+                        : fieldFallbackLabel('indexer', data.pipeline.states.indexer)
+                    ),
                   },
                   {
                     label: 'Tip Gap',
@@ -437,12 +622,17 @@ export default function AdminOnchainPage() {
                               0
                             )
                           )
-                        : '—',
+                        : fieldFallbackLabel('node', data.pipeline.states.node),
                     hint: 'headers와 blocks 차이',
                   },
                   {
                     label: 'Sync Percent',
-                    value: formatPercent(data.pipeline.syncPercent),
+                    value: valueOrFallback(
+                      formatPercent(data.pipeline.syncPercent),
+                      data.pipeline.states.node !== 'ok'
+                        ? fieldFallbackLabel('node', data.pipeline.states.node)
+                        : fieldFallbackLabel('indexer', data.pipeline.states.indexer)
+                    ),
                   },
                 ]}
               />
@@ -451,6 +641,8 @@ export default function AdminOnchainPage() {
             <OpsPanel
               title="Published Stream"
               description="웹이 읽는 published 테이블 상태와 알림 볼륨을 확인합니다."
+              statusLabel={publishedPanelStatus?.label}
+              statusClassName={publishedPanelStatus?.className}
             >
               <KeyValueGrid
                 items={[
@@ -460,15 +652,21 @@ export default function AdminOnchainPage() {
                   },
                   {
                     label: 'Published Day',
-                    value: formatDay(data.pipeline.publishedLatestDay),
+                    value: valueOrFallback(
+                      formatDay(data.pipeline.publishedLatestDay),
+                      fieldFallbackLabel('published', data.pipeline.states.published)
+                    ),
                   },
                   {
                     label: 'Published Status',
-                    value: data.summary.status === 'available' ? 'Available' : 'Unavailable',
+                    value: publishedStateLabel(data.pipeline.states.published),
                   },
                   {
                     label: 'Alert Total',
-                    value: formatCount(data.pipeline.alertTotal),
+                    value:
+                      data.pipeline.alertTotal > 0
+                        ? formatCount(data.pipeline.alertTotal)
+                        : fieldFallbackLabel('published', data.pipeline.states.published),
                   },
                 ]}
               />
