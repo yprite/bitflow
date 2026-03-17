@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { OnchainFeePressureData } from '@/lib/types';
+import { trackEvent } from '@/lib/event-tracker';
 import {
   clampCount,
   clampFeeRate,
@@ -29,6 +30,7 @@ type TargetTier = 'fastest' | 'halfHour' | 'hour';
 export default function BitcoinStuckTxRescue({
   feePressure,
 }: BitcoinStuckTxRescueProps) {
+  const trackedEngagement = useRef(false);
   const [parentSizeInput, setParentSizeInput] = useState('180');
   const [currentFeeRateInput, setCurrentFeeRateInput] = useState('2');
   const [childSizeInput, setChildSizeInput] = useState('140');
@@ -62,6 +64,14 @@ export default function BitcoinStuckTxRescue({
     { key: 'hour', label: '1시간', feeRate: feePressure.hourFee },
   ];
 
+  const trackEngagement = () => {
+    if (trackedEngagement.current) return;
+    trackedEngagement.current = true;
+    trackEvent('tools_stuck_tx_rescue_used', '/tools', {
+      targetTier,
+    });
+  };
+
   return (
     <article className="dot-card h-full p-4 sm:p-5">
       <div className="dot-card-inner space-y-4">
@@ -82,7 +92,10 @@ export default function BitcoinStuckTxRescue({
             <button
               key={tier.key}
               type="button"
-              onClick={() => setTargetTier(tier.key)}
+              onClick={() => {
+                setTargetTier(tier.key);
+                trackEngagement();
+              }}
               className={`rounded-sm border px-2 py-1 text-[10px] font-mono uppercase tracking-[0.12em] transition ${
                 targetTier === tier.key
                   ? 'border-dot-accent bg-dot-accent text-white'
@@ -102,7 +115,10 @@ export default function BitcoinStuckTxRescue({
             <input
               inputMode="numeric"
               value={parentSizeInput}
-              onChange={(event) => setParentSizeInput(event.target.value)}
+              onChange={(event) => {
+                setParentSizeInput(event.target.value);
+                trackEngagement();
+              }}
               className="w-full border border-dot-border bg-white px-3 py-2 text-sm font-mono text-dot-accent outline-none transition focus:border-dot-accent"
             />
           </label>
@@ -114,7 +130,10 @@ export default function BitcoinStuckTxRescue({
             <input
               inputMode="decimal"
               value={currentFeeRateInput}
-              onChange={(event) => setCurrentFeeRateInput(event.target.value)}
+              onChange={(event) => {
+                setCurrentFeeRateInput(event.target.value);
+                trackEngagement();
+              }}
               className="w-full border border-dot-border bg-white px-3 py-2 text-sm font-mono text-dot-accent outline-none transition focus:border-dot-accent"
             />
           </label>
@@ -126,7 +145,10 @@ export default function BitcoinStuckTxRescue({
             <input
               inputMode="numeric"
               value={childSizeInput}
-              onChange={(event) => setChildSizeInput(event.target.value)}
+              onChange={(event) => {
+                setChildSizeInput(event.target.value);
+                trackEngagement();
+              }}
               className="w-full border border-dot-border bg-white px-3 py-2 text-sm font-mono text-dot-accent outline-none transition focus:border-dot-accent"
             />
           </label>

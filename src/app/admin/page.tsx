@@ -54,6 +54,13 @@ interface FeatureRow {
   unique_sessions: number;
 }
 
+interface RecentFeatureEvent {
+  event_type: string;
+  page: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
 interface UtmRow {
   source: string;
   medium: string;
@@ -106,6 +113,25 @@ interface AdminData {
   featureUsage: FeatureRow[];
   utmBreakdown: UtmRow[];
   recentSessions: RecentSession[];
+  recentFeatureEvents: RecentFeatureEvent[];
+}
+
+interface InfoDemandRow {
+  page: string;
+  label: string;
+  views: number;
+  uniqueSessions: number;
+  sessionShare: number;
+  landingActivationRate: number | null;
+  avgPageviews: number | null;
+}
+
+interface FeatureDemandRow {
+  eventType: string;
+  label: string;
+  count: number;
+  uniqueSessions: number;
+  sessionShare: number;
 }
 
 function toNumber(value: number | string | null | undefined): number {
@@ -125,6 +151,150 @@ function formatDecimal(value: number | string | null | undefined, digits: number
 
 function formatPercent(value: number | string | null | undefined, digits: number = 1): string {
   return `${formatDecimal(value, digits)}%`;
+}
+
+const PAGE_LABELS: Record<string, string> = {
+  '/': '홈',
+  '/onchain': '온체인',
+  '/tools': '도구',
+  '/indicators': '지표',
+  '/alert': '알림',
+  '/admin': '관리자 이벤트',
+  '/admin/onchain': '관리자 온체인',
+  '/realtime': '실시간',
+  '/about': '소개',
+  '/contact': '문의',
+};
+
+const FEATURE_LABELS: Record<string, string> = {
+  telegram_bot_click: '텔레그램 알림 CTA',
+  arbitrage_calculator_engaged: '재정거래 계산기 사용',
+  tools_fee_calculator_used: '수수료 계산기 사용',
+  tools_tx_size_estimator_used: 'TX 크기 추정기 사용',
+  tools_stuck_tx_rescue_used: 'Stuck TX 복구 계산',
+  tools_tx_status_lookup: 'TX 상태 조회',
+  tools_unit_converter_used: 'BTC 단위 환산기 사용',
+  tools_utxo_planner_used: 'UTXO 정리 계산기 사용',
+};
+
+function describePage(page: string): string {
+  return PAGE_LABELS[page] ?? page;
+}
+
+function describeFeature(eventType: string): string {
+  return FEATURE_LABELS[eventType] ?? eventType;
+}
+
+function readMetadataString(
+  metadata: Record<string, unknown> | null | undefined,
+  key: string
+): string | null {
+  const value = metadata?.[key];
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+function describeFeatureDetail(event: RecentFeatureEvent): string {
+  const { event_type: eventType, metadata } = event;
+
+  if (eventType === 'arbitrage_calculator_engaged') {
+    const action = readMetadataString(metadata, 'action');
+    const coin = readMetadataString(metadata, 'coin');
+    const direction = readMetadataString(metadata, 'direction');
+    const directionLabel =
+      direction === 'buy-global-sell-kr'
+        ? '해외 매수 -> 한국 매도'
+        : direction === 'buy-kr-sell-global'
+          ? '한국 매수 -> 해외 매도'
+          : null;
+    return [coin, action, directionLabel].filter(Boolean).join(' · ') || '계산 시작';
+  }
+
+  if (eventType === 'tools_tx_status_lookup') {
+    const result = readMetadataString(metadata, 'result');
+    if (result === 'confirmed') return '확정된 tx 조회';
+    if (result === 'mempool') return 'mempool 대기 tx 조회';
+    if (result === 'not_found') return '미발견 tx 조회';
+    if (result === 'error' || result === 'network_error') return '조회 실패';
+    return '상태 조회';
+  }
+
+  if (eventType === 'tools_fee_calculator_used') {
+    const action = readMetadataString(metadata, 'action');
+    return action === 'preset' ? '프리셋으로 수수료 계산' : '직접 입력으로 수수료 계산';
+  }
+
+  if (eventType === 'tools_tx_size_estimator_used') {
+    const inputProfile = readMetadataString(metadata, 'inputProfile');
+    const outputProfile = readMetadataString(metadata, 'outputProfile');
+    return [inputProfile, outputProfile].filter(Boolean).join(' -> ') || '입출력 타입 추정';
+  }
+
+  if (eventType === 'tools_stuck_tx_rescue_used') {
+    const targetTier = readMetadataString(metadata, 'targetTier');
+    return targetTier ? `${targetTier} 목표 rescue 계산` : 'RBF / CPFP rescue 계산';
+  }
+
+  if (eventType === 'tools_unit_converter_used') {
+    const mode = readMetadataString(metadata, 'mode');
+    return mode ? `${mode.toUpperCase()} 기준 환산` : '단위 환산';
+  }
+
+  if (eventType === 'tools_utxo_planner_used') {
+    const inputProfile = readMetadataString(metadata, 'inputProfile');
+    const outputProfile = readMetadataString(metadata, 'outputProfile');
+    return [inputProfile, outputProfile].filter(Boolean).join(' -> ') || 'UTXO 정리 계산';
+  }
+
+  return '세부 정보 없음';
+}
+
+function buildInfoDemandRows(data: AdminData): InfoDemandRow[] {
+  const landingMap = new Map(
+    data.landingPageBreakdown.map((row) => [
+      row.page,
+      {
+        activationRate: toNumber(row.activation_rate),
+        avgPageviews: toNumber(row.avg_pageviews),
+      },
+    ])
+  );
+
+  return data.pageBreakdown
+    .map((row) => {
+      const landing = landingMap.get(row.page);
+      const uniqueSessions = toNumber(row.unique_sessions);
+      return {
+        page: row.page,
+        label: describePage(row.page),
+        views: toNumber(row.views),
+        uniqueSessions,
+        sessionShare:
+          data.totals && toNumber(data.totals.unique_sessions) > 0
+            ? (uniqueSessions / toNumber(data.totals.unique_sessions)) * 100
+            : 0,
+        landingActivationRate: landing?.activationRate ?? null,
+        avgPageviews: landing?.avgPageviews ?? null,
+      };
+    })
+    .sort((a, b) => b.uniqueSessions - a.uniqueSessions || b.views - a.views);
+}
+
+function buildFeatureDemandRows(data: AdminData): FeatureDemandRow[] {
+  return data.featureUsage
+    .map((row) => {
+      const uniqueSessions = toNumber(row.unique_sessions);
+      return {
+        eventType: row.event_type,
+        label: describeFeature(row.event_type),
+        count: toNumber(row.count),
+        uniqueSessions,
+        sessionShare:
+          data.totals && toNumber(data.totals.unique_sessions) > 0
+            ? (uniqueSessions / toNumber(data.totals.unique_sessions)) * 100
+            : 0,
+      };
+    })
+    .sort((a, b) => b.uniqueSessions - a.uniqueSessions || b.count - a.count);
 }
 
 // ─── Mini bar chart using plain divs ────────────────────────────
@@ -358,6 +528,11 @@ export default function AdminPage() {
 
   const totals = data?.totals;
   const growthOverview = data?.growthOverview;
+  const infoDemandRows = data ? buildInfoDemandRows(data) : [];
+  const featureDemandRows = data ? buildFeatureDemandRows(data) : [];
+  const topInfo = infoDemandRows[0] ?? null;
+  const topLanding = data?.landingPageBreakdown[0] ?? null;
+  const topFeature = featureDemandRows[0] ?? null;
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -412,6 +587,40 @@ export default function AdminPage() {
             </p>
           </div>
         </div>
+      )}
+
+      {data && (topInfo || topLanding || topFeature) && (
+        <Card title="사용자 관심 요약">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+            <MetricCard
+              label="가장 많이 찾는 정보"
+              value={topInfo ? topInfo.label : '-'}
+              hint={
+                topInfo
+                  ? `${formatPercent(topInfo.sessionShare)} 세션 도달 · ${formatCount(topInfo.views)} PV`
+                  : '데이터 없음'
+              }
+            />
+            <MetricCard
+              label="전환 강한 첫 진입"
+              value={topLanding ? describePage(topLanding.page) : '-'}
+              hint={
+                topLanding
+                  ? `활성률 ${formatPercent(topLanding.activation_rate)} · 세션당 PV ${formatDecimal(topLanding.avg_pageviews)}`
+                  : '데이터 없음'
+              }
+            />
+            <MetricCard
+              label="행동이 많은 기능"
+              value={topFeature ? topFeature.label : '-'}
+              hint={
+                topFeature
+                  ? `${formatCount(topFeature.uniqueSessions)}세션 · 전체의 ${formatPercent(topFeature.sessionShare)}`
+                  : '아직 pageview 중심 트래픽'
+              }
+            />
+          </div>
+        </Card>
       )}
 
       {/* Growth overview */}
@@ -483,6 +692,81 @@ export default function AdminPage() {
       {/* Two-column grid */}
       {data && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+          <Card title="실제 많이 찾는 정보">
+            {infoDemandRows.length > 0 ? (
+              <div className="overflow-x-auto -mx-4 px-4">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-dot-muted text-left">
+                      <th className="pb-2 font-medium">정보</th>
+                      <th className="pb-2 font-medium text-right">PV</th>
+                      <th className="pb-2 font-medium text-right">세션 점유</th>
+                      <th className="pb-2 font-medium text-right">랜딩 활성률</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {infoDemandRows.slice(0, 8).map((row) => (
+                      <tr key={row.page} className="border-t border-dot-border/20">
+                        <td className="py-2">
+                          <p className="font-mono text-dot-sub">{row.label}</p>
+                          <p className="text-[10px] text-dot-muted">{row.page}</p>
+                        </td>
+                        <td className="py-2 text-right font-mono text-dot-sub">
+                          {formatCount(row.views)}
+                        </td>
+                        <td className="py-2 text-right font-mono text-dot-accent">
+                          {formatPercent(row.sessionShare)}
+                        </td>
+                        <td className="py-2 text-right font-mono text-dot-sub">
+                          {row.landingActivationRate !== null
+                            ? formatPercent(row.landingActivationRate)
+                            : '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-dot-muted text-xs text-center py-2">데이터 없음</p>
+            )}
+          </Card>
+
+          <Card title="실행 행동 랭킹">
+            {featureDemandRows.length > 0 ? (
+              <div className="overflow-x-auto -mx-4 px-4">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-dot-muted text-left">
+                      <th className="pb-2 font-medium">기능</th>
+                      <th className="pb-2 font-medium text-right">이벤트</th>
+                      <th className="pb-2 font-medium text-right">세션</th>
+                      <th className="pb-2 font-medium text-right">세션 점유</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {featureDemandRows.slice(0, 8).map((row) => (
+                      <tr key={row.eventType} className="border-t border-dot-border/20">
+                        <td className="py-2 font-mono text-dot-sub">{row.label}</td>
+                        <td className="py-2 text-right font-mono text-dot-sub">
+                          {formatCount(row.count)}
+                        </td>
+                        <td className="py-2 text-right font-mono text-dot-sub">
+                          {formatCount(row.uniqueSessions)}
+                        </td>
+                        <td className="py-2 text-right font-mono text-dot-accent">
+                          {formatPercent(row.sessionShare)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-dot-muted text-xs text-center py-2">데이터 없음</p>
+            )}
+          </Card>
+
           <Card title="페이지별 방문">
             <BarChart data={data.pageBreakdown} labelKey="page" valueKey="views" />
           </Card>
@@ -521,6 +805,39 @@ export default function AdminPage() {
             )}
           </Card>
         </div>
+      )}
+
+      {data && data.recentFeatureEvents.length > 0 && (
+        <Card title="최근 행동 로그">
+          <div className="overflow-x-auto -mx-4 px-4">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-dot-muted text-left">
+                  <th className="pb-1 font-medium">시간</th>
+                  <th className="pb-1 font-medium">기능</th>
+                  <th className="pb-1 font-medium">페이지</th>
+                  <th className="pb-1 font-medium">세부 내용</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.recentFeatureEvents.slice(0, 20).map((event, index) => (
+                  <tr key={`${event.event_type}-${event.created_at}-${index}`} className="border-t border-dot-border/20 hover:bg-dot-accent/[0.02] transition-colors">
+                    <td className="py-1 font-mono text-dot-muted">
+                      {new Date(event.created_at).toLocaleTimeString('ko-KR', {
+                        timeZone: 'Asia/Seoul',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </td>
+                    <td className="py-1 font-mono text-dot-sub">{describeFeature(event.event_type)}</td>
+                    <td className="py-1 text-dot-muted">{describePage(event.page)}</td>
+                    <td className="py-1 text-dot-sub">{describeFeatureDetail(event)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       )}
 
       {/* Recent sessions */}

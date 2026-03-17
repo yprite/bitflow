@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
     featureUsage,
     utmBreakdown,
     recentSessions,
+    recentFeatureEvents,
     totalCounts,
   ] = await Promise.all([
     // 1. Daily pageview counts
@@ -71,7 +72,17 @@ export async function GET(req: NextRequest) {
       .limit(100)
       .then((r) => r.data || []),
 
-    // 12. Total counts
+    // 12. Recent feature actions
+    supabase
+      .from('events')
+      .select('event_type, page, metadata, created_at')
+      .gte('created_at', since)
+      .neq('event_type', 'pageview')
+      .order('created_at', { ascending: false })
+      .limit(50)
+      .then((r) => r.data || []),
+
+    // 13. Total counts
     supabase.rpc('get_event_totals', { since_date: since }).then((r) => r.data?.[0] || null),
   ]);
 
@@ -89,5 +100,6 @@ export async function GET(req: NextRequest) {
     featureUsage,
     utmBreakdown,
     recentSessions,
+    recentFeatureEvents,
   });
 }

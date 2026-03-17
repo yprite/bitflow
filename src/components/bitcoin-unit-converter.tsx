@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { trackEvent } from '@/lib/event-tracker';
 
 interface BitcoinUnitConverterProps {
   btcPriceUsd: number;
@@ -43,6 +44,7 @@ export default function BitcoinUnitConverter({
   btcPriceUsd,
   btcPriceKrw,
 }: BitcoinUnitConverterProps) {
+  const trackedEngagement = useRef(false);
   const [mode, setMode] = useState<InputMode>('krw');
   const [amountInput, setAmountInput] = useState('100000');
 
@@ -70,6 +72,14 @@ export default function BitcoinUnitConverter({
     { key: 'sats', label: 'sats 입력', suffix: 'sats' },
   ];
 
+  const trackEngagement = (nextMode: InputMode = mode) => {
+    if (trackedEngagement.current) return;
+    trackedEngagement.current = true;
+    trackEvent('tools_unit_converter_used', '/tools', {
+      mode: nextMode,
+    });
+  };
+
   return (
     <article className="dot-card h-full p-4 sm:p-5">
       <div className="dot-card-inner space-y-4">
@@ -90,7 +100,10 @@ export default function BitcoinUnitConverter({
             <button
               key={option.key}
               type="button"
-              onClick={() => setMode(option.key)}
+              onClick={() => {
+                setMode(option.key);
+                trackEngagement(option.key);
+              }}
               className={`rounded-sm border px-2 py-1 text-[10px] font-mono uppercase tracking-[0.12em] transition ${
                 mode === option.key
                   ? 'border-dot-accent bg-dot-accent text-white'
@@ -111,7 +124,10 @@ export default function BitcoinUnitConverter({
               <input
                 inputMode="decimal"
                 value={amountInput}
-                onChange={(event) => setAmountInput(event.target.value)}
+                onChange={(event) => {
+                  setAmountInput(event.target.value);
+                  trackEngagement();
+                }}
                 className="w-full border border-dot-border bg-white px-3 py-2 text-sm font-mono text-dot-accent outline-none transition focus:border-dot-accent"
                 placeholder="100"
               />

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { OnchainFeePressureData } from '@/lib/types';
+import { trackEvent } from '@/lib/event-tracker';
 import {
   BITCOIN_SCRIPT_PROFILES,
   type BitcoinScriptProfile,
@@ -41,6 +42,7 @@ export default function BitcoinTxSizeEstimator({
   feePressure,
   btcPriceUsd,
 }: BitcoinTxSizeEstimatorProps) {
+  const trackedEngagement = useRef(false);
   const [inputProfile, setInputProfile] = useState<BitcoinScriptProfile>('p2wpkh');
   const [outputProfile, setOutputProfile] = useState<BitcoinScriptProfile>('p2wpkh');
   const [inputCountInput, setInputCountInput] = useState('1');
@@ -60,6 +62,15 @@ export default function BitcoinTxSizeEstimator({
     { label: '1시간', feeRate: feePressure.hourFee },
     { label: '절약', feeRate: feePressure.economyFee },
   ];
+
+  const trackEngagement = () => {
+    if (trackedEngagement.current) return;
+    trackedEngagement.current = true;
+    trackEvent('tools_tx_size_estimator_used', '/tools', {
+      inputProfile,
+      outputProfile,
+    });
+  };
 
   return (
     <article className="dot-card h-full p-4 sm:p-5">
@@ -89,7 +100,10 @@ export default function BitcoinTxSizeEstimator({
             </span>
             <select
               value={inputProfile}
-              onChange={(event) => setInputProfile(event.target.value as BitcoinScriptProfile)}
+              onChange={(event) => {
+                setInputProfile(event.target.value as BitcoinScriptProfile);
+                trackEngagement();
+              }}
               className="w-full border border-dot-border bg-white px-3 py-2 text-sm font-mono text-dot-accent outline-none transition focus:border-dot-accent"
             >
               {SCRIPT_PROFILE_OPTIONS.map(([key, value]) => (
@@ -106,7 +120,10 @@ export default function BitcoinTxSizeEstimator({
             </span>
             <select
               value={outputProfile}
-              onChange={(event) => setOutputProfile(event.target.value as BitcoinScriptProfile)}
+              onChange={(event) => {
+                setOutputProfile(event.target.value as BitcoinScriptProfile);
+                trackEngagement();
+              }}
               className="w-full border border-dot-border bg-white px-3 py-2 text-sm font-mono text-dot-accent outline-none transition focus:border-dot-accent"
             >
               {SCRIPT_PROFILE_OPTIONS.map(([key, value]) => (
@@ -124,7 +141,10 @@ export default function BitcoinTxSizeEstimator({
             <input
               inputMode="numeric"
               value={inputCountInput}
-              onChange={(event) => setInputCountInput(event.target.value)}
+              onChange={(event) => {
+                setInputCountInput(event.target.value);
+                trackEngagement();
+              }}
               className="w-full border border-dot-border bg-white px-3 py-2 text-sm font-mono text-dot-accent outline-none transition focus:border-dot-accent"
             />
           </label>
@@ -136,7 +156,10 @@ export default function BitcoinTxSizeEstimator({
             <input
               inputMode="numeric"
               value={outputCountInput}
-              onChange={(event) => setOutputCountInput(event.target.value)}
+              onChange={(event) => {
+                setOutputCountInput(event.target.value);
+                trackEngagement();
+              }}
               className="w-full border border-dot-border bg-white px-3 py-2 text-sm font-mono text-dot-accent outline-none transition focus:border-dot-accent"
             />
           </label>

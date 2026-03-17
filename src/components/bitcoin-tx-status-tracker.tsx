@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { BitcoinTxStatusSnapshot } from '@/lib/bitcoin-tx-status';
+import { trackEvent } from '@/lib/event-tracker';
 
 interface BitcoinTxStatusTrackerProps {
   initialTxid?: string;
@@ -97,13 +98,27 @@ export default function BitcoinTxStatusTracker({
             ? payload.error
             : 'TX 상태를 조회하지 못했습니다.'
         );
+        trackEvent('tools_tx_status_lookup', '/tools', {
+          result: 'error',
+        });
         return;
       }
 
       setResult(payload as unknown as TxStatusPayload);
+      trackEvent('tools_tx_status_lookup', '/tools', {
+        result:
+          payload.status === 'ok'
+            ? (payload.snapshot as { stage?: string } | undefined)?.stage ?? 'ok'
+            : payload.status === 'not_found'
+              ? 'not_found'
+              : 'ok',
+      });
     } catch {
       setResult(null);
       setError('TX 상태를 조회하지 못했습니다.');
+      trackEvent('tools_tx_status_lookup', '/tools', {
+        result: 'network_error',
+      });
     } finally {
       setLoading(false);
     }

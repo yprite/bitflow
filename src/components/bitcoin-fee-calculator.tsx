@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { OnchainBlockTempoData, OnchainFeePressureData } from '@/lib/types';
+import { trackEvent } from '@/lib/event-tracker';
 
 const VBYTES_PRESETS = [140, 220, 400, 900] as const;
 
@@ -48,6 +49,7 @@ export default function BitcoinFeeCalculator({
   btcPriceUsd,
 }: BitcoinFeeCalculatorProps) {
   const [vbytesInput, setVbytesInput] = useState('140');
+  const trackedEngagement = useRef(false);
   const vbytes = sanitizeVbytes(vbytesInput);
   const averageBlockMinutes = Math.max(Math.round(blockTempo.averageBlockMinutes), 8);
   const tiers = [
@@ -72,6 +74,15 @@ export default function BitcoinFeeCalculator({
       feeRate: feePressure.economyFee,
     },
   ];
+
+  const trackEngagement = (action: 'input' | 'preset') => {
+    if (trackedEngagement.current) return;
+    trackedEngagement.current = true;
+    trackEvent('tools_fee_calculator_used', '/tools', {
+      action,
+      vbytes,
+    });
+  };
 
   return (
     <article className="dot-card h-full p-4 sm:p-5">
@@ -103,7 +114,10 @@ export default function BitcoinFeeCalculator({
               <input
                 inputMode="numeric"
                 value={vbytesInput}
-                onChange={(event) => setVbytesInput(event.target.value)}
+                onChange={(event) => {
+                  setVbytesInput(event.target.value);
+                  trackEngagement('input');
+                }}
                 className="w-full border border-dot-border bg-white px-3 py-2 text-sm font-mono text-dot-accent outline-none transition focus:border-dot-accent"
                 placeholder="140"
               />
@@ -116,7 +130,10 @@ export default function BitcoinFeeCalculator({
               <button
                 key={preset}
                 type="button"
-                onClick={() => setVbytesInput(String(preset))}
+                onClick={() => {
+                  setVbytesInput(String(preset));
+                  trackEngagement('preset');
+                }}
                 className={`rounded-sm border px-2 py-1 text-[10px] font-mono uppercase tracking-[0.12em] transition ${
                   vbytes === preset
                     ? 'border-dot-accent bg-dot-accent text-white'
