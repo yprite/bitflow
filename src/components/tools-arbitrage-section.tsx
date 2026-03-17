@@ -42,5 +42,5 @@ export default function ToolsArbitrageSection() {
     );
   }
 
-  return <ArbitrageCalculator data={multiCoinData} />;
+  return <ArbitrageCalculator data={multiCoinData} lockedCoinSymbol="BTC" />;
 }

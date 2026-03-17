@@ -1,5 +1,8 @@
 import BitcoinFeeCalculator from '@/components/bitcoin-fee-calculator';
+import BitcoinStuckTxRescue from '@/components/bitcoin-stuck-tx-rescue';
+import BitcoinTxSizeEstimator from '@/components/bitcoin-tx-size-estimator';
 import BitcoinUnitConverter from '@/components/bitcoin-unit-converter';
+import BitcoinUtxoConsolidationPlanner from '@/components/bitcoin-utxo-consolidation-planner';
 import GuideCard from '@/components/guide-card';
 import PageHeader from '@/components/page-header';
 import ToolsArbitrageSection from '@/components/tools-arbitrage-section';
@@ -17,10 +20,10 @@ export default async function ToolsPage() {
         <PageHeader
           eyebrow="Bitcoin Utility Deck"
           title="도구"
-          description="비트코인 전송 비용 계산, 단위 환산, 그리고 재정거래 판단에 필요한 최소 도구만 남겼습니다."
+          description="비트코인 전송 수수료 계산, stuck tx 복구, UTXO 정리, 단위 환산, 재정거래 판단까지 실전에 바로 쓰는 도구만 모았습니다."
           action={(
             <div className="rounded-sm border border-dot-border/50 bg-white/70 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.16em] text-dot-sub">
-              3 tools only
+              BTC ops toolkit
             </div>
           )}
         />
@@ -33,28 +36,28 @@ export default async function ToolsPage() {
           maxHeight={340}
           intro={(
             <>
-              이 화면은 세 가지 용도만 남겼습니다.
-              비트코인 전송 수수료를 잡고, 단위를 빠르게 환산하고, 마지막으로 시장 간 괴리를 재정거래 관점에서 계산하는 흐름입니다.
+              이 화면은 비트코인 실무 도구 위주로 다시 묶었습니다.
+              전송 크기를 추정하고, fee를 잡고, 막힌 거래를 복구하고, UTXO를 정리하고, 마지막으로 재정거래 계산까지 이어지는 흐름입니다.
             </>
           )}
         >
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-              <p className="text-[10px] text-dot-muted uppercase tracking-wider">Fee</p>
+              <p className="text-[10px] text-dot-muted uppercase tracking-wider">Size + Fee</p>
               <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
-                전송 크기(vB)를 넣어 즉시, 30분, 1시간 tier별 총 수수료를 바로 계산합니다.
+                먼저 예상 vbytes를 잡고, 그 크기 기준으로 즉시, 30분, 1시간 수수료를 바로 계산합니다.
               </p>
             </div>
             <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-              <p className="text-[10px] text-dot-muted uppercase tracking-wider">Converter</p>
+              <p className="text-[10px] text-dot-muted uppercase tracking-wider">Rescue + UTXO</p>
               <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
-                달러, BTC, sats 중 하나를 기준으로 다른 단위 체감치를 바로 확인할 수 있습니다.
+                stuck tx를 RBF/CPFP로 살릴 때 얼마를 더 붙여야 하는지, 지금이 UTXO를 정리하기 좋은지 계산합니다.
               </p>
             </div>
             <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-              <p className="text-[10px] text-dot-muted uppercase tracking-wider">Arbitrage</p>
+              <p className="text-[10px] text-dot-muted uppercase tracking-wider">Converter + Arbitrage</p>
               <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
-                국내외 호가 차이와 수수료를 반영해 실제로 수익이 남는지 계산기로 바로 점검합니다.
+                BTC, sats, 달러 체감치를 맞춘 뒤 국내외 호가 차이와 총비용을 반영해 실제 수익성을 계산합니다.
               </p>
             </div>
           </div>
@@ -75,10 +78,30 @@ export default async function ToolsPage() {
       ) : null}
 
       <DotAssemblyReveal delay={220} duration={720}>
-        <ToolsArbitrageSection />
+        {networkPulse ? (
+          <section className="grid gap-3 xl:grid-cols-2">
+            <BitcoinTxSizeEstimator
+              feePressure={networkPulse.feePressure}
+              btcPriceUsd={networkPulse.marketContext.currentPriceUsd}
+            />
+            <BitcoinStuckTxRescue feePressure={networkPulse.feePressure} />
+          </section>
+        ) : null}
       </DotAssemblyReveal>
 
-      <DotAssemblyReveal delay={300} duration={620} density="low">
+      <DotAssemblyReveal delay={300} duration={740}>
+        <section className="grid gap-3 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          {networkPulse ? (
+            <BitcoinUtxoConsolidationPlanner
+              feePressure={networkPulse.feePressure}
+              btcPriceUsd={networkPulse.marketContext.currentPriceUsd}
+            />
+          ) : null}
+          <ToolsArbitrageSection />
+        </section>
+      </DotAssemblyReveal>
+
+      <DotAssemblyReveal delay={360} duration={620} density="low">
         <section className="dot-card p-5 sm:p-6 space-y-3">
           <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">
             비트코인 도구 사용 순서
@@ -86,15 +109,19 @@ export default async function ToolsPage() {
           <ul className="space-y-2 text-xs text-dot-sub leading-relaxed">
             <li className="flex items-start gap-2">
               <span className="text-dot-muted/50 font-mono">01</span>
-              <span>먼저 Fee Calculator에서 거래 크기 기준 수수료 tier를 보고, 지금 허용 가능한 전송 비용 범위를 정하세요.</span>
+              <span>먼저 Transaction Size Estimator로 예상 vbytes를 잡고, 바로 Fee Calculator에서 실제 송금 비용을 확인하세요.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-dot-muted/50 font-mono">02</span>
-              <span>금액 감이 애매하면 BTC / sats Converter로 달러와 sats 기준 체감치를 먼저 맞추는 편이 빠릅니다.</span>
+              <span>거래가 이미 막혔다면 Stuck TX Rescue에서 RBF와 CPFP 기준 추가 sats를 먼저 계산하는 편이 빠릅니다.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-dot-muted/50 font-mono">03</span>
-              <span>재정거래는 마지막 단계입니다. 국내외 호가 괴리보다 총비용과 예상 체결 시간을 먼저 확인한 뒤 진입 여부를 판단하세요.</span>
+              <span>UTXO Consolidation Planner로 현재 fee 구간이 정리하기 좋은지 보고, 큰 정리는 혼잡하지 않을 때 미리 처리하세요.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-dot-muted/50 font-mono">04</span>
+              <span>금액 감이 애매하면 BTC / sats Converter로 단위 체감치를 맞춘 뒤, 재정거래 계산기로 마지막 실행 판단을 하세요.</span>
             </li>
           </ul>
         </section>

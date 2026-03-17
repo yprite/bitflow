@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CoinPremium, MultiCoinKimpData, ArbitrageResult } from '@/lib/types';
 import { calculateArbitrage } from '@/lib/kimp';
 import { trackEvent } from '@/lib/event-tracker';
@@ -13,6 +13,7 @@ import LivePulse from './motion/indicators/LivePulse';
 interface ArbitrageCalculatorProps {
   data: MultiCoinKimpData;
   selectedCoin?: CoinPremium | null;
+  lockedCoinSymbol?: string;
 }
 
 const PRESET_AMOUNTS = [1_000_000, 5_000_000, 10_000_000, 50_000_000];
@@ -59,19 +60,32 @@ function AnimatedRow({
   );
 }
 
-export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCalculatorProps) {
-  const [coinSymbol, setCoinSymbol] = useState(selectedCoin?.symbol || 'BTC');
+export default function ArbitrageCalculator({
+  data,
+  selectedCoin,
+  lockedCoinSymbol,
+}: ArbitrageCalculatorProps) {
+  const initialCoinSymbol = lockedCoinSymbol ?? selectedCoin?.symbol ?? 'BTC';
+  const [coinSymbol, setCoinSymbol] = useState(initialCoinSymbol);
   const [amountInput, setAmountInput] = useState('10000000');
   const [direction, setDirection] = useState<'buy-kr-sell-global' | 'buy-global-sell-kr'>('buy-global-sell-kr');
   const trackedEngagement = useRef(false);
   const reducedMotion = useReducedMotion();
+  const isCoinLocked = typeof lockedCoinSymbol === 'string' && lockedCoinSymbol.length > 0;
 
   const coin = data.coins.find(c => c.symbol === coinSymbol);
   const amount = parseInt(amountInput.replace(/,/g, ''), 10) || 0;
 
-  if (selectedCoin && selectedCoin.symbol !== coinSymbol) {
-    setCoinSymbol(selectedCoin.symbol);
-  }
+  useEffect(() => {
+    if (isCoinLocked) {
+      setCoinSymbol(lockedCoinSymbol);
+      return;
+    }
+
+    if (selectedCoin?.symbol) {
+      setCoinSymbol(selectedCoin.symbol);
+    }
+  }, [isCoinLocked, lockedCoinSymbol, selectedCoin?.symbol]);
 
   const result: ArbitrageResult | null = useMemo(() => {
     if (!coin || amount <= 0) return null;
@@ -109,26 +123,34 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
           차익거래 계산기
         </h2>
 
-        {/* Input form */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3 sm:mb-4">
-          <div>
-            <label className="text-xs text-dot-muted block mb-1 font-mono">코인</label>
-            <select
-              value={coinSymbol}
-              onChange={e => {
-                setCoinSymbol(e.target.value);
-                trackEngagement('coin_select', { coin: e.target.value });
-              }}
-              className="w-full bg-white border-2 border-dot-border px-3 py-2 text-sm text-dot-text font-mono focus:outline-none focus:border-dot-accent"
-            >
-              {data.coins.map(c => (
-                <option key={c.symbol} value={c.symbol}>
-                  {c.symbol} ({c.premium >= 0 ? '+' : ''}{c.premium.toFixed(2)}%)
-                </option>
-              ))}
-            </select>
+        {isCoinLocked ? (
+          <div className="mb-3 inline-flex items-center gap-2 rounded-sm border border-dot-border/40 bg-white/70 px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-dot-sub">
+            <span>Coin</span>
+            <span className="text-dot-accent">{coinSymbol}</span>
           </div>
+        ) : null}
 
+        {/* Input form */}
+        <div className={`grid grid-cols-1 gap-3 mb-3 sm:mb-4 ${isCoinLocked ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
+          {!isCoinLocked ? (
+            <div>
+              <label className="text-xs text-dot-muted block mb-1 font-mono">코인</label>
+              <select
+                value={coinSymbol}
+                onChange={e => {
+                  setCoinSymbol(e.target.value);
+                  trackEngagement('coin_select', { coin: e.target.value });
+                }}
+                className="w-full bg-white border-2 border-dot-border px-3 py-2 text-sm text-dot-text font-mono focus:outline-none focus:border-dot-accent"
+              >
+                {data.coins.map(c => (
+                  <option key={c.symbol} value={c.symbol}>
+                    {c.symbol} ({c.premium >= 0 ? '+' : ''}{c.premium.toFixed(2)}%)
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           <div>
             <label className="text-xs text-dot-muted block mb-1 font-mono">투자 금액 (원)</label>
             <input
@@ -320,7 +342,9 @@ export default function ArbitrageCalculator({ data, selectedCoin }: ArbitrageCal
         )}
 
         {!coin && (
-          <p className="text-sm text-dot-muted text-center py-4">코인을 선택해주세요.</p>
+          <p className="text-sm text-dot-muted text-center py-4">
+            {isCoinLocked ? `${coinSymbol} 시세를 찾지 못했습니다.` : '코인을 선택해주세요.'}
+          </p>
         )}
       </div>
     </div>
