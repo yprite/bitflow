@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next';
+import { fetchWeeklyReportArchive } from '@/lib/weekly-reports';
 import { getBaseUrl } from '@/lib/site';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getBaseUrl();
   const now = new Date();
   const highPriorityRoutes: Array<{
@@ -11,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }> = [
     { path: '', priority: 1, changeFrequency: 'always' as const },
     { path: '/realtime', priority: 0.9, changeFrequency: 'always' as const },
+    { path: '/weekly', priority: 0.85, changeFrequency: 'weekly' as const },
     { path: '/indicators', priority: 0.9, changeFrequency: 'always' as const },
     { path: '/tools', priority: 0.8, changeFrequency: 'always' as const },
     { path: '/alert', priority: 0.6, changeFrequency: 'monthly' as const },
@@ -39,6 +41,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: 'monthly',
       priority: route.priority,
+    });
+  }
+
+  const weeklyArchive = await fetchWeeklyReportArchive(52).catch(() => []);
+  for (const item of weeklyArchive) {
+    const lastModified = new Date(item.publishedAt);
+    entries.push({
+      url: `${baseUrl}/weekly/${item.slug}`,
+      lastModified: Number.isNaN(lastModified.getTime()) ? now : lastModified,
+      changeFrequency: 'weekly',
+      priority: 0.65,
     });
   }
 

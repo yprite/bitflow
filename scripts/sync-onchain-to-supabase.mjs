@@ -1,14 +1,11 @@
 #!/usr/bin/env node
 
-import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 
 const { Client } = pg;
-const execFileAsync = promisify(execFile);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
@@ -74,6 +71,44 @@ function createSupabaseHeaders() {
   };
 }
 
+function createBitcoinRpcHeaders() {
+  const token = Buffer.from(
+    `${requiredEnv('BITCOIN_RPC_USER')}:${requiredEnv('BITCOIN_RPC_PASSWORD')}`,
+    'utf8'
+  ).toString('base64');
+
+  return {
+    Authorization: `Basic ${token}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+async function bitcoinRpcCall(method, params = []) {
+  const timeoutSeconds = Number.parseInt(process.env.BITCOIN_RPC_TIMEOUT_SECONDS ?? '30', 10);
+  const response = await fetch(requiredEnv('BITCOIN_RPC_URL'), {
+    method: 'POST',
+    headers: createBitcoinRpcHeaders(),
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: method,
+      method,
+      params,
+    }),
+    signal: AbortSignal.timeout(Math.max(timeoutSeconds, 1) * 1000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Bitcoin RPC HTTP ${response.status}: ${await response.text()}`);
+  }
+
+  const payload = await response.json();
+  if (payload?.error) {
+    throw new Error(`Bitcoin RPC error for ${method}: ${JSON.stringify(payload.error)}`);
+  }
+
+  return payload?.result ?? null;
+}
+
 async function supabaseDelete(relativePath) {
   const url = `${requiredEnv('SUPABASE_URL')}${relativePath}`;
   const response = await fetch(url, {
@@ -136,8 +171,7 @@ function latestPublishedDay(metricRows, alertRows) {
 
 async function readNodeStatus() {
   try {
-    const { stdout } = await execFileAsync('bitcoin-cli', ['getblockchaininfo']);
-    const payload = JSON.parse(stdout);
+    const payload = await bitcoinRpcCall('getblockchaininfo');
     return {
       state: 'ok',
       nodeTipHeight: typeof payload.blocks === 'number' ? payload.blocks : null,

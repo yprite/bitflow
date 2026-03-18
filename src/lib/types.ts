@@ -561,3 +561,74 @@ export interface ArbitrageResult {
   estimatedTime: string;      // 예상 소요시간
   viable: boolean;            // 수익 가능 여부
 }
+
+export interface WeeklyReportSection {
+  id: string;
+  title: string;
+  summary: string;
+  bullets: string[];
+}
+
+export interface WeeklyReportEntityFlow {
+  entitySlug: string;
+  netflowBtc: number;
+  receivedBtc: number;
+  sentBtc: number;
+  txCount: number;
+}
+
+export interface WeeklyReportMarketSnapshot {
+  priceUsd: number | null;
+  weeklyPriceChangePercent: number | null;
+  kimpAverage: number | null;
+  kimpLatest: number | null;
+  fearGreedValue: number | null;
+  fearGreedClassification: string | null;
+  fundingRatePercent: number | null;
+}
+
+export interface WeeklyReportOnchainSnapshot {
+  latestDay: string | null;
+  spentBtc7d: number | null;
+  dormantReactivatedBtc7d: number | null;
+  activeSupply30d: number | null;
+  activeSupply90d: number | null;
+  whaleAlertCount7d: number | null;
+  topEntityFlows: WeeklyReportEntityFlow[];
+}
+
+export interface WeeklyReportNewsItem {
+  rank: number;
+  title: string;
+  sourceName: string;
+  sourceUrl: string;
+  publishedAt: string | null;
+  summary: string;
+  whyItMatters: string;
+  topic: string | null;
+  priority: number | null;
+}
+
+export interface WeeklyReportArchiveItem {
+  slug: string;
+  weekStart: string;
+  weekEnd: string;
+  title: string;
+  dek: string | null;
+  publishedAt: string;
+}
+
+export interface WeeklyReportRecord extends WeeklyReportArchiveItem {
+  summary: string;
+  marketView: string;
+  onchainView: string;
+  riskWatch: string;
+  watchlist: string[];
+  sections: WeeklyReportSection[];
+  marketSnapshot: WeeklyReportMarketSnapshot;
+  onchainSnapshot: WeeklyReportOnchainSnapshot;
+  newsItems: WeeklyReportNewsItem[];
+  modelName: string | null;
+  generatedBy: string;
+  generatedAt: string;
+}

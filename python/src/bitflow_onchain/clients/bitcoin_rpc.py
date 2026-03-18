@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import json
 from typing import Any
-from urllib import request
+from urllib import error, request
 
 
 class BitcoinRPC:
@@ -26,8 +26,15 @@ class BitcoinRPC:
             }
         ).encode("utf-8")
         req = request.Request(self.url, data=payload, headers=self.headers, method="POST")
-        with request.urlopen(req, timeout=self.timeout_seconds) as response:
-            body = json.loads(response.read().decode("utf-8"))
+        try:
+            with request.urlopen(req, timeout=self.timeout_seconds) as response:
+                body = json.loads(response.read().decode("utf-8"))
+        except TimeoutError as exc:
+            raise RuntimeError(
+                f"Bitcoin RPC timeout for {method} after {self.timeout_seconds}s ({self.url})"
+            ) from exc
+        except error.URLError as exc:
+            raise RuntimeError(f"Bitcoin RPC transport error for {method}: {exc.reason}") from exc
         error = body.get("error")
         if error is not None:
             raise RuntimeError(f"Bitcoin RPC error for {method}: {error}")

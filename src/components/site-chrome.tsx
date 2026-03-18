@@ -9,6 +9,7 @@ import { SITE_NAME } from '@/lib/site';
 
 const PUBLIC_NAV_ITEMS = [
   { href: '/onchain', label: '온체인' },
+  { href: '/weekly', label: '주간리포트' },
   { href: '/indicators', label: '히스토리' },
   { href: '/tools', label: '도구' },
 ] as const;
