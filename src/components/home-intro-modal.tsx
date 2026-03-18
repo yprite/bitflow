@@ -4,8 +4,6 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { SITE_NAME, SITE_REPO_URL } from '@/lib/site';
 
-const HOME_INTRO_SEEN_KEY = 'bitflow:home-intro-seen';
-
 interface OverviewCard {
   title: string;
   body: string;
@@ -23,15 +21,6 @@ export default function HomeIntroModal({
   contactEmail: string;
 }) {
   const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const hasSeen = window.localStorage.getItem(HOME_INTRO_SEEN_KEY) === '1';
-
-    if (!hasSeen) {
-      window.localStorage.setItem(HOME_INTRO_SEEN_KEY, '1');
-      setOpen(true);
-    }
-  }, []);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -60,17 +49,17 @@ export default function HomeIntroModal({
 
       {open ? (
         <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/45 px-3 py-5 backdrop-blur-[2px]"
+          className="fixed inset-0 z-[90] flex items-end justify-center overflow-y-auto bg-black/45 px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-[calc(env(safe-area-inset-top)+0.5rem)] backdrop-blur-[2px] sm:items-center sm:px-3 sm:py-5"
           onClick={handleClose}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-label={`${SITE_NAME} 소개`}
-            className="dot-card relative max-h-[calc(100vh-2.5rem)] w-full max-w-2xl overflow-hidden"
+            className="dot-card relative flex w-full max-w-2xl flex-col overflow-hidden max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1rem)] sm:max-h-[calc(100dvh-2.5rem)]"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-dot-border/60 bg-white/90 px-5 py-4">
+            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-dot-border/60 bg-white/95 px-4 py-3 sm:px-5 sm:py-4">
               <div className="space-y-1">
                 <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-dot-muted">
                   Bitcoin Weather Station
@@ -90,7 +79,7 @@ export default function HomeIntroModal({
               </div>
             </div>
 
-            <div className="max-h-[calc(100vh-6rem)] overflow-y-auto px-5 py-5">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5 sm:py-5">
               <div className="space-y-5">
                 <div className="space-y-2">
                   <p className="text-sm leading-relaxed text-dot-sub">
