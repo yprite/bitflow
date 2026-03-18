@@ -64,6 +64,11 @@ export async function generateMetadata({
       siteName: SITE_NAME,
       type: 'article',
     },
+    twitter: {
+      card: 'summary_large_image',
+      title: report.title,
+      description,
+    },
   };
 }
 

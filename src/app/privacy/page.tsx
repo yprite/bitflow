@@ -7,7 +7,9 @@ export const metadata: Metadata = {
     '비트코인 기상청이 수집하는 접속 데이터, 분석 정보, 선택 기능 사용 정보에 대한 안내.',
 };
 
-const lastUpdated = '2026-03-14';
+const lastUpdated = '2026-03-18';
+const googlePartnerSitesUrl = 'https://policies.google.com/technologies/partner-sites';
+const googleAdSettingsUrl = 'https://myadcenter.google.com/';
 
 export default function PrivacyPage() {
   return (
@@ -64,6 +66,40 @@ export default function PrivacyPage() {
           비트코인 기상청은 자체 로그인 쿠키를 사용하지 않습니다.
           다만 페이지뷰 집계를 위해 브라우저의 sessionStorage에 임시 세션 식별자 하나를 저장할 수 있습니다.
           이 값은 브라우저 세션이 종료되면 사라질 수 있습니다.
+        </p>
+      </section>
+
+      <section className="dot-card p-5 sm:p-6 space-y-3">
+        <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">Google 광고 및 제3자 기술</h2>
+        <p className="text-xs text-dot-sub leading-relaxed">
+          비트코인 기상청은 현재 또는 향후 Google AdSense 등 Google 게시자 제품을 사용할 수 있습니다.
+          광고 기능이 활성화되면 Google 및 제3자 파트너는 광고 제공, 노출 빈도 제한, 성과 측정, 사기 방지,
+          개인화 또는 비개인화 광고 제공을 위해 쿠키, 웹 비콘, IP 주소, 브라우저 또는 기기 식별자 같은 기술을 사용할 수 있습니다.
+        </p>
+        <p className="text-xs text-dot-sub leading-relaxed">
+          이 과정에서 제3자가 사용자의 브라우저에 정보를 저장하거나 읽을 수 있습니다.
+          Google이 파트너 사이트에서 데이터를 사용하는 방식은
+          {' '}
+          <a href={googlePartnerSitesUrl} target="_blank" rel="noreferrer" className="text-dot-accent hover:underline">
+            Google 안내 문서
+          </a>
+          에서 확인할 수 있습니다.
+        </p>
+      </section>
+
+      <section className="dot-card p-5 sm:p-6 space-y-3">
+        <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">사용자 선택권</h2>
+        <p className="text-xs text-dot-sub leading-relaxed">
+          사용자는 브라우저 설정에서 쿠키 저장을 제한하거나 기존 쿠키를 삭제할 수 있습니다.
+          Google 광고 개인화 설정은
+          {' '}
+          <a href={googleAdSettingsUrl} target="_blank" rel="noreferrer" className="text-dot-accent hover:underline">
+            My Ad Center
+          </a>
+          에서 조정할 수 있습니다.
+        </p>
+        <p className="text-xs text-dot-sub leading-relaxed">
+          개인정보, 광고, 데이터 처리 방식에 대한 문의는 사이트의 문의 페이지에 안내된 공식 채널로 접수할 수 있습니다.
         </p>
       </section>
     </div>

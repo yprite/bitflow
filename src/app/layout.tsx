@@ -1,13 +1,21 @@
 import type { Metadata } from 'next';
 import AmbientBackground from '@/components/motion/ambient/AmbientBackground';
 import SiteChrome from '@/components/site-chrome';
-import { SITE_ALTERNATE_NAME, SITE_NAME, getBaseUrl } from '@/lib/site';
+import {
+  SITE_CONTACT_EMAIL,
+  SITE_ALTERNATE_NAME,
+  SITE_NAME,
+  SITE_NAVER_SITE_VERIFICATION,
+  SITE_REPO_URL,
+  getBaseUrl,
+} from '@/lib/site';
 import './globals.css';
 
 const baseUrl = getBaseUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
+  applicationName: SITE_NAME,
   title: {
     default: `${SITE_NAME} | 실시간 김치프리미엄 · 펀딩비 · 공포탐욕지수`,
     template: `%s | ${SITE_NAME}`,
@@ -21,8 +29,10 @@ export const metadata: Metadata = {
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   description:
-    '실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에. 50개 이상 코인 프리미엄 히트맵, 복합 시그널, 텔레그램 알림까지.',
+    '비트코인 기상청은 실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에 보여주는 비트코인 데이터 사이트입니다.',
   keywords: [
+    SITE_NAME,
+    `${SITE_NAME} ${SITE_ALTERNATE_NAME}`,
     '김치프리미엄',
     '김프',
     '비트코인',
@@ -36,11 +46,11 @@ export const metadata: Metadata = {
     '코인 시세',
     '실시간 김프',
     '역프',
-    SITE_NAME,
     SITE_ALTERNATE_NAME,
   ],
-  authors: [{ name: SITE_ALTERNATE_NAME }],
-  creator: SITE_ALTERNATE_NAME,
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
   openGraph: {
     type: 'website',
     locale: 'ko_KR',
@@ -48,13 +58,13 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: `${SITE_NAME} | 실시간 김치프리미엄 · 펀딩비 · 공포탐욕지수`,
     description:
-      '실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에. 50개 이상 코인 프리미엄 히트맵, 복합 시그널, 텔레그램 알림까지.',
+      '비트코인 기상청은 실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에 보여주는 비트코인 데이터 사이트입니다.',
   },
   twitter: {
     card: 'summary_large_image',
     title: `${SITE_NAME} | 실시간 김치프리미엄 · 펀딩비 · 공포탐욕지수`,
     description:
-      '실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에. 50개 이상 코인 프리미엄 히트맵, 복합 시그널, 텔레그램 알림까지.',
+      '비트코인 기상청은 실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에 보여주는 비트코인 데이터 사이트입니다.',
   },
   robots: {
     index: true,
@@ -68,6 +78,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
+    canonical: '/',
     types: {
       'application/llms+txt': '/llms.txt',
     },
@@ -79,16 +90,42 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const jsonLd = {
+  const organizationJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': `${baseUrl}/#organization`,
+    name: SITE_NAME,
+    alternateName: SITE_ALTERNATE_NAME,
+    url: baseUrl,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${baseUrl}/icon-512.png`,
+    },
+    sameAs: [SITE_REPO_URL],
+    contactPoint: [
+      {
+        '@type': 'ContactPoint',
+        contactType: 'customer support',
+        url: `${baseUrl}/contact`,
+        ...(SITE_CONTACT_EMAIL ? { email: SITE_CONTACT_EMAIL } : {}),
+      },
+    ],
+  };
+
+  const webApplicationJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
+    '@id': `${baseUrl}/#webapp`,
     name: SITE_NAME,
     alternateName: SITE_ALTERNATE_NAME,
     description:
-      '실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에. 50개 이상 코인 프리미엄 히트맵, 복합 시그널, 텔레그램 알림까지.',
+      '비트코인 기상청은 실시간 김치프리미엄, 펀딩비, 공포탐욕지수를 한눈에 보여주는 비트코인 데이터 사이트입니다.',
     applicationCategory: 'FinanceApplication',
     operatingSystem: 'Web',
     url: baseUrl,
+    publisher: {
+      '@id': `${baseUrl}/#organization`,
+    },
     offers: {
       '@type': 'Offer',
       price: '0',
@@ -108,10 +145,16 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content={SITE_NAME} />
-        <meta name="naver-site-verification" content="" />
+        {SITE_NAVER_SITE_VERIFICATION ? (
+          <meta name="naver-site-verification" content={SITE_NAVER_SITE_VERIFICATION} />
+        ) : null}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(webApplicationJsonLd) }}
         />
       </head>
       <body className="min-h-screen bg-dot-bg env-safe dot-vignette">
