@@ -19,7 +19,6 @@ import type {
   ExtendedKimpHistoryPoint,
 } from '@/lib/types';
 
-const GUIDE_STORAGE_KEY = 'bitflow:indicators-guide-seen';
 
 function computeStats(data: ExtendedKimpHistoryPoint[]): KimpStats | null {
   if (data.length < 2) return null;
@@ -110,7 +109,7 @@ export default function IndicatorsPage() {
       <DotAssemblyReveal delay={70} duration={660}>
         <GuideCard
           title="히스토리 읽는 법"
-          storageKey={GUIDE_STORAGE_KEY}
+
           maxHeight={320}
           intro={(
             <>

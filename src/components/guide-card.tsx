@@ -4,7 +4,6 @@ import { useEffect, useState, type ReactNode } from 'react';
 
 interface GuideCardProps {
   title: string;
-  storageKey?: string;
   maxHeight?: number;
   intro?: ReactNode;
   children?: ReactNode;
@@ -12,7 +11,6 @@ interface GuideCardProps {
 
 export default function GuideCard({
   title,
-  storageKey,
   maxHeight = 320,
   intro,
   children,
@@ -21,20 +19,8 @@ export default function GuideCard({
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!storageKey) {
-      setExpanded(true);
-      setReady(true);
-      return;
-    }
-
-    const hasSeenGuide = window.localStorage.getItem(storageKey) === '1';
-    setExpanded(!hasSeenGuide);
     setReady(true);
-
-    if (!hasSeenGuide) {
-      window.localStorage.setItem(storageKey, '1');
-    }
-  }, [storageKey]);
+  }, []);
 
   return (
     <section className="dot-card p-5 sm:p-6">

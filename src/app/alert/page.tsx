@@ -3,7 +3,6 @@ import GuideCard from '@/components/guide-card';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import PageHeader from '@/components/page-header';
 
-const GUIDE_STORAGE_KEY = 'bitflow:alert-guide-seen';
 
 const setupSteps = [
   {
@@ -47,7 +46,7 @@ export default function AlertPage() {
       <DotAssemblyReveal delay={80} duration={680}>
         <GuideCard
           title="알림 시작 가이드"
-          storageKey={GUIDE_STORAGE_KEY}
+
           maxHeight={520}
           intro="봇 검색부터 임계값 설정, 현재 상태 확인까지 한 카드에서 빠르게 확인할 수 있습니다."
         >

@@ -12,7 +12,6 @@ import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal
 import { fetchUsdKrw } from '@/lib/kimp';
 import { fetchOnchainNetworkPulse } from '@/lib/onchain-monitor';
 
-const GUIDE_STORAGE_KEY = 'bitflow:tools-guide-seen';
 
 function ToolSection({
   eyebrow,
@@ -65,7 +64,7 @@ export default async function ToolsPage() {
       <DotAssemblyReveal delay={70} duration={660}>
         <GuideCard
           title="도구 안내"
-          storageKey={GUIDE_STORAGE_KEY}
+
           maxHeight={340}
           intro={(
             <>

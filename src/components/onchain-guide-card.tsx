@@ -1,6 +1,5 @@
 import GuideCard from '@/components/guide-card';
 
-const GUIDE_STORAGE_KEY = 'bitflow:onchain-guide-seen';
 
 const readingSteps = [
   {
@@ -74,7 +73,7 @@ export default function OnchainGuideCard() {
   return (
     <GuideCard
       title="온체인 읽는 법"
-      storageKey={GUIDE_STORAGE_KEY}
+
       maxHeight={980}
       intro={(
         <>

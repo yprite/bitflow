@@ -5,7 +5,6 @@ import PageHeader from '@/components/page-header';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import type { WeeklyReportArchiveItem, WeeklyReportRecord } from '@/lib/types';
 
-const GUIDE_STORAGE_KEY = 'bitflow:weekly-report-guide-seen';
 
 const dateFormatter = new Intl.DateTimeFormat('ko-KR', {
   year: 'numeric',
@@ -200,7 +199,7 @@ export default function WeeklyReportView({
       <DotAssemblyReveal delay={70} duration={660}>
         <GuideCard
           title="주간 리포트 읽는 법"
-          storageKey={GUIDE_STORAGE_KEY}
+
           maxHeight={360}
           intro="이번 주 핵심 요약부터 시장, 온체인, 뉴스 후보까지 한 번에 따라갈 수 있게 정리했습니다."
         >
