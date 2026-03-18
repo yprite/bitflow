@@ -1,4 +1,5 @@
 import GuideCard from '@/components/guide-card';
+import GuideModal from '@/components/guide-modal';
 
 const GUIDE_STORAGE_KEY = 'bitflow:onchain-guide-seen';
 
@@ -70,20 +71,9 @@ const cautions = [
   '가장 신뢰도 높은 건 한 번의 숫자보다 며칠간 이어지는 추세입니다. 스파크라인과 24시간 분포를 같이 보세요.',
 ];
 
-export default function OnchainGuideCard() {
+export function OnchainGuideContent() {
   return (
-    <GuideCard
-      title="온체인 읽는 법"
-      storageKey={GUIDE_STORAGE_KEY}
-      maxHeight={980}
-      intro={(
-        <>
-          온체인 데이터는 가격처럼 직관적이지 않습니다. 이 페이지는 거래량 자체보다
-          <span className="font-medium text-dot-accent"> 네트워크 참여 강도, 대형 자금 이동, 수수료 혼잡도</span>
-          를 읽기 위한 화면입니다.
-        </>
-      )}
-    >
+    <>
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
         {readingSteps.map((step) => (
           <div key={step.title} className="border border-dot-border/60 p-3 dot-grid-sparse">
@@ -115,6 +105,46 @@ export default function OnchainGuideCard() {
           ))}
         </ul>
       </div>
+    </>
+  );
+}
+
+export function OnchainGuideModalTrigger() {
+  return (
+    <GuideModal
+      title="온체인 읽는 법"
+      eyebrow="Bitcoin On-chain"
+      triggerLabel="읽는 법"
+      maxWidthClassName="max-w-5xl"
+      triggerClassName="inline-flex rounded-sm border border-dot-border/60 bg-white/75 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.16em] text-dot-sub transition hover:border-dot-accent/50 hover:text-dot-accent"
+      intro={(
+        <>
+          온체인 데이터는 가격처럼 직관적이지 않습니다. 이 페이지는 거래량 자체보다
+          <span className="font-medium text-dot-accent"> 네트워크 참여 강도, 대형 자금 이동, 수수료 혼잡도</span>
+          를 읽기 위한 화면입니다.
+        </>
+      )}
+    >
+      <OnchainGuideContent />
+    </GuideModal>
+  );
+}
+
+export default function OnchainGuideCard() {
+  return (
+    <GuideCard
+      title="온체인 읽는 법"
+      storageKey={GUIDE_STORAGE_KEY}
+      maxHeight={980}
+      intro={(
+        <>
+          온체인 데이터는 가격처럼 직관적이지 않습니다. 이 페이지는 거래량 자체보다
+          <span className="font-medium text-dot-accent"> 네트워크 참여 강도, 대형 자금 이동, 수수료 혼잡도</span>
+          를 읽기 위한 화면입니다.
+        </>
+      )}
+    >
+      <OnchainGuideContent />
     </GuideCard>
   );
 }

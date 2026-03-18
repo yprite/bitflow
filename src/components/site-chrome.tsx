@@ -159,6 +159,11 @@ function AdminChrome({ children, pathname }: { children: React.ReactNode; pathna
 export default function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '/';
   const isAdminRoute = pathname.startsWith('/admin');
+  const isDesktopRoute = pathname === '/desktop' || pathname.startsWith('/desktop/');
+
+  if (isDesktopRoute) {
+    return children;
+  }
 
   if (isAdminRoute) {
     return <AdminChrome pathname={pathname}>{children}</AdminChrome>;

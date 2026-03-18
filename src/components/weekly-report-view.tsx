@@ -1,11 +1,9 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import GuideCard from '@/components/guide-card';
+import GuideModal from '@/components/guide-modal';
 import PageHeader from '@/components/page-header';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import type { WeeklyReportArchiveItem, WeeklyReportRecord } from '@/lib/types';
-
-const GUIDE_STORAGE_KEY = 'bitflow:weekly-report-guide-seen';
 
 const dateFormatter = new Intl.DateTimeFormat('ko-KR', {
   year: 'numeric',
@@ -156,6 +154,31 @@ function NewsCard({
   );
 }
 
+function WeeklyReportGuideContent() {
+  return (
+    <div className="grid gap-2 sm:grid-cols-3">
+      <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+        <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">시장</p>
+        <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
+          summary와 market view를 먼저 읽고, 가격과 프리미엄 변화가 이번 주 분위기를 어떻게 바꿨는지 확인합니다.
+        </p>
+      </div>
+      <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+        <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">온체인</p>
+        <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
+          onchain view와 스냅샷으로 네트워크 활동, 고래 흐름, 활성 공급 추세를 함께 봅니다.
+        </p>
+      </div>
+      <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+        <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">뉴스</p>
+        <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
+          뉴스 항목은 원문 링크를 함께 제공합니다. 아카이브를 통해 지난 회차와 현재 회차를 바로 비교할 수 있습니다.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 interface WeeklyReportViewProps {
   title: string;
   eyebrow: string;
@@ -193,38 +216,22 @@ export default function WeeklyReportView({
           eyebrow={eyebrow}
           title={title}
           description={description}
-          action={action}
+          action={(
+            <div className="flex flex-col items-end gap-2">
+              {action}
+              <GuideModal
+                title="주간 리포트 읽는 법"
+                eyebrow="Weekly Report"
+                triggerLabel="읽는 법"
+                maxWidthClassName="max-w-4xl"
+                triggerClassName="inline-flex rounded-sm border border-dot-border/60 bg-white/75 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.16em] text-dot-sub transition hover:border-dot-accent/50 hover:text-dot-accent"
+                intro="이번 주 핵심 요약부터 시장, 온체인, 뉴스 후보까지 한 번에 따라갈 수 있게 정리했습니다."
+              >
+                <WeeklyReportGuideContent />
+              </GuideModal>
+            </div>
+          )}
         />
-      </DotAssemblyReveal>
-
-      <DotAssemblyReveal delay={70} duration={660}>
-        <GuideCard
-          title="주간 리포트 읽는 법"
-          storageKey={GUIDE_STORAGE_KEY}
-          maxHeight={360}
-          intro="이번 주 핵심 요약부터 시장, 온체인, 뉴스 후보까지 한 번에 따라갈 수 있게 정리했습니다."
-        >
-          <div className="grid gap-2 sm:grid-cols-3">
-            <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-              <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">시장</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
-                summary와 market view를 먼저 읽고, 가격과 프리미엄 변화가 이번 주 분위기를 어떻게 바꿨는지 확인합니다.
-              </p>
-            </div>
-            <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-              <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">온체인</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
-                onchain view와 스냅샷으로 네트워크 활동, 고래 흐름, 활성 공급 추세를 함께 봅니다.
-              </p>
-            </div>
-            <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-              <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">뉴스</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
-                뉴스 항목은 원문 링크를 함께 제공합니다. 아카이브를 통해 지난 회차와 현재 회차를 바로 비교할 수 있습니다.
-              </p>
-            </div>
-          </div>
-        </GuideCard>
       </DotAssemblyReveal>
 
       {hasReport ? (

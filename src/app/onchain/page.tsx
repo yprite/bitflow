@@ -9,7 +9,7 @@ import OnchainEntityFlowCard from '@/components/onchain-entity-flow-card';
 import OnchainFeePressureCard from '@/components/onchain-fee-pressure-card';
 import OnchainFeeRegimeHistoryCard from '@/components/onchain-fee-regime-history-card';
 import OnchainFlowPressureCard from '@/components/onchain-flow-pressure-card';
-import OnchainGuideCard from '@/components/onchain-guide-card';
+import { OnchainGuideModalTrigger } from '@/components/onchain-guide-card';
 import OnchainMetricCard from '@/components/onchain-metric-card';
 import OnchainRegimeCard from '@/components/onchain-regime-card';
 import OnchainSupportResistanceCard from '@/components/onchain-support-resistance-card';
@@ -104,16 +104,15 @@ export default async function OnchainPage() {
             </span>
           )}
           action={(
-            <span className="text-[10px] font-mono text-dot-muted">
-              기준일 {freshnessLabel}
-            </span>
+            <div className="flex flex-col items-end gap-2">
+              <span className="text-[10px] font-mono text-dot-muted">
+                기준일 {freshnessLabel}
+              </span>
+              <OnchainGuideModalTrigger />
+            </div>
           )}
           variant="card"
         />
-      </DotAssemblyReveal>
-
-      <DotAssemblyReveal delay={70} duration={660}>
-        <OnchainGuideCard />
       </DotAssemblyReveal>
 
       {briefing ? (

@@ -38,7 +38,7 @@ export default function PageHeader({
               </div>
             ) : null}
           </div>
-          {action ? <div className="sm:shrink-0">{action}</div> : null}
+          {action ? <div className="sm:self-end sm:shrink-0">{action}</div> : null}
         </div>
       </section>
     );
