@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { execFile } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import pg from 'pg';
 import { promisify } from 'node:util';
@@ -15,7 +16,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const CODEx_TIMEOUT_SECONDS = 120;
+const CODEx_TIMEOUT_SECONDS = 240;
+const MAX_LLM_NEWS_CANDIDATES = 8;
+const MAX_CANDIDATE_TEXT_LENGTH = 120;
 
 const NEWS_FEEDS = [
   {
@@ -989,40 +992,235 @@ ${JSON.stringify(
   )}`;
 }
 
+function truncateText(value, maxLength = MAX_CANDIDATE_TEXT_LENGTH) {
+  const normalized = String(value ?? '').replace(/\s+/g, ' ').trim();
+  if (!normalized) {
+    return '';
+  }
+
+  return normalized.length > maxLength
+    ? `${normalized.slice(0, maxLength - 3)}...`
+    : normalized;
+}
+
+function compactNewsCandidatesForLlm(newsCandidates) {
+  return newsCandidates.slice(0, MAX_LLM_NEWS_CANDIDATES).map((candidate) => ({
+    id: candidate.id,
+    sourceType: candidate.sourceType ?? null,
+    sourceName: candidate.sourceName,
+    authorHandle: candidate.authorHandle ?? null,
+    title: truncateText(candidate.title, 180),
+    url: candidate.url,
+    publishedAt: candidate.publishedAt,
+    topicHint: candidate.topicHint,
+    score: candidate.score ?? null,
+  }));
+}
+
+function buildWeeklyReportSchema(newsCandidates) {
+  const candidateIds = newsCandidates.map((candidate) => candidate.id);
+
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: [
+      'title',
+      'dek',
+      'summary',
+      'market_view',
+      'onchain_view',
+      'risk_watch',
+      'watchlist',
+      'sections',
+      'selected_candidate_ids',
+      'news_items',
+    ],
+    properties: {
+      title: { type: 'string', minLength: 5 },
+      dek: { type: 'string', minLength: 5 },
+      summary: { type: 'string', minLength: 20 },
+      market_view: { type: 'string', minLength: 20 },
+      onchain_view: { type: 'string', minLength: 20 },
+      risk_watch: { type: 'string', minLength: 20 },
+      watchlist: {
+        type: 'array',
+        minItems: 3,
+        maxItems: 5,
+        items: { type: 'string', minLength: 2 },
+      },
+      sections: {
+        type: 'array',
+        minItems: 3,
+        maxItems: 5,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['id', 'title', 'summary', 'bullets'],
+          properties: {
+            id: { type: 'string', minLength: 2 },
+            title: { type: 'string', minLength: 2 },
+            summary: { type: 'string', minLength: 10 },
+            bullets: {
+              type: 'array',
+              minItems: 2,
+              maxItems: 5,
+              items: { type: 'string', minLength: 2 },
+            },
+          },
+        },
+      },
+      selected_candidate_ids: {
+        type: 'array',
+        minItems: 2,
+        maxItems: 5,
+        items: {
+          type: 'string',
+          enum: candidateIds,
+        },
+      },
+      news_items: {
+        type: 'array',
+        minItems: 2,
+        maxItems: 5,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['candidate_id', 'summary', 'why_it_matters', 'topic', 'priority'],
+          properties: {
+            candidate_id: {
+              type: 'string',
+              enum: candidateIds,
+            },
+            summary: { type: 'string', minLength: 10 },
+            why_it_matters: { type: 'string', minLength: 10 },
+            topic: { type: 'string', minLength: 2 },
+            priority: { type: 'integer', minimum: 1, maximum: 5 },
+          },
+        },
+      },
+    },
+  };
+}
+
+function buildJsonRepairPrompt({ rawResponse, newsCandidates }) {
+  const compactCandidates = compactNewsCandidatesForLlm(newsCandidates);
+
+  return `아래 원문 응답을 읽고, 정확히 하나의 JSON 객체만 출력하세요.
+
+마크다운, 코드펜스, 설명, 주석 금지.
+JSON 외 다른 문자열 금지.
+사실을 새로 만들지 말고 원문에 없는 내용은 후보 뉴스와 기존 문맥 안에서만 최소한으로 보정하세요.
+
+필수 JSON 스키마:
+{
+  "title": string,
+  "dek": string,
+  "summary": string,
+  "market_view": string,
+  "onchain_view": string,
+  "risk_watch": string,
+  "watchlist": string[],
+  "sections": [
+    {
+      "id": string,
+      "title": string,
+      "summary": string,
+      "bullets": string[]
+    }
+  ],
+  "selected_candidate_ids": string[],
+  "news_items": [
+    {
+      "candidate_id": string,
+      "summary": string,
+      "why_it_matters": string,
+      "topic": string,
+      "priority": number
+    }
+  ]
+}
+
+제약:
+- news_items의 candidate_id는 반드시 아래 후보 id 중 하나여야 함
+- watchlist는 3개
+- sections는 3개 이상 5개 이하
+- news_items는 2개 이상 5개 이하
+- 한국어 유지
+
+허용된 candidate_id:
+${JSON.stringify(compactCandidates.map((candidate) => ({ id: candidate.id, title: candidate.title, topicHint: candidate.topicHint })), null, 2)}
+
+원문 응답:
+${rawResponse}`;
+}
+
 async function callCodex(prompt, model = null) {
-  const cmd = ['codex', 'exec', '--json', prompt];
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), 'bitflow-codex-raw-'));
+  const outputPath = path.join(tempDir, 'last-message.txt');
+  const cmd = ['codex', 'exec', '--output-last-message', outputPath, prompt];
   if (model) {
     cmd.splice(2, 0, '--model', model);
   }
 
-  const { stdout, stderr } = await execFileAsync(cmd[0], cmd.slice(1), {
-    cwd: ROOT_DIR,
-    timeout: CODEx_TIMEOUT_SECONDS * 1000,
-    maxBuffer: 8 * 1024 * 1024,
-  });
+  try {
+    await execFileAsync(cmd[0], cmd.slice(1), {
+      cwd: ROOT_DIR,
+      timeout: CODEx_TIMEOUT_SECONDS * 1000,
+      maxBuffer: 8 * 1024 * 1024,
+    });
 
-  if (stderr && stderr.trim()) {
-    // Codex often writes progress to stderr; do not fail on that alone.
-  }
-
-  let assistantText = null;
-  for (const line of stdout.trim().split('\n')) {
-    if (!line.trim()) continue;
-    try {
-      const event = JSON.parse(line);
-      if (event.type === 'item.completed' && event.item?.type === 'agent_message' && event.item?.text) {
-        assistantText = event.item.text;
-      }
-    } catch {
-      // Ignore malformed event lines.
+    const assistantText = (await readFile(outputPath, 'utf8')).trim();
+    if (!assistantText) {
+      throw new Error('No assistant message found in codex output file');
     }
-  }
 
-  if (!assistantText) {
-    throw new Error('No assistant message found in codex output');
+    return assistantText;
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
   }
+}
 
-  return assistantText;
+async function callCodexWithSchema(prompt, modelName, schema) {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), 'bitflow-weekly-report-'));
+  const schemaPath = path.join(tempDir, 'weekly-report-schema.json');
+  const outputPath = path.join(tempDir, 'weekly-report-last-message.txt');
+
+  try {
+    await writeFile(schemaPath, JSON.stringify(schema), 'utf8');
+
+    const cmd = [
+      'codex',
+      'exec',
+      '--json',
+      '--output-schema',
+      schemaPath,
+      '--output-last-message',
+      outputPath,
+      prompt,
+    ];
+    if (modelName) {
+      cmd.splice(2, 0, '--model', modelName);
+    }
+
+    await execFileAsync(cmd[0], cmd.slice(1), {
+      cwd: ROOT_DIR,
+      timeout: CODEx_TIMEOUT_SECONDS * 1000,
+      maxBuffer: 8 * 1024 * 1024,
+    });
+
+    const raw = (await readFile(outputPath, 'utf8')).trim();
+    if (!raw) {
+      throw new Error('Codex wrote no final message to output file');
+    }
+
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return extractJsonObject(raw);
+    }
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
 }
 
 function extractJsonObject(raw) {
@@ -1068,6 +1266,39 @@ function extractJsonObject(raw) {
   }
 
   throw new Error('Assistant JSON object was incomplete');
+}
+
+async function generateStructuredWeeklyReport({
+  prompt,
+  modelName,
+  newsCandidates,
+}) {
+  const llmCandidates = compactNewsCandidatesForLlm(newsCandidates);
+  const llmPrompt = buildPrompt({
+    weekStart: prompt.weekStart,
+    weekEnd: prompt.weekEnd,
+    marketSnapshot: prompt.marketSnapshot,
+    onchainSnapshot: prompt.onchainSnapshot,
+    newsCandidates: llmCandidates,
+  });
+  const schema = buildWeeklyReportSchema(llmCandidates);
+
+  try {
+    return await callCodexWithSchema(llmPrompt, modelName, schema);
+  } catch (initialError) {
+    const assistantText = await callCodex(llmPrompt, modelName);
+    const repairPrompt = buildJsonRepairPrompt({
+      rawResponse: assistantText,
+      newsCandidates: llmCandidates,
+    });
+    try {
+      return await callCodexWithSchema(repairPrompt, modelName, schema);
+    } catch (repairError) {
+      throw new Error(
+        `Structured JSON extraction failed after repair attempt. Initial error: ${initialError instanceof Error ? initialError.message : String(initialError)}. Repair error: ${repairError instanceof Error ? repairError.message : String(repairError)}`
+      );
+    }
+  }
 }
 
 function finalizeModelReport({
@@ -1263,19 +1494,26 @@ async function main() {
     const newsCandidates = storedNewsCandidates.length > 0 ? storedNewsCandidates : liveNewsCandidates;
 
     let report = null;
-    const modelName = options.model ?? process.env.BITFLOW_WEEKLY_REPORT_MODEL ?? null;
+    let usedLlmOutput = false;
+    const modelName =
+      options.model ??
+      process.env.BITFLOW_WEEKLY_REPORT_MODEL ??
+      'gpt-5.4-mini';
 
     if (!options.skipLlm && newsCandidates.length > 0) {
       try {
-        const prompt = buildPrompt({
+        const promptContext = {
           weekStart,
           weekEnd,
           marketSnapshot,
           onchainSnapshot,
           newsCandidates,
+        };
+        const generated = await generateStructuredWeeklyReport({
+          prompt: promptContext,
+          modelName,
+          newsCandidates,
         });
-        const assistantText = await callCodex(prompt, modelName);
-        const generated = extractJsonObject(assistantText);
         report = finalizeModelReport({
           generated,
           newsCandidates,
@@ -1285,6 +1523,7 @@ async function main() {
           onchainSnapshot,
           modelName,
         });
+        usedLlmOutput = report.modelName !== 'fallback-template';
       } catch (error) {
         console.error('Weekly report LLM generation failed, falling back to template:', error);
       }
@@ -1325,7 +1564,10 @@ async function main() {
       },
       payload: report.payload,
       modelName: report.modelName,
-      generatedBy: options.skipLlm ? 'local_template_worker' : 'local_codex_worker',
+      generatedBy:
+        options.skipLlm || !usedLlmOutput
+          ? 'local_template_worker'
+          : 'local_codex_worker',
     };
 
     if (options.dryRun) {
