@@ -359,6 +359,58 @@ async function fetchNewsCandidates(weekStart, weekEnd) {
     }));
 }
 
+async function loadNewsCandidatesFromSupabase(supabase, weekStart, weekEnd) {
+  const weekStartIso = `${weekStart}T00:00:00+09:00`;
+  const weekEndIso = `${formatIsoDateKst(addDaysKst(parseIsoDateKst(weekEnd), 1))}T00:00:00+09:00`;
+
+  const { data, error } = await supabase
+    .from('news_candidates')
+    .select('source_type, source_name, external_id, author_handle, title, body, url, published_at, topic_hint, score, metadata')
+    .gte('published_at', weekStartIso)
+    .lt('published_at', weekEndIso)
+    .order('score', { ascending: false })
+    .order('published_at', { ascending: false })
+    .limit(40);
+
+  if (error) {
+    if (error.code === 'PGRST205') {
+      return [];
+    }
+    throw error;
+  }
+
+  return (data ?? []).map((row, index) => {
+    const sourceType = String(row.source_type);
+    const externalId = String(row.external_id);
+    const sourceName = String(row.source_name);
+    const title = String(row.title);
+    const body = typeof row.body === 'string' ? row.body : '';
+    const authorHandle = typeof row.author_handle === 'string' ? row.author_handle : null;
+    const topicHint = typeof row.topic_hint === 'string' ? row.topic_hint : inferTopicFromText(`${title} ${body}`);
+    const metadata = row.metadata && typeof row.metadata === 'object' ? row.metadata : {};
+    const baseId =
+      sourceType === 'x'
+        ? `x-${externalId}`
+        : `${sourceName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${externalId.slice(0, 12)}`;
+
+    return {
+      id: `candidate-${index + 1}-${baseId}`,
+      sourceType,
+      feedName: metadata.feed_name ? String(metadata.feed_name) : sourceName,
+      title,
+      url: String(row.url),
+      publishedAt: typeof row.published_at === 'string' ? row.published_at : String(row.published_at),
+      description: body,
+      body,
+      sourceName,
+      sourceUrl: metadata.source_url ? String(metadata.source_url) : null,
+      authorHandle,
+      topicHint,
+      score: Number(row.score ?? 0),
+    };
+  });
+}
+
 async function fetchMarketSnapshot(supabase, weekStart, weekEnd) {
   const [{ prices }, fearGreed, funding, upbitPrice, usdRates, kimpHistoryRows] = await Promise.all([
     fetchJson(
@@ -1202,11 +1254,13 @@ async function main() {
   });
 
   try {
-    const [marketSnapshot, onchainSnapshot, newsCandidates] = await Promise.all([
+    const [marketSnapshot, onchainSnapshot, storedNewsCandidates, liveNewsCandidates] = await Promise.all([
       fetchMarketSnapshot(supabase, weekStart, weekEnd),
       loadOnchainSnapshot(pgPool, supabase, weekStart, weekEnd),
+      loadNewsCandidatesFromSupabase(supabase, weekStart, weekEnd),
       fetchNewsCandidates(weekStart, weekEnd),
     ]);
+    const newsCandidates = storedNewsCandidates.length > 0 ? storedNewsCandidates : liveNewsCandidates;
 
     let report = null;
     const modelName = options.model ?? process.env.BITFLOW_WEEKLY_REPORT_MODEL ?? null;
