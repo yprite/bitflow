@@ -11,7 +11,7 @@ export default function DesktopDisclaimerPage() {
   return (
     <div className="space-y-6">
       <DesktopHero
-        eyebrow="Disclaimer Desktop"
+        eyebrow="Disclaimer"
         title="면책 및 이용안내"
         description={(
           <>

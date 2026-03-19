@@ -8,7 +8,9 @@ import BtcReturnHeatmap from '@/components/indicators/btc-return-heatmap';
 import KimpCorrelationChart from '@/components/indicators/kimp-correlation-chart';
 import KimpStatsCard from '@/components/indicators/kimp-stats-card';
 import KimpChart from '@/components/kimp-chart';
+import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
+import GuideModal from '@/components/guide-modal';
 import {
   DesktopBulletList,
   DesktopHero,
@@ -22,6 +24,68 @@ import type {
   IndicatorsPageData,
   KimpStats,
 } from '@/lib/types';
+
+const readingSteps = [
+  {
+    title: '1. 먼저 김프 흐름',
+    body: '김프 차트와 통계 카드로 현재 값이 최근 평균 대비 어느 위치인지 먼저 확인합니다.',
+  },
+  {
+    title: '2. 다음은 펀딩비 / 심리',
+    body: '파생 포지션 쏠림과 공포탐욕지수를 같이 보면서, 과열이 현물 체감과 동행하는지 확인합니다.',
+  },
+  {
+    title: '3. 환율과 상관관계',
+    body: '김프 변화가 환율 때문인지, 국내 수급 때문인지 구분하려면 환율 차트와 상관관계 차트를 같이 봐야 합니다.',
+  },
+  {
+    title: '4. 마지막은 수익률 히트맵',
+    body: '월간·분기 수익률 히트맵으로 현재 구간이 역사적으로 어떤 계절성과 변동성 구간인지 비교합니다.',
+  },
+];
+
+const indicatorGuides = [
+  {
+    title: '김치프리미엄',
+    body: '국내 수급이 해외 대비 얼마나 강한지 보여주는 국내 체감 지표입니다. 평균 회귀가 빠른 구간인지 같이 봐야 합니다.',
+  },
+  {
+    title: '펀딩비',
+    body: '파생 포지션이 한쪽으로 과도하게 쏠렸는지 읽는 데 유용합니다. 급등장에서 김프와 동시에 튈 수 있습니다.',
+  },
+  {
+    title: '공포탐욕지수',
+    body: '시장 심리 과열 여부를 보여줍니다. 국내 프리미엄과 같이 오르면 군중 심리가 더 강하게 반영될 수 있습니다.',
+  },
+  {
+    title: '환율 / 상관관계',
+    body: '김프가 정말 국내 수급 신호인지, 환율 영향이 섞였는지 분해해서 보는 용도입니다.',
+  },
+];
+
+function IndicatorsGuideContent() {
+  return (
+    <>
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        {readingSteps.map((step) => (
+          <div key={step.title} className="border border-dot-border/60 p-3 dot-grid-sparse">
+            <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">{step.title}</p>
+            <p className="mt-2 text-[11px] leading-relaxed text-dot-sub">{step.body}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        {indicatorGuides.map((guide) => (
+          <div key={guide.title} className="border border-dot-border/60 p-3 dot-grid-sparse">
+            <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">{guide.title}</p>
+            <p className="mt-2 text-[11px] leading-relaxed text-dot-sub">{guide.body}</p>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
 
 function computeStats(data: ExtendedKimpHistoryPoint[]): KimpStats | null {
   if (data.length < 2) return null;
@@ -106,78 +170,105 @@ export default function DesktopIndicatorsPage() {
 
   return (
     <div className="space-y-6">
-      <DesktopHero
-        eyebrow="Historical Research Deck"
-        title="히스토리 Desktop"
-        description={(
-          <>
-            과거 차트는 세로 스크롤을 줄이고 비교 밀도를 높이는 쪽으로 재배치했습니다.
-            김프, 펀딩비, 심리 지수, 환율, 수익률 히트맵을 넓은 화면에서 바로 이어서 읽을 수 있습니다.
-          </>
-        )}
-        sidebar={(
-          <div className="space-y-4">
-            <DesktopStatCard label="현재 김프" value={`${data.kimp.kimchiPremium.toFixed(2)}%`} />
-            <DesktopStatCard label="현재 공포탐욕" value={data.fearGreed.value} />
-            <DesktopStatCard label="차트 포인트" value={chartData.length} tone="neutral" />
-            <DesktopStatCard
-              label="30일 평균"
-              value={data.avg30d !== null ? `${data.avg30d.toFixed(2)}%` : '—'}
-              tone="neutral"
-            />
-          </div>
-        )}
-      />
+      <DotAssemblyReveal delay={0} duration={500} density="low">
+        <DesktopHero
+          eyebrow="Historical Research Deck"
+          title="히스토리"
+          description={(
+            <>
+              과거 차트는 세로 스크롤을 줄이고 비교 밀도를 높이는 쪽으로 재배치했습니다.
+              김프, 펀딩비, 심리 지수, 환율, 수익률 히트맵을 넓은 화면에서 바로 이어서 읽을 수 있습니다.
+            </>
+          )}
+          action={(
+            <GuideModal
+              title="히스토리 읽는 법"
+              eyebrow="Indicator History"
+              triggerLabel="읽는 법"
+              maxWidthClassName="max-w-5xl"
+              triggerClassName="inline-flex rounded-sm border border-dot-border/60 bg-white/75 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.16em] text-dot-sub transition hover:border-dot-accent/50 hover:text-dot-accent"
+              intro={(
+                <>
+                  이 페이지는 김치프리미엄, 펀딩비, 공포탐욕지수의 시간 흐름을 함께 보여줍니다.
+                  단순히 숫자를 나열하는 대신
+                  <span className="font-medium text-dot-accent"> 과열 구간, 평균 회귀, 환율 영향, 변동성 확대 여부</span>
+                  를 한 번에 읽을 수 있도록 설계했습니다.
+                </>
+              )}
+            >
+              <IndicatorsGuideContent />
+            </GuideModal>
+          )}
+          sidebar={(
+            <div className="space-y-4">
+              <DesktopStatCard label="현재 김프" value={`${data.kimp.kimchiPremium.toFixed(2)}%`} />
+              <DesktopStatCard label="현재 공포탐욕" value={data.fearGreed.value} />
+              <DesktopStatCard label="차트 포인트" value={chartData.length} tone="neutral" />
+              <DesktopStatCard
+                label="30일 평균"
+                value={data.avg30d !== null ? `${data.avg30d.toFixed(2)}%` : '—'}
+                tone="neutral"
+              />
+            </div>
+          )}
+        />
+      </DotAssemblyReveal>
 
-      <div className="grid grid-cols-4 gap-4">
-        <DesktopStatCard
-          label="김프"
-          value="국내 체감 수급"
-          detail="국내 시장 온도가 해외 대비 얼마나 뜨거운지 보는 핵심 지표입니다."
-        />
-        <DesktopStatCard
-          label="펀딩비"
-          value="파생 포지션 쏠림"
-          detail="롱 과열과 숏 압박을 함께 읽는 데 유용합니다."
-        />
-        <DesktopStatCard
-          label="심리"
-          value="시장 군중 심리"
-          detail="공포탐욕지수와 김프가 같이 움직이는지 비교합니다."
-        />
-        <DesktopStatCard
-          label="히트맵"
-          value="계절성 참고"
-          detail="월간·분기 수익률을 함께 보면서 현재 구간의 역사적 위치를 가늠합니다."
-        />
-      </div>
-
-      <div className="min-w-0">
-        <KimpChart data={chartData} />
-      </div>
-
-      <div className="grid grid-cols-[minmax(0,1fr)_420px] gap-6">
-        <div className="min-w-0">
-          {stats ? <KimpStatsCard stats={stats} period="30일" /> : null}
-        </div>
-        <DesktopSurface className="p-6">
-          <DesktopSectionHeader
-            eyebrow="Interpretation"
-            title="해석 포인트"
-            description="히스토리 차트를 읽을 때 같이 봐야 하는 문맥입니다."
+      <DotAssemblyReveal delay={100} duration={600}>
+        <div className="grid grid-cols-4 gap-4">
+          <DesktopStatCard
+            label="김프"
+            value="국내 체감 수급"
+            detail="국내 시장 온도가 해외 대비 얼마나 뜨거운지 보는 핵심 지표입니다."
           />
-          <div className="mt-5">
-            <DesktopBulletList
-              numbered
-              items={[
-                '급등 구간에서는 김프와 펀딩비가 동시에 튈 수 있어서, 한 지표만으로 과열을 단정하면 오판할 수 있습니다.',
-                '김프 평균 회귀는 환율, 거래소 유동성, 글로벌 변동성과 함께 봐야 의미가 있습니다.',
-                '히스토리 페이지는 관측 도구입니다. 실제 진입과 청산 판단은 별도 리스크 기준이 필요합니다.',
-              ]}
-            />
+          <DesktopStatCard
+            label="펀딩비"
+            value="파생 포지션 쏠림"
+            detail="롱 과열과 숏 압박을 함께 읽는 데 유용합니다."
+          />
+          <DesktopStatCard
+            label="심리"
+            value="시장 군중 심리"
+            detail="공포탐욕지수와 김프가 같이 움직이는지 비교합니다."
+          />
+          <DesktopStatCard
+            label="히트맵"
+            value="계절성 참고"
+            detail="월간·분기 수익률을 함께 보면서 현재 구간의 역사적 위치를 가늠합니다."
+          />
+        </div>
+      </DotAssemblyReveal>
+
+      <DotAssemblyReveal delay={200} duration={700}>
+        <div className="min-w-0">
+          <KimpChart data={chartData} />
+        </div>
+      </DotAssemblyReveal>
+
+      <DotAssemblyReveal delay={300} duration={700}>
+        <div className="grid grid-cols-[minmax(0,1fr)_420px] gap-6">
+          <div className="min-w-0">
+            {stats ? <KimpStatsCard stats={stats} period="30일" /> : null}
           </div>
-        </DesktopSurface>
-      </div>
+          <DesktopSurface className="p-6">
+            <DesktopSectionHeader
+              eyebrow="Interpretation"
+              title="해석 포인트"
+              description="히스토리 차트를 읽을 때 같이 봐야 하는 문맥입니다."
+            />
+            <div className="mt-5">
+              <DesktopBulletList
+                numbered
+                items={[
+                  '급등 구간에서는 김프와 펀딩비가 동시에 튈 수 있어서, 한 지표만으로 과열을 단정하면 오판할 수 있습니다.',
+                  '김프 평균 회귀는 환율, 거래소 유동성, 글로벌 변동성과 함께 봐야 의미가 있습니다.',
+                  '히스토리 페이지는 관측 도구입니다. 실제 진입과 청산 판단은 별도 리스크 기준이 필요합니다.',
+                ]}
+              />
+            </div>
+          </DesktopSurface>
+        </div>
+      </DotAssemblyReveal>
 
       {indicatorLoading ? (
         <DesktopSurface className="p-8 text-center text-[14px] text-dot-sub">
@@ -185,30 +276,36 @@ export default function DesktopIndicatorsPage() {
         </DesktopSurface>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="min-w-0">
-              <FundingRateHistoryChart data={indicatorData?.fundingRateHistory ?? []} />
+          <DotAssemblyReveal delay={400} duration={700}>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="min-w-0">
+                <FundingRateHistoryChart data={indicatorData?.fundingRateHistory ?? []} />
+              </div>
+              <div className="min-w-0">
+                <FearGreedHistoryChart data={indicatorData?.fearGreedHistory ?? []} />
+              </div>
             </div>
-            <div className="min-w-0">
-              <FearGreedHistoryChart data={indicatorData?.fearGreedHistory ?? []} />
-            </div>
-          </div>
+          </DotAssemblyReveal>
 
-          <div className="min-w-0">
-            <BtcReturnHeatmap data={indicatorData?.btcReturnsHistory ?? null} />
-          </div>
+          <DotAssemblyReveal delay={500} duration={700}>
+            <div className="min-w-0">
+              <BtcReturnHeatmap data={indicatorData?.btcReturnsHistory ?? null} />
+            </div>
+          </DotAssemblyReveal>
 
-          <div className="grid grid-cols-2 gap-6">
-            <div className="min-w-0">
-              <ExchangeRateChart data={indicatorData?.kimpHistory ?? []} />
+          <DotAssemblyReveal delay={600} duration={700}>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="min-w-0">
+                <ExchangeRateChart data={indicatorData?.kimpHistory ?? []} />
+              </div>
+              <div className="min-w-0">
+                <KimpCorrelationChart
+                  kimpData={indicatorData?.kimpHistory ?? []}
+                  fundingData={indicatorData?.fundingRateHistory ?? []}
+                />
+              </div>
             </div>
-            <div className="min-w-0">
-              <KimpCorrelationChart
-                kimpData={indicatorData?.kimpHistory ?? []}
-                fundingData={indicatorData?.fundingRateHistory ?? []}
-              />
-            </div>
-          </div>
+          </DotAssemblyReveal>
         </>
       )}
     </div>

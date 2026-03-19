@@ -10,6 +10,7 @@ import LongShortCard from '@/components/long-short-card';
 import MarketBriefing from '@/components/market-briefing';
 import MicroStrategyCard from '@/components/microstrategy-card';
 import OpenInterestCard from '@/components/open-interest-card';
+import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
 import SignalBadge from '@/components/signal-badge';
 import StablecoinCard from '@/components/stablecoin-card';
@@ -123,93 +124,99 @@ export default function DesktopRealtimePage() {
 
   return (
     <div className="space-y-6">
-      <DesktopHero
-        eyebrow="Realtime Command Deck"
-        title="실시간 지표 Desktop"
-        description={(
-          <>
-            PC 화면에서는 지표 목록과 상세 카드를 분리해 두었습니다. 좌측에서 팩터를 선택하면 우측 분석 카드가 고정되어,
-            모바일처럼 펼치고 접지 않아도 빠르게 비교할 수 있습니다.
-          </>
-        )}
-        action={(
-          <button
-            type="button"
-            onClick={fetchData}
-            className="desktop-chip hover:border-dot-accent/40 hover:text-dot-accent"
-          >
-            새로고침
-          </button>
-        )}
-        sidebar={(
-          <div className="space-y-4">
-            <DesktopStatCard label="마지막 업데이트" value={lastUpdated || '동기화 중'} tone="neutral" />
-            <DesktopStatCard label="현재 신호" value={data.signal.level} />
-            <DesktopStatCard label="선택 지표" value={selectedFactor.displayLabel} tone="neutral" />
-            <DesktopStatCard label="김치프리미엄" value={formatPercent(data.kimp.kimchiPremium)} />
-          </div>
-        )}
-      />
-
-      <DesktopSurface className="p-6">
-        <DesktopSectionHeader
-          eyebrow="Indicator Matrix"
-          title="실시간 상세 패널"
-          description="좌측 목록에서 지표를 고르면 우측에 상세 카드가 고정됩니다."
+      <DotAssemblyReveal delay={0} duration={500} density="low">
+        <DesktopHero
+          eyebrow="Realtime Command Deck"
+          title="실시간 지표"
+          description={(
+            <>
+              PC 화면에서는 지표 목록과 상세 카드를 분리해 두었습니다. 좌측에서 팩터를 선택하면 우측 분석 카드가 고정되어,
+              모바일처럼 펼치고 접지 않아도 빠르게 비교할 수 있습니다.
+            </>
+          )}
+          action={(
+            <button
+              type="button"
+              onClick={fetchData}
+              className="desktop-chip hover:border-dot-accent/40 hover:text-dot-accent"
+            >
+              새로고침
+            </button>
+          )}
+          sidebar={(
+            <div className="space-y-4">
+              <DesktopStatCard label="마지막 업데이트" value={lastUpdated || '동기화 중'} tone="neutral" />
+              <DesktopStatCard label="현재 신호" value={data.signal.level} />
+              <DesktopStatCard label="선택 지표" value={selectedFactor.displayLabel} tone="neutral" />
+              <DesktopStatCard label="김치프리미엄" value={formatPercent(data.kimp.kimchiPremium)} />
+            </div>
+          )}
         />
-        <div className="mt-6 grid grid-cols-[340px_minmax(0,1fr)] gap-5">
-          <div className="desktop-surface p-4">
-            <div className="space-y-2">
-              <p className="desktop-kicker">Indicators</p>
-              {INDICATOR_ORDER.map((item, index) => {
-                const factor = factorMap.get(item.factorLabel);
-                if (!factor) return null;
-                const active = selectedIndex === index;
+      </DotAssemblyReveal>
 
-                return (
-                  <button
-                    key={item.factorLabel}
-                    type="button"
-                    onClick={() => setSelectedIndex(index)}
-                    className={`flex w-full items-center justify-between border px-3 py-3 text-left transition ${
-                      active
-                        ? 'border-dot-accent bg-dot-accent text-white'
-                        : 'border-dot-border/60 bg-white/72 text-dot-sub hover:border-dot-accent/30 hover:text-dot-accent'
-                    }`}
-                  >
-                    <div className="space-y-1">
-                      <p className="text-[13px] font-medium">{item.displayLabel}</p>
-                      <p className={`inline-flex border px-2 py-0.5 text-[10px] font-mono ${active ? 'border-white/20 bg-white/10 text-white' : directionTone(factor.direction)}`}>
-                        {factor.direction}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className={`text-[12px] font-mono ${active ? 'text-white' : 'text-dot-accent'}`}>
-                        {factor.value}
-                      </p>
-                      <p className={`mt-1 text-[10px] font-mono ${active ? 'text-white/60' : 'text-dot-muted'}`}>
-                        {active ? 'OPEN' : 'VIEW'}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
+      <DotAssemblyReveal delay={100} duration={700}>
+        <DesktopSurface className="p-6">
+          <DesktopSectionHeader
+            eyebrow="Indicator Matrix"
+            title="실시간 상세 패널"
+            description="좌측 목록에서 지표를 고르면 우측에 상세 카드가 고정됩니다."
+          />
+          <div className="mt-6 grid grid-cols-[340px_minmax(0,1fr)] gap-5">
+            <div className="desktop-surface p-4">
+              <div className="space-y-2">
+                <p className="desktop-kicker">Indicators</p>
+                {INDICATOR_ORDER.map((item, index) => {
+                  const factor = factorMap.get(item.factorLabel);
+                  if (!factor) return null;
+                  const active = selectedIndex === index;
+
+                  return (
+                    <button
+                      key={item.factorLabel}
+                      type="button"
+                      onClick={() => setSelectedIndex(index)}
+                      className={`flex w-full items-center justify-between border px-3 py-3 text-left transition ${
+                        active
+                          ? 'border-dot-accent bg-dot-accent text-white'
+                          : 'border-dot-border/60 bg-white/72 text-dot-sub hover:border-dot-accent/30 hover:text-dot-accent'
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <p className="text-[13px] font-medium">{item.displayLabel}</p>
+                        <p className={`inline-flex border px-2 py-0.5 text-[10px] font-mono ${active ? 'border-white/20 bg-white/10 text-white' : directionTone(factor.direction)}`}>
+                          {factor.direction}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-[12px] font-mono ${active ? 'text-white' : 'text-dot-accent'}`}>
+                          {factor.value}
+                        </p>
+                        <p className={`mt-1 text-[10px] font-mono ${active ? 'text-white/60' : 'text-dot-muted'}`}>
+                          {active ? 'OPEN' : 'VIEW'}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="min-w-0">
+              {renderDetailCard()}
             </div>
           </div>
+        </DesktopSurface>
+      </DotAssemblyReveal>
+
+      <DotAssemblyReveal delay={200} duration={700}>
+        <div className="grid grid-cols-[minmax(0,1.05fr)_420px] gap-6">
           <div className="min-w-0">
-            {renderDetailCard()}
+            <MarketBriefing data={data} />
+          </div>
+          <div className="min-w-0">
+            <SignalBadge signal={data.signal} upbitPrice={data.kimp.upbitPrice} />
           </div>
         </div>
-      </DesktopSurface>
-
-      <div className="grid grid-cols-[minmax(0,1.05fr)_420px] gap-6">
-        <div className="min-w-0">
-          <MarketBriefing data={data} />
-        </div>
-        <div className="min-w-0">
-          <SignalBadge signal={data.signal} upbitPrice={data.kimp.upbitPrice} />
-        </div>
-      </div>
+      </DotAssemblyReveal>
     </div>
   );
 }

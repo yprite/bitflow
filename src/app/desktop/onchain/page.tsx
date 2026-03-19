@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import HalvingCountdown from '@/components/halving-countdown';
 import OnchainAgeBandCard from '@/components/onchain-age-band-card';
 import OnchainBlockTempoCard from '@/components/onchain-block-tempo-card';
@@ -29,7 +30,7 @@ import {
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: '온체인 Desktop',
+  title: '온체인',
   description: '비트코인 온체인 모니터의 PC 전용 버전입니다.',
 };
 
@@ -92,106 +93,124 @@ export default async function DesktopOnchainPage() {
 
   return (
     <div className="space-y-6">
-      <DesktopHero
-        eyebrow="Bitcoin On-chain Desktop"
-        title="온체인 모니터 Desktop"
-        description={(
-          <>
-            모바일 카드 나열 대신 네트워크 해석 흐름을 넓은 캔버스에 맞게 다시 묶었습니다.
-            상단에서 현재 레짐과 브리핑을 잡고, 아래에서 활동성, 수수료 압력, 엔티티 흐름을 이어서 읽도록 구성했습니다.
-          </>
-        )}
-        sidebar={(
-          <div className="space-y-4">
-            <DesktopStatCard label="기준일" value={freshnessLabel} tone="neutral" />
-            <DesktopStatCard label="데이터 상태" value={summary.status} tone="neutral" />
-            <DesktopStatCard label="엔티티 흐름" value={summary.entityFlows.length} tone="neutral" />
-            <DesktopStatCard label="알림 수" value={summary.alertStats.total} tone="neutral" />
-          </div>
-        )}
-      />
+      <DotAssemblyReveal delay={0} duration={500} density="low">
+        <DesktopHero
+          eyebrow="Bitcoin On-chain"
+          title="온체인 모니터"
+          description={(
+            <>
+              모바일 카드 나열 대신 네트워크 해석 흐름을 넓은 캔버스에 맞게 다시 묶었습니다.
+              상단에서 현재 레짐과 브리핑을 잡고, 아래에서 활동성, 수수료 압력, 엔티티 흐름을 이어서 읽도록 구성했습니다.
+            </>
+          )}
+          sidebar={(
+            <div className="space-y-4">
+              <DesktopStatCard label="기준일" value={freshnessLabel} tone="neutral" />
+              <DesktopStatCard label="데이터 상태" value={summary.status} tone="neutral" />
+              <DesktopStatCard label="엔티티 흐름" value={summary.entityFlows.length} tone="neutral" />
+              <DesktopStatCard label="알림 수" value={summary.alertStats.total} tone="neutral" />
+            </div>
+          )}
+        />
+      </DotAssemblyReveal>
 
-      <div className="min-w-0">
-        <OnchainGuideCard />
-      </div>
+      <DotAssemblyReveal delay={100} duration={680}>
+        <div className="min-w-0">
+          <OnchainGuideCard />
+        </div>
+      </DotAssemblyReveal>
 
       {briefing ? (
-        <div className="min-w-0">
-          <OnchainBriefingCard briefing={briefing} />
-        </div>
+        <DotAssemblyReveal delay={130} duration={700}>
+          <div className="min-w-0">
+            <OnchainBriefingCard briefing={briefing} />
+          </div>
+        </DotAssemblyReveal>
       ) : null}
 
       {regime || whaleSummary ? (
-        <div className="grid grid-cols-2 gap-6">
-          <div className="min-w-0">{regime ? <OnchainRegimeCard regime={regime} /> : null}</div>
-          <div className="min-w-0">{whaleSummary ? <OnchainWhaleSummaryCard summary={whaleSummary} /> : null}</div>
-        </div>
+        <DotAssemblyReveal delay={170} duration={700}>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="min-w-0">{regime ? <OnchainRegimeCard regime={regime} /> : null}</div>
+            <div className="min-w-0">{whaleSummary ? <OnchainWhaleSummaryCard summary={whaleSummary} /> : null}</div>
+          </div>
+        </DotAssemblyReveal>
       ) : null}
 
       {dormancyPulse || flowPressure ? (
-        <div className="grid grid-cols-2 gap-6">
-          <div className="min-w-0">{dormancyPulse ? <OnchainDormancyPulseCard data={dormancyPulse} /> : null}</div>
-          <div className="min-w-0">{flowPressure ? <OnchainFlowPressureCard data={flowPressure} /> : null}</div>
-        </div>
+        <DotAssemblyReveal delay={210} duration={740}>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="min-w-0">{dormancyPulse ? <OnchainDormancyPulseCard data={dormancyPulse} /> : null}</div>
+            <div className="min-w-0">{flowPressure ? <OnchainFlowPressureCard data={flowPressure} /> : null}</div>
+          </div>
+        </DotAssemblyReveal>
       ) : null}
 
       {ageBands || supportResistance ? (
-        <div className="grid grid-cols-2 gap-6">
-          <div className="min-w-0">{ageBands ? <OnchainAgeBandCard data={ageBands} /> : null}</div>
-          <div className="min-w-0">{supportResistance ? <OnchainSupportResistanceCard data={supportResistance} /> : null}</div>
-        </div>
+        <DotAssemblyReveal delay={250} duration={750}>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="min-w-0">{ageBands ? <OnchainAgeBandCard data={ageBands} /> : null}</div>
+            <div className="min-w-0">{supportResistance ? <OnchainSupportResistanceCard data={supportResistance} /> : null}</div>
+          </div>
+        </DotAssemblyReveal>
       ) : null}
 
-      <DesktopSurface className="p-6">
-        <DesktopSectionHeader
-          eyebrow="Network Pulse"
-          title="프로토콜 진행 상황"
-          description="반감기, 수수료 압력, 블록 템포를 고정 그리드에서 함께 읽습니다."
-        />
-        <div className="mt-6 grid grid-cols-2 gap-6">
-          <div className="min-w-0">
-            <HalvingCountdown />
-          </div>
-          <div className="min-w-0">
-            {networkPulse ? <OnchainFeePressureCard data={networkPulse.feePressure} /> : null}
-          </div>
-          <div className="min-w-0">
-            {feeHistory ? <OnchainFeeRegimeHistoryCard data={feeHistory} /> : null}
-          </div>
-          <div className="min-w-0">
-            {networkPulse ? <OnchainBlockTempoCard data={networkPulse.blockTempo} /> : null}
-          </div>
-        </div>
-      </DesktopSurface>
-
-      {visibleMetrics.length > 0 ? (
+      <DotAssemblyReveal delay={290} duration={760}>
         <DesktopSurface className="p-6">
           <DesktopSectionHeader
-            eyebrow="Metric Grid"
-            title="핵심 온체인 지표"
-            description="PC 화면에서는 개별 지표를 3열로 정렬해 비교 속도를 높였습니다."
+            eyebrow="Network Pulse"
+            title="프로토콜 진행 상황"
+            description="반감기, 수수료 압력, 블록 템포를 고정 그리드에서 함께 읽습니다."
           />
-          <div className="mt-6 grid grid-cols-3 gap-5">
-            {visibleMetrics.map((metric) => (
-              <div key={metric.id} className="min-w-0">
-                <OnchainMetricCard metric={metric} />
-              </div>
-            ))}
+          <div className="mt-6 grid grid-cols-2 gap-6">
+            <div className="min-w-0">
+              <HalvingCountdown />
+            </div>
+            <div className="min-w-0">
+              {networkPulse ? <OnchainFeePressureCard data={networkPulse.feePressure} /> : null}
+            </div>
+            <div className="min-w-0">
+              {feeHistory ? <OnchainFeeRegimeHistoryCard data={feeHistory} /> : null}
+            </div>
+            <div className="min-w-0">
+              {networkPulse ? <OnchainBlockTempoCard data={networkPulse.blockTempo} /> : null}
+            </div>
           </div>
         </DesktopSurface>
+      </DotAssemblyReveal>
+
+      {visibleMetrics.length > 0 ? (
+        <DotAssemblyReveal delay={330} duration={800}>
+          <DesktopSurface className="p-6">
+            <DesktopSectionHeader
+              eyebrow="Metric Grid"
+              title="핵심 온체인 지표"
+              description="PC 화면에서는 개별 지표를 3열로 정렬해 비교 속도를 높였습니다."
+            />
+            <div className="mt-6 grid grid-cols-3 gap-5">
+              {visibleMetrics.map((metric) => (
+                <div key={metric.id} className="min-w-0">
+                  <OnchainMetricCard metric={metric} />
+                </div>
+              ))}
+            </div>
+          </DesktopSurface>
+        </DotAssemblyReveal>
       ) : null}
 
       {hasFlows ? (
-        <DesktopSurface className="p-6">
-          <DesktopSectionHeader
-            eyebrow="Entity Flow"
-            title="주요 엔티티 흐름"
-            description="거래소·보유 기관 중심 흐름을 데스크톱 너비 기준으로 넓게 배치했습니다."
-          />
-          <div className="mt-6 min-w-0">
-            <OnchainEntityFlowCard flows={visibleEntityFlows} />
-          </div>
-        </DesktopSurface>
+        <DotAssemblyReveal delay={370} duration={840}>
+          <DesktopSurface className="p-6">
+            <DesktopSectionHeader
+              eyebrow="Entity Flow"
+              title="주요 엔티티 흐름"
+              description="거래소·보유 기관 중심 흐름을 데스크톱 너비 기준으로 넓게 배치했습니다."
+            />
+            <div className="mt-6 min-w-0">
+              <OnchainEntityFlowCard flows={visibleEntityFlows} />
+            </div>
+          </DesktopSurface>
+        </DotAssemblyReveal>
       ) : null}
     </div>
   );

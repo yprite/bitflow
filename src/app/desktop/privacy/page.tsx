@@ -8,7 +8,7 @@ export default function DesktopPrivacyPage() {
   return (
     <div className="space-y-6">
       <DesktopHero
-        eyebrow="Privacy Desktop"
+        eyebrow="Privacy"
         title="개인정보처리방침"
         description={(
           <>

@@ -26,7 +26,7 @@ export default function DesktopAboutPage() {
   return (
     <div className="space-y-6">
       <DesktopHero
-        eyebrow="About Desktop"
+        eyebrow="About"
         title={SITE_NAME}
         description={(
           <>

@@ -25,8 +25,8 @@ export default async function DesktopWeeklyPage() {
 
   return (
     <DesktopWeeklyReportView
-      eyebrow="Weekly Report Desktop"
-      title="주간 리포트 Desktop"
+      eyebrow="Weekly Report"
+      title="주간 리포트"
       description="최신 회차를 본문에 두고, 우측 고정 아카이브에서 지난 리포트를 바로 비교할 수 있도록 재배치했습니다."
       action={
         latestReport ? (

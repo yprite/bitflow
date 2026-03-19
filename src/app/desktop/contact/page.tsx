@@ -35,7 +35,7 @@ export default function DesktopContactPage() {
   return (
     <div className="space-y-6">
       <DesktopHero
-        eyebrow="Contact Desktop"
+        eyebrow="Contact"
         title="문의 및 제보"
         description={(
           <>
