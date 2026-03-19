@@ -1,4 +1,5 @@
 import DesktopWeeklyReportView from '@/components/desktop/desktop-weekly-report-view';
+import WeatherEffect from '@/components/motion/storytelling/WeatherEffect';
 import { fetchLatestWeeklyReport, fetchWeeklyReportArchive } from '@/lib/weekly-reports';
 
 const weeklyDateFormatter = new Intl.DateTimeFormat('ko-KR', {
@@ -27,7 +28,12 @@ export default async function DesktopWeeklyPage() {
     <DesktopWeeklyReportView
       eyebrow="Weekly Report"
       title="주간 리포트"
-      description="최신 회차를 본문에 두고, 우측 고정 아카이브에서 지난 리포트를 바로 비교할 수 있도록 재배치했습니다."
+      description={(
+        <>
+          최신 회차를 본문에 두고, 우측 고정 아카이브에서 지난 리포트를 바로 비교할 수 있도록 재배치했습니다.
+          <WeatherEffect weather="foggy" width={500} height={200} className="absolute bottom-0 left-0 z-0 pointer-events-none" />
+        </>
+      )}
       action={
         latestReport ? (
           <span className="desktop-chip">

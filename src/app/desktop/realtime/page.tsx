@@ -1,5 +1,5 @@
-import DesktopRealtimePage from '@/components/desktop/desktop-realtime-page';
+import { redirect } from 'next/navigation';
 
 export default function DesktopRealtimeRoute() {
-  return <DesktopRealtimePage />;
+  redirect('/desktop');
 }

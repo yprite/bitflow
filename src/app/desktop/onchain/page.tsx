@@ -14,6 +14,7 @@ import OnchainMetricCard from '@/components/onchain-metric-card';
 import OnchainRegimeCard from '@/components/onchain-regime-card';
 import OnchainSupportResistanceCard from '@/components/onchain-support-resistance-card';
 import OnchainWhaleSummaryCard from '@/components/onchain-whale-summary-card';
+import WeatherEffect from '@/components/motion/storytelling/WeatherEffect';
 import { DesktopHero, DesktopSectionHeader, DesktopStatCard, DesktopSurface } from '@/components/desktop/desktop-ui';
 import { fetchOnchainSummary } from '@/lib/onchain';
 import {
@@ -101,14 +102,22 @@ export default async function DesktopOnchainPage() {
             <>
               모바일 카드 나열 대신 네트워크 해석 흐름을 넓은 캔버스에 맞게 다시 묶었습니다.
               상단에서 현재 레짐과 브리핑을 잡고, 아래에서 활동성, 수수료 압력, 엔티티 흐름을 이어서 읽도록 구성했습니다.
+              <WeatherEffect weather="windy" width={700} height={250} className="absolute bottom-0 left-0 z-0 pointer-events-none" />
             </>
           )}
           sidebar={(
             <div className="space-y-4">
               <DesktopStatCard label="기준일" value={freshnessLabel} tone="neutral" />
-              <DesktopStatCard label="데이터 상태" value={summary.status} tone="neutral" />
-              <DesktopStatCard label="엔티티 흐름" value={summary.entityFlows.length} tone="neutral" />
-              <DesktopStatCard label="알림 수" value={summary.alertStats.total} tone="neutral" />
+              {briefing && (
+                <div className="border border-dot-border/55 bg-white/70 p-4 space-y-2">
+                  <p className="desktop-kicker">브리핑</p>
+                  <p className="text-[13px] font-semibold text-dot-accent leading-snug">{briefing.headline}</p>
+                  <p className="text-[11px] leading-relaxed text-dot-sub">{briefing.summary}</p>
+                  <div className="pt-1 border-t border-dot-border/30">
+                    <p className="text-[10px] text-dot-muted">{briefing.watchLabel}</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         />

@@ -36,7 +36,7 @@ export function DesktopHero({
   sidebar,
 }: {
   eyebrow: string;
-  title: string;
+  title: ReactNode;
   description: ReactNode;
   action?: ReactNode;
   sidebar?: ReactNode;
