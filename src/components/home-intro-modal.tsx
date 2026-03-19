@@ -59,7 +59,7 @@ export default function HomeIntroModal({
             className="dot-card relative flex w-full max-w-2xl flex-col overflow-hidden max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-1rem)] sm:max-h-[calc(100dvh-2.5rem)]"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-dot-border/60 bg-white/95 px-4 py-3 sm:px-5 sm:py-4">
+            <div className="sticky top-0 z-10 border-b border-dot-border/60 bg-white/95 px-4 py-3 sm:px-5 sm:py-4">
               <div className="space-y-1">
                 <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-dot-muted">
                   Bitcoin Weather Station
@@ -67,15 +67,6 @@ export default function HomeIntroModal({
                 <h2 className="text-sm font-semibold tracking-tight text-dot-accent">
                   {SITE_NAME}
                 </h2>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="inline-flex rounded-sm border border-dot-border/70 px-3 py-2 text-[11px] font-mono text-dot-sub transition hover:border-dot-accent/40 hover:text-dot-accent"
-                >
-                  닫기
-                </button>
               </div>
             </div>
 
@@ -144,6 +135,18 @@ export default function HomeIntroModal({
                     ) : null}
                   </p>
                 </section>
+              </div>
+            </div>
+
+            <div className="border-t border-dot-border/60 bg-white/92 px-4 py-3 sm:px-5 sm:py-4">
+              <div className="flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="inline-flex rounded-sm border border-dot-accent bg-dot-accent px-3 py-2 text-[11px] font-mono text-white transition hover:opacity-90"
+                >
+                  닫기
+                </button>
               </div>
             </div>
           </div>

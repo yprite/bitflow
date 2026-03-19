@@ -5,14 +5,12 @@ import BitcoinTxStatusTracker from '@/components/bitcoin-tx-status-tracker';
 import BitcoinTxSizeEstimator from '@/components/bitcoin-tx-size-estimator';
 import BitcoinUnitConverter from '@/components/bitcoin-unit-converter';
 import BitcoinUtxoConsolidationPlanner from '@/components/bitcoin-utxo-consolidation-planner';
-import GuideCard from '@/components/guide-card';
+import GuideModal from '@/components/guide-modal';
 import PageHeader from '@/components/page-header';
 import ToolsArbitrageSection from '@/components/tools-arbitrage-section';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import { fetchUsdKrw } from '@/lib/kimp';
 import { fetchOnchainNetworkPulse } from '@/lib/onchain-monitor';
-
-const GUIDE_STORAGE_KEY = 'bitflow:tools-guide-seen';
 
 function ToolSection({
   eyebrow,
@@ -41,6 +39,31 @@ function ToolSection({
   );
 }
 
+function ToolsGuideContent() {
+  return (
+    <div className="grid gap-2 sm:grid-cols-3">
+      <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+        <p className="text-[10px] text-dot-muted uppercase tracking-wider">Prepare</p>
+        <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
+          전송 크기를 먼저 추정하고, 그 크기 기준으로 즉시, 30분, 1시간 fee를 바로 계산합니다.
+        </p>
+      </div>
+      <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+        <p className="text-[10px] text-dot-muted uppercase tracking-wider">Rescue + Track</p>
+        <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
+          stuck tx를 RBF/CPFP로 살릴 때 얼마를 더 붙여야 하는지 계산하고, txid로 현재 stage를 추적합니다.
+        </p>
+      </div>
+      <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+        <p className="text-[10px] text-dot-muted uppercase tracking-wider">Operations + Market</p>
+        <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
+          단위 감각을 맞추고 UTXO 정리 타이밍을 본 뒤, 마지막에 BTC 재정거래 계산으로 이어집니다.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default async function ToolsPage() {
   const [networkPulse, usdKrw] = await Promise.all([
     fetchOnchainNetworkPulse(),
@@ -55,46 +78,30 @@ export default async function ToolsPage() {
           title="도구"
           description="비트코인 전송 준비, 막힌 거래 복구, 상태 확인, UTXO 정리, 재정거래 판단까지 실제 순서대로 배치한 BTC 전용 도구 모음입니다."
           action={(
-            <div className="rounded-sm border border-dot-border/50 bg-white/70 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.16em] text-dot-sub">
-              BTC ops toolkit
+            <div className="flex flex-col items-end gap-2">
+              <div className="rounded-sm border border-dot-border/50 bg-white/70 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.16em] text-dot-sub">
+                BTC ops toolkit
+              </div>
+              <GuideModal
+                title="도구 안내"
+                eyebrow="Bitcoin Utility Deck"
+                triggerLabel="읽는 법"
+                maxWidthClassName="max-w-4xl"
+                triggerClassName="inline-flex rounded-sm border border-dot-border/60 bg-white/75 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.16em] text-dot-sub transition hover:border-dot-accent/50 hover:text-dot-accent"
+                intro={(
+                  <>
+                    이 화면은 비트코인 실무 흐름 그대로 묶었습니다. 먼저 전송 크기와 fee를 준비하고,
+                    막힌 거래를 구조적으로 복구하고, 상태를 추적한 뒤,
+                    <span className="font-medium text-dot-accent"> UTXO 정리와 재정거래 판단</span>
+                    으로 넘어가면 됩니다.
+                  </>
+                )}
+              >
+                <ToolsGuideContent />
+              </GuideModal>
             </div>
           )}
         />
-      </DotAssemblyReveal>
-
-      <DotAssemblyReveal delay={70} duration={660}>
-        <GuideCard
-          title="도구 안내"
-          storageKey={GUIDE_STORAGE_KEY}
-          maxHeight={340}
-          intro={(
-            <>
-              이 화면은 비트코인 실무 흐름 그대로 묶었습니다. 먼저 전송 크기와 fee를 준비하고,
-              막힌 거래를 구조적으로 복구하고, 상태를 추적한 뒤, UTXO 정리와 재정거래 판단으로 넘어가면 됩니다.
-            </>
-          )}
-        >
-          <div className="grid gap-2 sm:grid-cols-3">
-            <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-              <p className="text-[10px] text-dot-muted uppercase tracking-wider">Prepare</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
-                전송 크기를 먼저 추정하고, 그 크기 기준으로 즉시, 30분, 1시간 fee를 바로 계산합니다.
-              </p>
-            </div>
-            <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-              <p className="text-[10px] text-dot-muted uppercase tracking-wider">Rescue + Track</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
-                stuck tx를 RBF/CPFP로 살릴 때 얼마를 더 붙여야 하는지 계산하고, txid로 현재 stage를 추적합니다.
-              </p>
-            </div>
-            <div className="border border-dot-border/60 p-3 dot-grid-sparse">
-              <p className="text-[10px] text-dot-muted uppercase tracking-wider">Operations + Market</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
-                단위 감각을 맞추고 UTXO 정리 타이밍을 본 뒤, 마지막에 BTC 재정거래 계산으로 이어집니다.
-              </p>
-            </div>
-          </div>
-        </GuideCard>
       </DotAssemblyReveal>
 
       {networkPulse ? (
