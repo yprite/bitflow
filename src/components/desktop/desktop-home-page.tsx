@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode, type WheelEvent } from 'react';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
 import WeatherEffect from '@/components/motion/storytelling/WeatherEffect';
@@ -19,6 +19,7 @@ import {
 } from '@/components/desktop/desktop-ui';
 import { useData } from '@/components/data-provider';
 import { SITE_CONTACT_EMAIL, SITE_BASE_URL } from '@/lib/site';
+import { applyMarketTempWheelGuard } from '@/lib/market-temp-scroll-guard';
 
 const overviewCards = [
   {
@@ -209,6 +210,7 @@ export default function DesktopHomePage() {
   const [slide, setSlide] = useState(0);
   const [paused, setPaused] = useState(false);
   const [selectedIndicator, setSelectedIndicator] = useState<IndicatorKey | null>('fearGreed');
+  const [isMarketTempHovered, setIsMarketTempHovered] = useState(false);
 
   // 자동 슬라이딩: 8초마다 다음 슬라이드 (일시정지 시 멈춤)
   useEffect(() => {
@@ -292,6 +294,10 @@ export default function DesktopHomePage() {
   };
 
   const d = data;
+  const handleMarketTempWheel = (event: WheelEvent<HTMLDivElement>) => {
+    applyMarketTempWheelGuard(event, { slide, isMarketTempHovered });
+  };
+
   function getStatValue(key: IndicatorKey): { value: ReactNode; detail?: ReactNode; tone?: 'accent' | 'positive' | 'negative' | 'neutral' } {
     switch (key) {
       case 'fearGreed': return { value: `${d.fearGreed.value}`, detail: d.fearGreed.classification };
@@ -368,7 +374,12 @@ export default function DesktopHomePage() {
                   style={{ transform: `translateX(-${slide * 100}%)` }}
                 >
                   {/* Slide 1: 시장 체온 — 클릭 가능 지표 */}
-                  <div className="w-full flex-shrink-0 px-4 pb-4 pt-2 space-y-3">
+                  <div
+                    className="w-full flex-shrink-0 px-4 pb-4 pt-2 space-y-3"
+                    onMouseEnter={() => setIsMarketTempHovered(true)}
+                    onMouseLeave={() => setIsMarketTempHovered(false)}
+                    onWheelCapture={handleMarketTempWheel}
+                  >
                     <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-4 items-stretch">
                       <div className="min-w-0 [&>*]:h-full [&_button:has(+div)]:hidden [&_button+div]:hidden">
                         <SignalBadge signal={data.signal} upbitPrice={data.kimp.upbitPrice} />
