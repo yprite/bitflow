@@ -101,14 +101,22 @@ function ExtensionItem({ ext }: { ext: ChromeExtension }) {
         </div>
 
         {!ext.webStoreUrl && (
-          <details className="group">
-            <summary className="cursor-pointer text-[10px] font-mono uppercase tracking-[0.14em] text-dot-sub transition hover:text-dot-accent">
-              수동 설치 방법
-            </summary>
-            <ol className="mt-2 space-y-1 text-[11px] leading-relaxed text-dot-sub">
+          <div className="space-y-2.5 rounded-sm border border-dot-border/40 bg-white/50 p-3">
+            <div className="flex items-center gap-2">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full border border-amber-400/60 bg-amber-50 text-[8px]">
+                !
+              </span>
+              <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-dot-sub">
+                Chrome은 Web Store 외 익스텐션을 개발자 모드로만 설치할 수 있습니다
+              </p>
+            </div>
+            <ol className="space-y-1.5 text-[11px] leading-relaxed text-dot-sub">
               <li className="flex items-start gap-2">
                 <span className="font-mono text-dot-muted/60">1.</span>
-                <span>GitHub에서 코드를 다운로드 (Code → Download ZIP)</span>
+                <span>
+                  위 버튼으로 GitHub에서{' '}
+                  <code className="rounded bg-dot-border/30 px-1 py-0.5 text-[10px]">Code → Download ZIP</code>
+                </span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-mono text-dot-muted/60">2.</span>
@@ -122,14 +130,21 @@ function ExtensionItem({ ext }: { ext: ChromeExtension }) {
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-mono text-dot-muted/60">3.</span>
-                <span>우측 상단 &quot;개발자 모드&quot; 활성화</span>
+                <span>
+                  우측 상단{' '}
+                  <code className="rounded bg-dot-border/30 px-1 py-0.5 text-[10px]">개발자 모드</code>{' '}
+                  토글 ON
+                </span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-mono text-dot-muted/60">4.</span>
-                <span>&quot;압축해제된 확장 프로그램을 로드합니다&quot; → ZIP 해제한 폴더 선택</span>
+                <span>
+                  <code className="rounded bg-dot-border/30 px-1 py-0.5 text-[10px]">압축해제된 확장 프로그램을 로드합니다</code>{' '}
+                  → ZIP 해제한 폴더 선택
+                </span>
               </li>
             </ol>
-          </details>
+          </div>
         )}
       </div>
     </article>
