@@ -1,5 +1,3 @@
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
 import Dashboard from '@/components/dashboard';
 import HomeIntroModal from '@/components/home-intro-modal';
 import {
@@ -30,24 +28,7 @@ const overviewCards = [
   },
 ] as const;
 
-const MOBILE_OR_TABLET_USER_AGENT_REGEX =
-  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Windows Phone|Mobile|Tablet|Silk|Kindle/i;
-
-function shouldRedirectToDesktop(userAgent: string): boolean {
-  if (!userAgent) {
-    return false;
-  }
-
-  return !MOBILE_OR_TABLET_USER_AGENT_REGEX.test(userAgent);
-}
-
 export default function HomePage() {
-  const userAgent = headers().get('user-agent') ?? '';
-
-  if (shouldRedirectToDesktop(userAgent)) {
-    redirect('/desktop/');
-  }
-
   const baseUrl = getBaseUrl();
   const websiteJsonLd = {
     '@context': 'https://schema.org',
