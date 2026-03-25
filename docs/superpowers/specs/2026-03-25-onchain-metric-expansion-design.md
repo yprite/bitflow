@@ -75,6 +75,11 @@
 
 - 외부 가격 소스를 런타임에 즉시 읽어 계산하지 않는다.
 - 일자별 참조값을 내부 테이블로 적재한 뒤 후속 계산이 이 값을 사용한다.
+- 기준 통화는 `USD`로 고정한다.
+- 기준 날짜는 `UTC day`로 고정한다.
+- 기본 소스는 `CoinGecko daily close`로 두고, 최신일이 아직 마감되지 않은 경우에만 `Coinbase spot`을 임시 보조값으로 허용한다.
+- `Coinbase spot`으로 채운 최신일 데이터는 `provisional` 상태로 표시하고, 이후 `CoinGecko daily close`가 들어오면 교체한다.
+- 필요한 날짜의 참조 가격이 없으면 valuation 계열 지표를 강제로 forward-fill 하지 않고 해당 날짜를 `unavailable` 처리한다.
 
 #### `btc_daily_supply_bands`
 
@@ -138,6 +143,17 @@
 - `concentration`
 - `miner balance proxy`
 
+엔티티 역할 분류 원칙:
+
+- 역할의 authoritative source는 `btc_entity_labels`다.
+- 역할은 `exchange`, `miner`, `custody`, `unknown` 네 가지로 제한한다.
+- 역할 값은 `label_type='role'` 또는 동일 의미의 metadata 필드에서 읽는다.
+- 하나의 entity에 역할 후보가 여러 개 있으면 `exchange -> miner -> custody -> unknown` 우선순위로 하나만 선택한다.
+- 역할이 명시되지 않은 entity는 `unknown`으로 취급한다.
+- `core` 역할 기반 지표는 명시적 역할이 있는 entity만 사용한다.
+- `coinbase-derived` 지표는 role label과 무관하게 계산할 수 있으므로 core로 유지한다.
+- miner label 의존이 큰 흐름과 잔고 계열은 `proxy/experimental`로 둔다.
+
 ### 6.3 Serving layer
 
 공개/관리자 화면은 여전히 `btc_daily_metrics`를 표준 서빙 레이어로 쓴다. 다만 현재처럼 일부 metric id만 고정 관리하는 구조에서 벗어나, 카탈로그 기반 지표 정의를 함께 둔다.
@@ -145,6 +161,14 @@
 ## 7. 지표 카탈로그 설계
 
 현재 `OnchainMetricId`는 6개 하드코딩 union 타입이다. 이번 확장에서는 고정 enum 중심 구조를 버리고 `지표 정의 카탈로그` 중심으로 바꾼다.
+
+호환성 원칙:
+
+- 이번 1차는 `breaking API change`가 아니라 `additive refactor`로 진행한다.
+- 기존 6개 metric key는 그대로 유지한다.
+- 현재 `/api/onchain/metrics?metric=<existing_key>` 계약은 계속 유효해야 한다.
+- `summary` 응답도 기존 소비자가 깨지지 않도록 기본 구조를 유지한 채 그룹/메타데이터를 추가한다.
+- 신규 지표만 카탈로그에서 확장하고, 기존 key는 카탈로그 안의 안정된 canonical id로 편입한다.
 
 각 지표는 최소한 아래 메타데이터를 가진다.
 
