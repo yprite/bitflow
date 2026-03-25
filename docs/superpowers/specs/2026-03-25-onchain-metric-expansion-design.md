@@ -81,6 +81,15 @@
 - `Coinbase spot`으로 채운 최신일 데이터는 `provisional` 상태로 표시하고, 이후 `CoinGecko daily close`가 들어오면 교체한다.
 - 필요한 날짜의 참조 가격이 없으면 valuation 계열 지표를 강제로 forward-fill 하지 않고 해당 날짜를 `unavailable` 처리한다.
 
+최소 컬럼 성격:
+
+- `day`
+- `close_usd`
+- `source`
+- `status`
+  `final` | `provisional`
+- `recorded_at`
+
 #### `btc_daily_supply_bands`
 
 일자별 살아 있는 공급을 연령 버킷별로 저장한다.
@@ -105,6 +114,14 @@
 - `illiquid supply proxy`
 - `active/inactive supply decomposition`
 
+최소 컬럼 성격:
+
+- `day`
+- `band_key`
+- `live_supply_sats`
+- `share_of_live_supply`
+- `reactivated_sats`
+
 #### `btc_daily_realized_state`
 
 실현 가치 계열 계산을 위한 일별 상태 테이블이다.
@@ -124,6 +141,17 @@
 - `SOPR`
 - 이후 `STH/LTH SOPR`
 
+최소 컬럼 성격:
+
+- `day`
+- `live_supply_sats`
+- `realized_cap_usd`
+- `spent_value_cost_basis_usd`
+- `spent_value_realized_usd`
+- `coin_days_destroyed`
+- `cumulative_coin_days_destroyed`
+- `cumulative_coin_days_created`
+
 #### `btc_entity_balance_daily`
 
 기존 `btc_entity_flow_daily`가 보여주지 못하는 누적 압력을 보기 위한 일별 상태 테이블이다.
@@ -142,6 +170,18 @@
 - `miner distribution`
 - `concentration`
 - `miner balance proxy`
+
+최소 컬럼 성격:
+
+- `day`
+- `entity_slug`
+- `role`
+- `received_sats`
+- `sent_sats`
+- `netflow_sats`
+- `estimated_balance_sats`
+- `coinbase_inflow_sats`
+- `coinbase_outflow_sats`
 
 엔티티 역할 분류 원칙:
 
@@ -222,6 +262,16 @@
 - `illiquid_supply_proxy`
 - `reactivated_old_supply_share`
 
+정의:
+
+- `active_supply_ratio_{window}` = `최근 {window} 내에 마지막 이동이 있었던 공급량 / issued_supply_sats_through_day * 100`
+- `supply_age_share(bucket, day)` = `btc_daily_supply_bands.live_supply_sats(bucket, day) / sum(live_supply_sats(day)) * 100`
+- `coin_days_destroyed(day)` = `sum(spent_value_btc * spent_age_days)` for all spent edges on `day`
+- `dormancy(day)` = `coin_days_destroyed(day) / spent_btc(day)`, 단 `spent_btc(day) = 0`이면 `unavailable`
+- `liveliness(day)` = `cumulative_coin_days_destroyed(day) / cumulative_coin_days_created(day)`, 단 분모가 0이면 `unavailable`
+- `illiquid_supply_proxy(day)` = `sum(live_supply_sats for bands >= 155d) / total_live_supply(day) * 100`
+- `reactivated_old_supply_share(day)` = `reactivated_sats from bands >= 155d / total_reactivated_sats(day) * 100`, 단 총 재활성 공급이 0이면 `unavailable`
+
 ### 8.2 주체별 압력
 
 `core`
@@ -242,6 +292,15 @@
 - 정확성을 강하게 주장해야 하는 코어 지표는 raw 또는 coinbase-derived 기준으로 계산한다.
 - 라벨링과 휴리스틱 의존이 큰 값은 `proxy/experimental`로 분리한다.
 
+정의:
+
+- `exchange_netflow_7d/30d(day)` = `sum(netflow_sats)` for entities with `role=exchange` over trailing `7d` or `30d`, 단 해당 역할 entity가 없으면 `unavailable`
+- `entity_flow_concentration(day)` = `sum(abs(netflow_sats)) of top 3 exchange-role entities / sum(abs(netflow_sats)) of all exchange-role entities * 100`, 단 분모가 0이면 `unavailable`
+- `coinbase_spent_btc(day)` = `sum(value_sats)` for spent edges on `day` whose prevout was created by a coinbase transaction, converted to BTC
+- `miner_distribution_btc(day)` = same as `coinbase_spent_btc(day)` and treated as the public core miner-distribution measure in phase 1
+- `miner_balance_proxy(day)` = `sum(estimated_balance_sats)` for entities with explicit `role=miner`, 단 miner-role labels가 없으면 `unavailable`
+- `miner_to_exchange_flow_proxy(day)` = `sum(outputs from coinbase-derived spends on day sent to exchange-role entities) / total coinbase-derived spent BTC on day * 100`, 단 분모가 0이면 `unavailable`
+
 ### 8.3 실현 가치/손익
 
 `core`
@@ -255,6 +314,22 @@
 
 - `sth_sopr`
 - `lth_sopr`
+
+정의:
+
+- `realized_cap(day)` = `sum(value_btc * reference_price_usd at last moved day)` across all live UTXOs at end of `day`
+- `realized_price(day)` = `realized_cap(day) / live_supply_btc(day)`, 단 분모가 0이면 `unavailable`
+- `mvrv(day)` = `market_cap_usd(day) / realized_cap(day)`, 여기서 `market_cap_usd(day) = reference_price_usd(day) * issued_supply_btc(day)`
+- `sopr(day)` = `sum(spent_value_realized_usd(day)) / sum(spent_value_cost_basis_usd(day))`, 단 분모가 0이면 `unavailable`
+- `sth_sopr(day)` = same as `sopr(day)` but only spent edges with `age_seconds < 155 days`
+- `lth_sopr(day)` = same as `sopr(day)` but only spent edges with `age_seconds >= 155 days`
+
+null / unavailable 규칙:
+
+- 필요한 source state가 하나라도 없으면 해당 metric은 `unavailable`
+- 분모가 0인 비율형 지표는 `0`으로 보정하지 않고 `unavailable`
+- role label이 필요한 지표는 대상 role entity가 없으면 `unavailable`
+- `provisional` 가격만 있는 날의 valuation 계열 지표는 public/core에 포함하지 않는다
 
 ## 9. 파이프라인 계산 방식
 
@@ -285,6 +360,14 @@
 - 같은 날짜 범위를 두 번 계산해도 결과가 동일해야 한다.
 - 신규 지표 추가는 raw 개편보다 state/materialize 단계 확장으로 처리할 수 있어야 한다.
 
+backfill 정책:
+
+- 공급 구조와 실현 가치 계열 `core` 지표는 `genesis -> latest indexed day` 기준의 연속 backfill이 완료되어야 public/core로 노출한다.
+- genesis부터의 연속 backfill이 완료되지 않은 상태에서는 해당 지표를 `partial` 또는 `unavailable`로 두고 public/core에 노출하지 않는다.
+- entity pressure 계열은 `earliest contiguous indexed day` 이후부터 계산 가능하지만, `7d/30d` 지표는 최소 lookback window가 채워지기 전까지 `unavailable` 처리한다.
+- retention pruning은 이번 스펙 범위에 포함하지 않는다. 즉 1차 확장은 긴 히스토리 정확성을 우선한다.
+- `provisional` 가격이 있는 최신 UTC day는 deterministic replay 보장의 예외다. deterministic 검증은 `final` 상태 가격만 있는 날짜 범위에 대해서만 수행한다.
+
 ## 10. API 변경
 
 ### `GET /api/onchain/summary`
@@ -306,6 +389,20 @@
 - `tier`
 - `visibility`
 - `days`
+
+응답 계약:
+
+- `metric`만 전달되면 기존과 동일한 `단일 metric summary 객체`를 반환한다.
+- `family`, `tier`, `visibility` 중 하나라도 전달되고 `metric`이 없으면 `metric collection 객체`를 반환한다.
+- `metric`과 `family` / `tier` / `visibility`를 동시에 전달하면 `400`을 반환한다.
+- `days`는 단건과 집합 모드 모두에서 허용한다.
+
+collection 응답 최소 성격:
+
+- `metrics`
+- `filters`
+- `updatedAt`
+- `total`
 
 ### `GET /api/onchain/catalog`
 
@@ -412,6 +509,7 @@
 - age band 합계가 live supply와 크게 어긋나지 않는지
 - realized price = realized cap / live supply 관계가 맞는지
 - entity inflow / outflow / netflow 부호가 일관적인지
+- provisional day를 제외한 같은 날짜 범위 replay 결과가 동일한지
 
 ### 재계산 테스트
 
