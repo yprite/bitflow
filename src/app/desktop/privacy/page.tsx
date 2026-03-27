@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { DesktopBulletList, DesktopHero, DesktopSectionHeader, DesktopSurface } from '@/components/desktop/desktop-ui';
 
 const lastUpdated = '2026-03-18';
@@ -6,6 +7,8 @@ const googleAdSettingsUrl = 'https://myadcenter.google.com/';
 
 export default function DesktopPrivacyPage() {
   return (
+    <div className="magazine-content pt-20 pb-16">
+      <Link href="/desktop" className="inline-block text-xs text-dot-muted hover:text-dot-text mb-6">← 메인</Link>
     <div className="space-y-6">
       <DesktopHero
         eyebrow="Privacy"
@@ -86,6 +89,7 @@ export default function DesktopPrivacyPage() {
           </p>
         </div>
       </DesktopSurface>
+    </div>
     </div>
   );
 }

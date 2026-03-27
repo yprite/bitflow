@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { DesktopBulletList, DesktopHero, DesktopSectionHeader, DesktopStatCard, DesktopSurface, DesktopTextCard } from '@/components/desktop/desktop-ui';
 import WeatherEffect from '@/components/motion/storytelling/WeatherEffect';
 import { SITE_CONTACT_URL, SITE_NAME, SITE_REPO_URL } from '@/lib/site';
@@ -25,6 +26,8 @@ const coverage = [
 
 export default function DesktopAboutPage() {
   return (
+    <div className="magazine-content pt-20 pb-16">
+      <Link href="/desktop" className="inline-block text-xs text-dot-muted hover:text-dot-text mb-6">← 메인</Link>
     <div className="space-y-6">
       <DesktopHero
         eyebrow="About"
@@ -82,6 +85,7 @@ export default function DesktopAboutPage() {
           </p>
         </div>
       </DesktopSurface>
+    </div>
     </div>
   );
 }

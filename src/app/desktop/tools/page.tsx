@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import BitcoinFeeCalculator from '@/components/bitcoin-fee-calculator';
 import BitcoinStuckTxRescue from '@/components/bitcoin-stuck-tx-rescue';
 import BitcoinTxStatusTracker from '@/components/bitcoin-tx-status-tracker';
@@ -68,6 +69,8 @@ export default async function DesktopToolsPage() {
   ]);
 
   return (
+    <div className="magazine-content pt-20 pb-16">
+      <Link href="/desktop" className="inline-block text-xs text-dot-muted hover:text-dot-text mb-6">← 메인</Link>
     <div className="space-y-6">
       <DotAssemblyReveal delay={0} duration={520} density="low">
         <DesktopHero
@@ -202,6 +205,7 @@ export default async function DesktopToolsPage() {
         </div>
       </DotAssemblyReveal>
 
+    </div>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { DesktopBulletList, DesktopHero, DesktopSectionHeader, DesktopStatCard, DesktopSurface, DesktopTextCard } from '@/components/desktop/desktop-ui';
 import { SITE_BASE_URL, SITE_CONTACT_EMAIL, SITE_CONTACT_URL, SITE_REPO_URL } from '@/lib/site';
 
@@ -33,6 +34,8 @@ if (SITE_CONTACT_EMAIL) {
 
 export default function DesktopContactPage() {
   return (
+    <div className="magazine-content pt-20 pb-16">
+      <Link href="/desktop" className="inline-block text-xs text-dot-muted hover:text-dot-text mb-6">← 메인</Link>
     <div className="space-y-6">
       <DesktopHero
         eyebrow="Contact"
@@ -82,6 +85,7 @@ export default function DesktopContactPage() {
           />
         </div>
       </DesktopSurface>
+    </div>
     </div>
   );
 }

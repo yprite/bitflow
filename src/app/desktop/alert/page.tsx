@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import AlertBotCta from '@/components/alert-bot-cta';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import { DesktopBulletList, DesktopHero, DesktopSectionHeader, DesktopStatCard, DesktopSurface } from '@/components/desktop/desktop-ui';
@@ -19,6 +20,8 @@ const setupSteps = [
 
 export default function DesktopAlertPage() {
   return (
+    <div className="magazine-content pt-20 pb-16">
+      <Link href="/desktop" className="inline-block text-xs text-dot-muted hover:text-dot-text mb-6">← 메인</Link>
     <div className="space-y-6">
       <DotAssemblyReveal delay={0} duration={520} density="low">
         <DesktopHero
@@ -92,6 +95,7 @@ export default function DesktopAlertPage() {
           </div>
         </DesktopSurface>
       </DotAssemblyReveal>
+    </div>
     </div>
   );
 }
