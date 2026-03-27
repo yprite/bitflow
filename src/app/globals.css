@@ -121,6 +121,176 @@ body {
   color: #4b5563;
 }
 
+/* ── Magazine Layout ────────────────────── */
+
+.magazine-shell {
+  min-width: 1024px;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.magazine-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.magazine-full-bleed {
+  width: 100%;
+}
+
+.magazine-full-bleed > .magazine-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.magazine-section-dark {
+  background-color: #1a1a1a;
+  color: #f5f5f0;
+}
+
+.magazine-section-dark .dot-grid {
+  background-image: radial-gradient(circle, #f5f5f0 0.6px, transparent 0.6px);
+  opacity: 0.04;
+}
+
+.magazine-section-light {
+  background-color: #f5f5f0;
+  color: #1a1a1a;
+}
+
+.magazine-masthead {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+.magazine-masthead-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.magazine-masthead-divider {
+  flex: 1;
+  height: 1px;
+  background: #d1d5db;
+}
+
+.magazine-masthead-meta {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.magazine-indicator-strip {
+  display: flex;
+  gap: 1px;
+  background: #d1d5db;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.magazine-indicator-strip-cell {
+  flex: 1;
+  background: #ffffff;
+  padding: 10px;
+  text-align: center;
+}
+
+.magazine-indicator-strip-label {
+  font-size: 8px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.magazine-indicator-strip-value {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.scroll-reveal-hidden {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.number-counter {
+  font-variant-numeric: tabular-nums;
+}
+
+.floating-progress {
+  position: fixed;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.floating-progress.visible {
+  opacity: 1;
+}
+
+.floating-progress-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d1d5db;
+  transition: background 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+.floating-progress-dot:hover {
+  transform: scale(1.5);
+}
+
+.floating-progress-dot.active {
+  background: #1a1a1a;
+  transform: scale(1.5);
+}
+
+.floating-progress-line {
+  width: 1px;
+  height: 8px;
+  background: #e5e5e0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-reveal-hidden {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .floating-progress {
+    transition: none;
+  }
+  .floating-progress-dot {
+    transition: none;
+  }
+}
+
 /* ── Halftone Dot Pattern Utilities ── */
 
 .dot-grid {
