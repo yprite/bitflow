@@ -39,12 +39,15 @@
 - Create: `src/app/api/onchain/catalog/route.ts`
 - Create: `src/app/api/onchain/catalog/route.test.ts`
 - Create: `src/app/api/onchain/metrics/route.test.ts`
+- Create: `src/app/api/onchain/summary/route.test.ts`
+- Create: `src/app/api/admin/onchain/route.test.ts`
 - Modify: `src/lib/types.ts`
 - Modify: `src/lib/onchain.ts`
 - Modify: `src/lib/onchain.test.ts`
 - Modify: `src/app/api/onchain/summary/route.ts`
 - Modify: `src/app/api/onchain/metrics/route.ts`
 - Modify: `src/app/api/admin/onchain/route.ts`
+- Modify: `scripts/sync-onchain-to-supabase.mjs`
 
 ### Public UI / ops
 
@@ -278,6 +281,7 @@ Expected: FAIL because the worker does not build `btc_entity_balance_daily` rows
 
 ```python
 normalized_role = normalize_role_label(label_type)
+resolved_role = choose_entity_role(["miner", "exchange"])  # returns "exchange"
 entity_balance_rows = store.build_entity_balance_rows(target_day, network=settings.network)
 entity_metric_rows = store.build_entity_metric_rows(target_day, network=settings.network)
 ```
@@ -409,12 +413,15 @@ git commit -m "feat: add backward-compatible onchain metric catalog"
 - Create: `src/app/api/onchain/catalog/route.ts`
 - Create: `src/app/api/onchain/catalog/route.test.ts`
 - Create: `src/app/api/onchain/metrics/route.test.ts`
+- Create: `src/app/api/onchain/summary/route.test.ts`
+- Create: `src/app/api/admin/onchain/route.test.ts`
 - Modify: `src/app/api/onchain/summary/route.ts`
 - Modify: `src/app/api/onchain/metrics/route.ts`
 - Modify: `src/app/api/admin/onchain/route.ts`
 - Modify: `src/lib/onchain.ts`
+- Modify: `scripts/sync-onchain-to-supabase.mjs`
 
-- [ ] **Step 1: Write failing route tests for default, single-metric, and collection modes**
+- [ ] **Step 1: Write failing route tests for default, single-metric, collection, summary, and admin contracts**
 
 ```ts
 it('defaults /api/onchain/metrics to spent_btc when no params are set', async () => {
@@ -426,14 +433,29 @@ it('returns 400 when metric and family filters are combined', async () => {
   const response = await GET(new Request('http://localhost/api/onchain/metrics?metric=spent_btc&family=supply'));
   expect(response.status).toBe(400);
 });
+
+it('returns grouped summary fields for /api/onchain/summary', async () => {
+  const response = await GET(new Request('http://localhost/api/onchain/summary'));
+  const payload = await response.json();
+  expect(payload).toHaveProperty('metricGroups');
+  expect(payload).toHaveProperty('featuredMetrics');
+  expect(payload).toHaveProperty('experimentalMetrics');
+});
+
+it('returns runtime coverage metadata for /api/admin/onchain', async () => {
+  const response = await GET(new Request('http://localhost/api/admin/onchain'));
+  const payload = await response.json();
+  expect(payload).toHaveProperty('metricCoverage');
+  expect(payload).toHaveProperty('stateTableFreshness');
+});
 ```
 
 - [ ] **Step 2: Run the route tests to verify they fail**
 
-Run: `npm test -- src/app/api/onchain/catalog/route.test.ts src/app/api/onchain/metrics/route.test.ts`
-Expected: FAIL because the catalog route and collection behavior do not exist yet.
+Run: `npm test -- src/app/api/onchain/catalog/route.test.ts src/app/api/onchain/metrics/route.test.ts src/app/api/onchain/summary/route.test.ts src/app/api/admin/onchain/route.test.ts`
+Expected: FAIL because the catalog route, expanded summary/admin payloads, and collection behavior do not exist yet.
 
-- [ ] **Step 3: Implement the catalog route, collection mode, and admin metadata**
+- [ ] **Step 3: Implement the catalog route, publish path updates, collection mode, summary groups, and admin metadata**
 
 ```ts
 // collection mode
@@ -445,15 +467,26 @@ return NextResponse.json({
 });
 ```
 
+```js
+// scripts/sync-onchain-to-supabase.mjs
+metric_name: catalogKey,
+metadata: {
+  family,
+  tier,
+  visibility,
+  lifecycleStatus,
+}
+```
+
 - [ ] **Step 4: Run the route tests and typecheck**
 
-Run: `npm test -- src/app/api/onchain/catalog/route.test.ts src/app/api/onchain/metrics/route.test.ts && npm run typecheck`
-Expected: PASS with the route contracts matching the spec.
+Run: `npm test -- src/app/api/onchain/catalog/route.test.ts src/app/api/onchain/metrics/route.test.ts src/app/api/onchain/summary/route.test.ts src/app/api/admin/onchain/route.test.ts && npm run typecheck`
+Expected: PASS with the route contracts and Supabase publish path matching the spec.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/app/api/onchain/catalog/route.ts src/app/api/onchain/catalog/route.test.ts src/app/api/onchain/metrics/route.ts src/app/api/onchain/metrics/route.test.ts src/app/api/onchain/summary/route.ts src/app/api/admin/onchain/route.ts src/lib/onchain.ts
+git add src/app/api/onchain/catalog/route.ts src/app/api/onchain/catalog/route.test.ts src/app/api/onchain/metrics/route.ts src/app/api/onchain/metrics/route.test.ts src/app/api/onchain/summary/route.ts src/app/api/onchain/summary/route.test.ts src/app/api/admin/onchain/route.ts src/app/api/admin/onchain/route.test.ts src/lib/onchain.ts scripts/sync-onchain-to-supabase.mjs
 git commit -m "feat: expose grouped onchain metric APIs"
 ```
 
@@ -544,7 +577,7 @@ Expected: CONFIRM it currently deletes historical serving rows and needs narrowi
 
 - [ ] **Step 4: Run end-to-end verification**
 
-Run: `cd python && python -m pytest tests/test_metric_formulas.py tests/test_postgres_store_models.py tests/test_supply_metrics.py tests/test_entity_metrics.py tests/test_reference_prices.py -q && cd .. && npm test -- src/lib/onchain.test.ts src/lib/onchain-monitor.test.ts src/lib/onchain-sections.test.ts src/app/api/onchain/catalog/route.test.ts src/app/api/onchain/metrics/route.test.ts && npm run typecheck`
+Run: `cd python && python -m pytest tests/test_metric_formulas.py tests/test_postgres_store_models.py tests/test_supply_metrics.py tests/test_entity_metrics.py tests/test_reference_prices.py -q && cd .. && npm test -- src/lib/onchain.test.ts src/lib/onchain-monitor.test.ts src/lib/onchain-sections.test.ts src/app/api/onchain/catalog/route.test.ts src/app/api/onchain/metrics/route.test.ts src/app/api/onchain/summary/route.test.ts src/app/api/admin/onchain/route.test.ts && npm run typecheck`
 Expected: PASS with all new and existing targeted coverage green.
 
 - [ ] **Step 5: Commit**
@@ -557,6 +590,6 @@ git commit -m "docs: document and preserve onchain metric retention"
 ## Final Verification
 
 - [ ] Run `cd python && python -m pytest tests/test_metric_formulas.py tests/test_postgres_store_models.py tests/test_supply_metrics.py tests/test_entity_metrics.py tests/test_reference_prices.py -q`
-- [ ] Run `npm test -- src/lib/onchain.test.ts src/lib/onchain-monitor.test.ts src/lib/onchain-sections.test.ts src/app/api/onchain/catalog/route.test.ts src/app/api/onchain/metrics/route.test.ts`
+- [ ] Run `npm test -- src/lib/onchain.test.ts src/lib/onchain-monitor.test.ts src/lib/onchain-sections.test.ts src/app/api/onchain/catalog/route.test.ts src/app/api/onchain/metrics/route.test.ts src/app/api/onchain/summary/route.test.ts src/app/api/admin/onchain/route.test.ts`
 - [ ] Run `npm run typecheck`
 - [ ] If all commands pass, create a final integration commit that only contains any follow-up fixes that were needed after task commits
