@@ -178,10 +178,48 @@ Expected: FAIL because the dataclasses and store helpers are missing.
 - [ ] **Step 3: Implement the migration, dataclasses, and upsert helpers**
 
 ```sql
-CREATE TABLE IF NOT EXISTS btc_reference_prices (...);
-CREATE TABLE IF NOT EXISTS btc_daily_supply_bands (...);
-CREATE TABLE IF NOT EXISTS btc_daily_realized_state (...);
-CREATE TABLE IF NOT EXISTS btc_entity_balance_daily (...);
+CREATE TABLE IF NOT EXISTS btc_reference_prices (
+  day DATE PRIMARY KEY,
+  close_usd NUMERIC NOT NULL,
+  source TEXT NOT NULL,
+  status TEXT NOT NULL,
+  recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS btc_daily_supply_bands (
+  day DATE NOT NULL,
+  band_key TEXT NOT NULL,
+  live_supply_sats BIGINT NOT NULL,
+  share_of_live_supply NUMERIC NOT NULL,
+  reactivated_sats BIGINT NOT NULL DEFAULT 0,
+  calculated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (day, band_key)
+);
+CREATE INDEX IF NOT EXISTS idx_btc_daily_supply_bands_day ON btc_daily_supply_bands (day DESC);
+CREATE TABLE IF NOT EXISTS btc_daily_realized_state (
+  day DATE PRIMARY KEY,
+  live_supply_sats BIGINT NOT NULL,
+  realized_cap_usd NUMERIC NOT NULL,
+  spent_value_cost_basis_usd NUMERIC NOT NULL,
+  spent_value_realized_usd NUMERIC NOT NULL,
+  coin_days_destroyed NUMERIC NOT NULL,
+  cumulative_coin_days_destroyed NUMERIC NOT NULL,
+  cumulative_coin_days_created NUMERIC NOT NULL,
+  calculated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS btc_entity_balance_daily (
+  day DATE NOT NULL,
+  entity_slug TEXT NOT NULL,
+  role TEXT NOT NULL,
+  received_sats BIGINT NOT NULL,
+  sent_sats BIGINT NOT NULL,
+  netflow_sats BIGINT NOT NULL,
+  estimated_balance_sats BIGINT NOT NULL,
+  coinbase_inflow_sats BIGINT NOT NULL DEFAULT 0,
+  coinbase_outflow_sats BIGINT NOT NULL DEFAULT 0,
+  calculated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (day, entity_slug)
+);
+CREATE INDEX IF NOT EXISTS idx_btc_entity_balance_daily_role_day ON btc_entity_balance_daily (role, day DESC);
 ```
 
 - [ ] **Step 4: Run the model/store tests**
@@ -220,6 +258,10 @@ def test_dormancy_returns_unavailable_when_spent_btc_is_zero():
     rows = build_supply_metric_rows(...)
     dormancy = next(row for row in rows if row.metric_name == "dormancy")
     assert dormancy.metric_value is None
+
+def test_supply_band_shares_sum_to_live_supply_ratio():
+    state_rows = build_supply_band_rows(...)
+    assert round(sum(row.share_of_live_supply for row in state_rows), 6) == 100.0
 ```
 
 - [ ] **Step 2: Run the supply tests to verify they fail**
@@ -241,7 +283,7 @@ store.replace_daily_metrics(day, supply_metric_rows + ...)
 - [ ] **Step 4: Run the supply test suite**
 
 Run: `cd python && python -m pytest tests/test_supply_metrics.py tests/test_metric_formulas.py -q`
-Expected: PASS with `active_supply_ratio_7d/180d`, `supply_age_share`, `coin_days_destroyed`, `dormancy`, `liveliness`, and proxy rows materialized.
+Expected: PASS with `active_supply_ratio_7d/180d`, `supply_age_share`, `coin_days_destroyed`, `dormancy`, `liveliness`, proxy rows materialized, and the age-band share invariant holding.
 
 - [ ] **Step 5: Commit**
 
@@ -333,16 +375,18 @@ Expected: FAIL because the refresh pipeline and valuation materialization do not
 
 ```python
 # python/src/bitflow_onchain/main.py
-subparsers.add_parser("reference-prices")
+parser = subparsers.add_parser("reference-prices")
+parser.add_argument("--start-date")
+parser.add_argument("--end-date")
 
 # python/src/bitflow_onchain/pipelines/reference_prices.py
-def run_reference_price_refresh(...): ...
+def run_reference_price_refresh(start_date: date | None, end_date: date | None): ...
 ```
 
 - [ ] **Step 4: Run the valuation tests**
 
 Run: `cd python && python -m pytest tests/test_reference_prices.py tests/test_metric_formulas.py -q`
-Expected: PASS with `final` vs `provisional` handling and valuation metrics following the spec formulas.
+Expected: PASS with `final` vs `provisional` handling, replayable date-range refresh, the realized-price identity, and valuation metrics following the spec formulas.
 
 - [ ] **Step 5: Commit**
 
@@ -447,6 +491,21 @@ it('returns runtime coverage metadata for /api/admin/onchain', async () => {
   const payload = await response.json();
   expect(payload).toHaveProperty('metricCoverage');
   expect(payload).toHaveProperty('stateTableFreshness');
+  expect(payload).toHaveProperty('latestCalculationSuccessAt');
+  expect(payload).toHaveProperty('lifecycleBreakdown');
+  expect(payload).toHaveProperty('familyStatuses');
+});
+
+it('excludes provisional valuation days from public core groups', async () => {
+  const response = await GET(new Request('http://localhost/api/onchain/summary'));
+  const payload = await response.json();
+  expect(payload.featuredMetrics).not.toContainEqual(
+    expect.objectContaining({
+      family: 'valuation',
+      tier: 'core',
+      referencePriceStatus: 'provisional',
+    })
+  );
 });
 ```
 
@@ -478,15 +537,24 @@ metadata: {
 }
 ```
 
-- [ ] **Step 4: Run the route tests and typecheck**
+```json
+// src/data/onchain-fallback.json
+{
+  "metrics": [
+    { "metric_name": "realized_price", "metadata": { "family": "valuation" } }
+  ]
+}
+```
 
-Run: `npm test -- src/app/api/onchain/catalog/route.test.ts src/app/api/onchain/metrics/route.test.ts src/app/api/onchain/summary/route.test.ts src/app/api/admin/onchain/route.test.ts && npm run typecheck`
-Expected: PASS with the route contracts and Supabase publish path matching the spec.
+- [ ] **Step 4: Run the route tests, invariant checks, and typecheck**
+
+Run: `npm test -- src/app/api/onchain/catalog/route.test.ts src/app/api/onchain/metrics/route.test.ts src/app/api/onchain/summary/route.test.ts src/app/api/admin/onchain/route.test.ts src/lib/onchain.test.ts && npm run typecheck`
+Expected: PASS with the route contracts, provisional-day exclusions, admin metadata, and Supabase publish path matching the spec.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/app/api/onchain/catalog/route.ts src/app/api/onchain/catalog/route.test.ts src/app/api/onchain/metrics/route.ts src/app/api/onchain/metrics/route.test.ts src/app/api/onchain/summary/route.ts src/app/api/onchain/summary/route.test.ts src/app/api/admin/onchain/route.ts src/app/api/admin/onchain/route.test.ts src/lib/onchain.ts scripts/sync-onchain-to-supabase.mjs
+git add src/app/api/onchain/catalog/route.ts src/app/api/onchain/catalog/route.test.ts src/app/api/onchain/metrics/route.ts src/app/api/onchain/metrics/route.test.ts src/app/api/onchain/summary/route.ts src/app/api/onchain/summary/route.test.ts src/app/api/admin/onchain/route.ts src/app/api/admin/onchain/route.test.ts src/lib/onchain.ts scripts/sync-onchain-to-supabase.mjs src/data/onchain-fallback.json
 git commit -m "feat: expose grouped onchain metric APIs"
 ```
 
