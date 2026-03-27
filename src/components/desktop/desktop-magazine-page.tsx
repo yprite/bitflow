@@ -13,6 +13,7 @@ import { LightSection } from '@/components/desktop/magazine/light-section';
 import { DarkSection } from '@/components/desktop/magazine/dark-section';
 import { MagazineFooter } from '@/components/desktop/magazine/magazine-footer';
 import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
+import { getUpcomingEvents } from '@/lib/events';
 import type { DashboardData, IndicatorsPageData, ExtendedKimpHistoryPoint, KimpStats } from '@/lib/types';
 
 // Chart components — exact paths verified from desktop-indicators-page.tsx
@@ -196,6 +197,73 @@ const INDICATORS: IndicatorDef[] = [
     decimals: 1,
   },
 ];
+
+// ── Internal: Event Calendar ──
+
+const EVENT_TYPE_BORDER: Record<string, string> = {
+  fomc: 'border-l-dot-blue',
+  cpi: 'border-l-dot-yellow',
+  etf: 'border-l-dot-green',
+  halving: 'border-l-dot-red',
+  employment: 'border-l-dot-muted',
+  other: 'border-l-dot-muted',
+};
+
+function EventCalendar() {
+  const events = getUpcomingEvents(5);
+
+  if (events.length === 0) {
+    return <div className="text-center text-dot-muted text-sm py-8">예정된 이벤트가 없습니다</div>;
+  }
+
+  return (
+    <div className="flex gap-4">
+      {events.map((event, i) => (
+        <ScrollReveal key={`${event.date}-${event.title}`} delay={i * 80} className="flex-1">
+          <div className={`border-l-[3px] ${EVENT_TYPE_BORDER[event.type] ?? EVENT_TYPE_BORDER.other} pl-3 py-2 bg-dot-bg rounded-r-md`}>
+            <div className="text-[11px] font-semibold text-dot-text">{event.title}</div>
+            <div className="text-[10px] text-dot-sub">
+              {event.date} · <NumberCounter value={event.daysUntil} prefix="D-" decimals={0} duration={600} />
+            </div>
+          </div>
+        </ScrollReveal>
+      ))}
+    </div>
+  );
+}
+
+// ── Internal: Tools Grid ──
+
+const TOOL_ITEMS = [
+  { icon: '⚡', label: 'TX 수수료 계산기', section: 'prepare' },
+  { icon: '📐', label: 'TX 사이즈 추정', section: 'prepare' },
+  { icon: '🔄', label: '단위 변환기', section: 'prepare' },
+  { icon: '🔧', label: 'UTXO 통합 플래너', section: 'prepare' },
+  { icon: '🆘', label: '멈춘 TX 구조', section: 'recover' },
+  { icon: '🔍', label: 'TX 상태 추적', section: 'recover' },
+  { icon: '💱', label: '환율 차트', section: 'market' },
+  { icon: '📈', label: 'KIMP 상관관계', section: 'market' },
+  { icon: '📊', label: '차익거래 분석', section: 'market' },
+];
+
+function ToolsGrid() {
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {TOOL_ITEMS.map((tool, i) => (
+        <ScrollReveal key={tool.label} delay={i * 80}>
+          <a
+            href={`/desktop/tools#${tool.section}`}
+            className="border border-dot-border/60 rounded-md p-4 text-center bg-white/50
+                       hover:shadow-md hover:scale-[1.02] transition-all block"
+          >
+            <div className="text-xl mb-1">{tool.icon}</div>
+            <div className="text-xs font-semibold text-dot-text">{tool.label}</div>
+          </a>
+        </ScrollReveal>
+      ))}
+    </div>
+  );
+}
 
 export default function DesktopMagazinePage() {
   const { data, error, loading } = useData();
@@ -421,7 +489,45 @@ export default function DesktopMagazinePage() {
         </ScrollReveal>
       </DarkSection>
 
-      {/* Sections 5-8: see Task 10 */}
+      {/* Section 5: BTC Returns Heatmap */}
+      <LightSection id="heatmap">
+        <ScrollReveal>
+          <div className="text-[10px] text-dot-sub uppercase tracking-[3px] mb-6">
+            Returns Heatmap
+          </div>
+          {indicatorData?.btcReturnsHistory ? (
+            <BtcReturnHeatmap data={indicatorData.btcReturnsHistory} />
+          ) : (
+            <div className="text-center py-12 text-dot-muted text-sm">
+              {chartTriggered ? '히트맵 데이터 로딩 중...' : '스크롤하여 데이터 로드'}
+            </div>
+          )}
+        </ScrollReveal>
+      </LightSection>
+
+      {/* Section 6: Event Calendar */}
+      <LightSection id="events" className="bg-white">
+        <div className="text-[10px] text-dot-sub uppercase tracking-[3px] mb-6">
+          Upcoming Events
+        </div>
+        <EventCalendar />
+      </LightSection>
+
+      {/* Section 7: Tools */}
+      <LightSection id="tools">
+        <div className="text-[10px] text-dot-sub uppercase tracking-[3px] mb-6">
+          Tools
+        </div>
+        <ToolsGrid />
+      </LightSection>
+
+      {/* Section 8: Footer */}
+      <MagazineFooter
+        links={[
+          { label: '온체인 딥다이브 →', sublabel: '더 깊이 읽기', href: '/desktop/onchain' },
+          { label: '주간 아카이브 →', sublabel: '지난 이야기', href: '/desktop/weekly' },
+        ]}
+      />
     </>
   );
 }
