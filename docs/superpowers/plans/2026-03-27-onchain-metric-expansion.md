@@ -308,6 +308,11 @@ def test_exchange_netflow_skips_unknown_role_entities():
     exchange_rows = [row for row in rows if row.metric_name == "exchange_netflow"]
     assert all(row.dimensions["role"] == "exchange" for row in exchange_rows)
 
+def test_choose_entity_role_uses_spec_priority():
+    assert choose_entity_role(["miner", "exchange"]) == "exchange"
+    assert choose_entity_role(["custody", "miner"]) == "miner"
+    assert choose_entity_role(["unknown", "custody"]) == "custody"
+
 def test_miner_distribution_is_public_metric_but_coinbase_spent_is_internal_only():
     rows = build_entity_metric_rows(...)
     assert any(row.metric_name == "miner_distribution_btc" for row in rows)
@@ -323,7 +328,7 @@ Expected: FAIL because the worker does not build `btc_entity_balance_daily` rows
 
 ```python
 normalized_role = normalize_role_label(label_type)
-resolved_role = choose_entity_role(["miner", "exchange"])  # returns "exchange"
+resolved_role = choose_entity_role(all_normalized_roles)  # exchange -> miner -> custody -> unknown
 entity_balance_rows = store.build_entity_balance_rows(target_day, network=settings.network)
 entity_metric_rows = store.build_entity_metric_rows(target_day, network=settings.network)
 ```
@@ -357,6 +362,10 @@ def test_reference_price_marks_latest_open_day_as_provisional():
     row = build_reference_price_row(...)
     assert row.status == "provisional"
 
+def test_reference_price_promotes_provisional_day_to_final_when_daily_close_arrives():
+    rows = refresh_reference_prices(...)
+    assert rows[-1].status == "final"
+
 def test_sopr_returns_none_when_cost_basis_is_zero():
     assert calculate_sopr(spent_value_realized_usd=50.0, spent_value_cost_basis_usd=0.0) is None
 
@@ -383,12 +392,33 @@ parser.add_argument("--end-date")
 def run_reference_price_refresh(start_date: date | None, end_date: date | None): ...
 ```
 
-- [ ] **Step 4: Run the valuation tests**
+```python
+# sourcing rule
+daily_close = fetch_coingecko_daily_close(day)
+latest_open_day_spot = fetch_coinbase_spot(day)  # only for the latest UTC day that is not closed yet
+status = "provisional" if using_latest_open_day_spot else "final"
+```
+
+- [ ] **Step 4: Run historical backfill and replay for supply/entity/valuation state before exposing public APIs**
+
+Run:
+```bash
+cd python
+PYTHONPATH=src python -m bitflow_onchain.main reference-prices --start-date 2009-01-03 --end-date "$(date -u +%F)"
+PYTHONPATH=src python -m bitflow_onchain.main metrics-range --start-date 2009-01-03 --end-date "$(date -u +%F)"
+PYTHONPATH=src python -m bitflow_onchain.main metrics-range --start-date 2009-01-03 --end-date "$(date -u +%F)"
+```
+Expected:
+- first pass materializes the historical state range through the latest indexed UTC day
+- second `metrics-range` replay reproduces the same finalized days without drift
+- public/core supply and valuation metrics are not enabled until this range exists
+
+- [ ] **Step 5: Run the valuation tests**
 
 Run: `cd python && python -m pytest tests/test_reference_prices.py tests/test_metric_formulas.py -q`
 Expected: PASS with `final` vs `provisional` handling, replayable date-range refresh, the realized-price identity, and valuation metrics following the spec formulas.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add python/src/bitflow_onchain/pipelines/reference_prices.py python/src/bitflow_onchain/main.py python/src/bitflow_onchain/clients/postgres.py python/src/bitflow_onchain/pipelines/metrics.py python/src/bitflow_onchain/metric_formulas.py python/tests/test_reference_prices.py
