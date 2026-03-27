@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import json
 from typing import Any
-from urllib import error, request
+from urllib import error as urllib_error, request
 
 
 class BitcoinRPC:
@@ -33,11 +33,11 @@ class BitcoinRPC:
             raise RuntimeError(
                 f"Bitcoin RPC timeout for {method} after {self.timeout_seconds}s ({self.url})"
             ) from exc
-        except error.URLError as exc:
+        except urllib_error.URLError as exc:
             raise RuntimeError(f"Bitcoin RPC transport error for {method}: {exc.reason}") from exc
-        error = body.get("error")
-        if error is not None:
-            raise RuntimeError(f"Bitcoin RPC error for {method}: {error}")
+        rpc_error = body.get("error")
+        if rpc_error is not None:
+            raise RuntimeError(f"Bitcoin RPC error for {method}: {rpc_error}")
         if "result" not in body:
             raise RuntimeError(f"Bitcoin RPC malformed response for {method}: {body}")
         return body["result"]

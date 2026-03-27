@@ -15,6 +15,7 @@ set +a
 export PYTHONPATH="$PYTHON_DIR/src"
 export PYTHONUNBUFFERED=1
 RPC_TIMEOUT_SECONDS="${BITCOIN_RPC_TIMEOUT_SECONDS:-30}"
+RAW_RETENTION_BLOCKS="${BITFLOW_RAW_RETENTION_BLOCKS:-14400}"
 
 bitcoin_rpc_call() {
   local method="$1"
@@ -28,6 +29,21 @@ bitcoin_rpc_call() {
     "$BITCOIN_RPC_URL"
 }
 
+compute_raw_retention_floor() {
+  local prune_height="$1"
+  local tip_height="$2"
+  local floor_height="$prune_height"
+
+  if [[ "$RAW_RETENTION_BLOCKS" =~ ^[0-9]+$ ]] && (( RAW_RETENTION_BLOCKS > 0 )); then
+    local candidate_floor=$(( tip_height - RAW_RETENTION_BLOCKS + 1 ))
+    if (( candidate_floor > floor_height )); then
+      floor_height=$candidate_floor
+    fi
+  fi
+
+  printf '%s\n' "$floor_height"
+}
+
 while true; do
   chain_info="$(bitcoin_rpc_call "getblockchaininfo" 2>/dev/null || true)"
   current_tip="$(jq -r '.result.blocks // empty' <<<"$chain_info" 2>/dev/null || true)"
@@ -37,17 +53,23 @@ while true; do
     continue
   fi
 
+  if [[ ! "$RAW_RETENTION_BLOCKS" =~ ^[0-9]+$ ]] || (( RAW_RETENTION_BLOCKS < 1 )); then
+    sleep 60
+    continue
+  fi
+
   last_height="$("$PSQL_BIN" "$BITFLOW_PG_DSN" -Atqc "SELECT COALESCE(MAX(height), -1) FROM btc_blocks" 2>/dev/null || echo -1)"
   if [[ ! "$last_height" =~ ^-?[0-9]+$ ]]; then
     sleep 30
     continue
   fi
 
+  raw_floor_height="$(compute_raw_retention_floor "$prune_height" "$current_tip")"
   start_height=$(( last_height + 1 ))
-  if (( start_height < prune_height )); then
+  if (( start_height < raw_floor_height )); then
     printf '%s prune gap detected, advancing catchup floor %s->%s\n' \
-      "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$start_height" "$prune_height"
-    start_height=$prune_height
+      "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$start_height" "$raw_floor_height"
+    start_height=$raw_floor_height
   fi
 
   if (( current_tip >= start_height )); then
