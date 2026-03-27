@@ -38,6 +38,9 @@ logs/
 # openchrome
 .openchrome/
 
+# superpowers brainstorming
+.superpowers/
+
 # vercel
 .vercel
 
