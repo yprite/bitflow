@@ -11,7 +11,7 @@ interface DotLayer {
 }
 
 interface ParallaxDotsProps {
-  layers: DotLayer[];
+  layers?: DotLayer[];
   className?: string;
 }
 

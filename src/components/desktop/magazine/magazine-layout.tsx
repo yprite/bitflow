@@ -9,7 +9,7 @@ interface MagazineLayoutProps {
   children: ReactNode;
 }
 
-export function MagazineLayout({ children }: MagazineLayoutProps) {
+export default function MagazineLayout({ children }: MagazineLayoutProps) {
   return (
     <div className="magazine-shell">
       {/* Minimal top bar — logo only */}
