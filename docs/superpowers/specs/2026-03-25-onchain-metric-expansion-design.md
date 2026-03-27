@@ -35,7 +35,7 @@
 ## 5. 설계 원칙
 
 - `데이터 통제력 우선`: 외부 API 실시간 호출보다 내부 저장 후 재사용 가능한 구조를 우선한다.
-- `raw 유지`: `btc_blocks`, `btc_outputs`, `btc_inputs`, `btc_spent_edges`는 source of truth로 유지한다.
+- `raw 유지`: `btc_blocks`, `btc_outputs`, `btc_inputs`, `btc_spent_edges`는 `현재 로컬에 유지되는 높이 범위`의 source of truth로 유지한다.
 - `상태 우선`: 공개 지표 전에 재계산 가능한 상태 테이블을 만든다.
 - `카탈로그 기반`: 지표를 하드코딩 enum이 아니라 메타데이터 기반으로 관리한다.
 - `구분 명확화`: 코어 지표와 프록시 지표를 화면과 API에서 구분한다.
@@ -54,7 +54,7 @@
 - `btc_spent_edges`
 - `btc_entity_labels`
 
-이 계층은 source of truth이자 검산 기준으로 사용한다.
+이 계층은 `현재 로컬에 보존 중인 height/day 범위`에 대해서 source of truth이자 검산 기준으로 사용한다.
 
 ### 6.2 State / research layer
 
@@ -204,6 +204,12 @@
 
 공개/관리자 화면은 여전히 `btc_daily_metrics`를 표준 서빙 레이어로 쓴다. 다만 현재처럼 일부 metric id만 고정 관리하는 구조에서 벗어나, 카탈로그 기반 지표 정의를 함께 둔다.
 
+source-of-truth 규칙:
+
+- `raw-normalized layer`는 현재 로컬 DB에 남아 있는 height/day 범위의 canonical source of truth다.
+- node pruning 이후 raw가 삭제된 과거 구간에 대해서는 `state tables + materialized metrics`가 historical source of truth 역할을 한다.
+- 즉 phase 1의 장기 히스토리 보존 전략은 `raw 영구 보관`이 아니라 `필요 구간을 먼저 materialize 한 뒤 state/serving을 보존`하는 방식이다.
+
 ## 7. 지표 카탈로그 설계
 
 현재 `OnchainMetricId`는 6개 하드코딩 union 타입이다. 이번 확장에서는 고정 enum 중심 구조를 버리고 `지표 정의 카탈로그` 중심으로 바꾼다.
@@ -229,7 +235,7 @@
 - `unit`
 - `defaultWindow`
 - `interpretationHint`
-- `status`
+- `lifecycleStatus`
 
 권장 값:
 
@@ -243,7 +249,7 @@
 - `visibility`
   - `public`
   - `expert`
-- `status`
+- `lifecycleStatus`
   - `stable`
   - `experimental`
 
@@ -288,7 +294,6 @@
 - `exchange_netflow_7d`
 - `exchange_netflow_30d`
 - `entity_flow_concentration`
-- `coinbase_spent_btc`
 - `miner_distribution_btc`
 
 `proxy/experimental`
@@ -306,7 +311,8 @@
 - `exchange_netflow_7d/30d(day)` = `sum(netflow_sats)` for entities with `role=exchange` over trailing `7d` or `30d`, 단 해당 역할 entity가 없으면 `unavailable`
 - `entity_flow_concentration(day)` = `sum(abs(netflow_sats)) of top 3 exchange-role entities / sum(abs(netflow_sats)) of all exchange-role entities * 100`, 단 분모가 0이면 `unavailable`
 - `coinbase_spent_btc(day)` = `sum(value_sats)` for spent edges on `day` whose prevout was created by a coinbase transaction, converted to BTC
-- `miner_distribution_btc(day)` = same as `coinbase_spent_btc(day)` and treated as the public core miner-distribution measure in phase 1
+- `miner_distribution_btc(day)` = public canonical metric derived directly from `coinbase_spent_btc(day)`
+- `coinbase_spent_btc(day)` is an internal materialized base series, not a separate public metric key
 - `miner_balance_proxy(day)` = `sum(estimated_balance_sats)` for entities with explicit `role=miner`, 단 miner-role labels가 없으면 `unavailable`
 - `miner_to_exchange_flow_proxy(day)` = `sum(outputs from coinbase-derived spends on day sent to exchange-role entities) / total coinbase-derived spent BTC on day * 100`, 단 분모가 0이면 `unavailable`
 
@@ -404,6 +410,7 @@ backfill 정책:
 
 응답 계약:
 
+- 아무 파라미터도 없으면 기존 동작과 동일하게 `metric=spent_btc` 단건 조회로 처리한다.
 - `metric`만 전달되면 기존과 동일한 `단일 metric summary 객체`를 반환한다.
 - `family`, `tier`, `visibility` 중 하나라도 전달되고 `metric`이 없으면 `metric collection 객체`를 반환한다.
 - `metric`과 `family` / `tier` / `visibility`를 동시에 전달하면 `400`을 반환한다.
@@ -414,6 +421,7 @@ backfill 정책:
 collection 응답 최소 성격:
 
 - `metrics`
+  각 item은 기존 metric summary shape에 catalog metadata를 덧붙인 형태다.
 - `filters`
 - `updatedAt`
 - `total`
@@ -490,16 +498,21 @@ collection 응답 최소 성격:
 
 - `core` 지표 계산 실패는 해당 날짜 범위를 실패로 기록하고 관리자 화면에서 즉시 드러나게 한다.
 - `proxy/experimental` 실패는 전체 summary를 깨지 않고 해당 지표만 `unavailable` 처리한다.
-- 각 지표는 아래 메타를 가질 수 있어야 한다.
-  - `sourceState`
+- catalog metadata와 runtime 상태는 분리한다.
+- catalog metadata는 아래를 가진다.
   - `tier`
-  - `status`
+  - `visibility`
+  - `lifecycleStatus`
+- runtime 상태는 아래를 가진다.
+  - `materializationStatus`
+    `available` | `partial` | `unavailable`
   - `latestCalculatedAt`
   - `coverageDays`
+  - `sourceState`
 
 공개 화면의 기본 원칙:
 
-- `stable/core`는 계속 표시
+- `lifecycleStatus=stable`이고 `materializationStatus=available`인 core는 계속 표시
 - `proxy/experimental`은 실패 시 숨기거나 준비 중 상태로 내린다
 
 ## 13. 검증과 테스트
