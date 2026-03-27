@@ -1,5 +1,5 @@
-import DesktopHomePage from '@/components/desktop/desktop-home-page';
+import DesktopMagazinePage from '@/components/desktop/desktop-magazine-page';
 
 export default function DesktopPage() {
-  return <DesktopHomePage />;
+  return <DesktopMagazinePage />;
 }
