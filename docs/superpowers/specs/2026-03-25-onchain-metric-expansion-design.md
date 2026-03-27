@@ -187,7 +187,13 @@
 
 - 역할의 authoritative source는 `btc_entity_labels`다.
 - 역할은 `exchange`, `miner`, `custody`, `unknown` 네 가지로 제한한다.
-- 역할 값은 `label_type='role'` 또는 동일 의미의 metadata 필드에서 읽는다.
+- 역할 값은 기존 `btc_entity_labels.label_type`를 정규화해서 얻는다.
+- 1차 구현의 기본 매핑은 아래와 같다.
+  - `exchange` -> `exchange`
+  - `miner`, `mining_pool`, `pool` -> `miner`
+  - `custody`, `custodian` -> `custody`
+  - 그 외 -> `unknown`
+- 즉 이번 스펙은 기존 라벨 구조를 유지하고, 별도 role table을 새로 만들기보다 `role normalization rule`을 도입하는 방식이다.
 - 하나의 entity에 역할 후보가 여러 개 있으면 `exchange -> miner -> custody -> unknown` 우선순위로 하나만 선택한다.
 - 역할이 명시되지 않은 entity는 `unknown`으로 취급한다.
 - `core` 역할 기반 지표는 명시적 역할이 있는 entity만 사용한다.
@@ -209,6 +215,9 @@
 - 현재 `/api/onchain/metrics?metric=<existing_key>` 계약은 계속 유효해야 한다.
 - `summary` 응답도 기존 소비자가 깨지지 않도록 기본 구조를 유지한 채 그룹/메타데이터를 추가한다.
 - 신규 지표만 카탈로그에서 확장하고, 기존 key는 카탈로그 안의 안정된 canonical id로 편입한다.
+- `OnchainMetricId`는 즉시 제거하지 않는다. 1차에서는 `legacy public metric keys` 타입으로 유지한다.
+- 새 카탈로그는 내부 source of truth가 되고, 기존 6개 key는 그 카탈로그의 backward-compatible alias 집합으로 남긴다.
+- 새 지표는 string-backed catalog key를 사용하고, 기존 6개만 compile-time stable contract를 보장한다.
 
 각 지표는 최소한 아래 메타데이터를 가진다.
 
@@ -365,7 +374,10 @@ backfill 정책:
 - 공급 구조와 실현 가치 계열 `core` 지표는 `genesis -> latest indexed day` 기준의 연속 backfill이 완료되어야 public/core로 노출한다.
 - genesis부터의 연속 backfill이 완료되지 않은 상태에서는 해당 지표를 `partial` 또는 `unavailable`로 두고 public/core에 노출하지 않는다.
 - entity pressure 계열은 `earliest contiguous indexed day` 이후부터 계산 가능하지만, `7d/30d` 지표는 최소 lookback window가 채워지기 전까지 `unavailable` 처리한다.
-- retention pruning은 이번 스펙 범위에 포함하지 않는다. 즉 1차 확장은 긴 히스토리 정확성을 우선한다.
+- 현재 pruning job은 `btc_daily_metrics`, `btc_entity_flow_daily`, 신규 state tables를 삭제하지 않도록 변경되어야 한다.
+- raw block tables는 node prune height 아래를 비울 수 있지만, 그 전에 `genesis -> prune floor` 구간의 state/materialized metrics가 이미 계산되어 남아 있어야 한다.
+- 즉 1차에서 장기 히스토리의 source of truth는 `raw forever`가 아니라 `state + materialized metrics retention`이다.
+- retention pruning 자체를 새로 설계하는 것은 이번 스펙 범위에 포함하지 않는다. 다만 기존 pruning 동작은 이번 설계와 충돌하지 않게 제한해야 한다.
 - `provisional` 가격이 있는 최신 UTC day는 deterministic replay 보장의 예외다. deterministic 검증은 `final` 상태 가격만 있는 날짜 범위에 대해서만 수행한다.
 
 ## 10. API 변경
@@ -396,6 +408,8 @@ backfill 정책:
 - `family`, `tier`, `visibility` 중 하나라도 전달되고 `metric`이 없으면 `metric collection 객체`를 반환한다.
 - `metric`과 `family` / `tier` / `visibility`를 동시에 전달하면 `400`을 반환한다.
 - `days`는 단건과 집합 모드 모두에서 허용한다.
+- collection 모드에서 여러 필터를 함께 주면 `AND semantics`로 처리한다.
+- 예를 들어 `family=supply&tier=core&visibility=public`이면 세 조건을 모두 만족하는 지표만 반환한다.
 
 collection 응답 최소 성격:
 
