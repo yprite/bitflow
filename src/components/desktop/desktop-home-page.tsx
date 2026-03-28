@@ -310,7 +310,7 @@ export default function DesktopHomePage() {
             {/* 슬라이딩 캐러셀 */}
             <div className="relative overflow-hidden border border-dot-border">
               {/* 인디케이터 */}
-              <div className="flex items-center gap-5 px-4 pt-3 pb-1">
+              <div className="flex items-center gap-6 px-4 pt-3 pb-1">
                 <button
                   type="button"
                   onClick={() => setPaused((p) => !p)}
