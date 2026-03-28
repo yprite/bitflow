@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { DesktopBulletList, DesktopHero, DesktopSectionHeader, DesktopStatCard, DesktopSurface, DesktopTextCard } from '@/components/desktop/desktop-ui';
+import { DesktopBulletList, DesktopHero, DesktopSectionHeader, DesktopSurface, DesktopTextCard } from '@/components/desktop/desktop-ui';
 import { SITE_CONTACT_URL, SITE_NAME, SITE_REPO_URL } from '@/lib/site';
 
 const productPrinciples = [
@@ -26,7 +26,7 @@ const coverage = [
 export default function DesktopAboutPage() {
   return (
     <div className="magazine-content pt-20 pb-16">
-      <Link href="/desktop" className="mb-6 inline-flex text-[10px] uppercase tracking-[0.14em] text-dot-muted hover:text-dot-accent">개요</Link>
+      <Link href="/desktop" className="mb-6 inline-flex text-[10px] uppercase tracking-[0.02em] text-dot-muted hover:text-dot-accent">개요</Link>
     <div className="space-y-6">
       <DesktopHero
         eyebrow="About"
@@ -36,13 +36,6 @@ export default function DesktopAboutPage() {
             비트코인 기상청은 한국 시장 기준으로 비트코인과 암호화폐의 체감 온도를 읽기 쉽게 정리한 데이터 사이트입니다.
             글로벌 차트가 놓치기 쉬운 국내 프리미엄, 원화 체감 가격, 심리 과열 신호를 함께 보여주는 것이 목표입니다.
           </>
-        )}
-        sidebar={(
-          <div className="space-y-4">
-            <DesktopStatCard label="핵심" value="국내 체감 지표" tone="neutral" />
-            <DesktopStatCard label="형식" value="해석 가능한 브리핑" tone="neutral" />
-            <DesktopStatCard label="공개" value="GitHub 저장소" tone="neutral" />
-          </div>
         )}
       />
 
