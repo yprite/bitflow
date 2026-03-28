@@ -76,19 +76,19 @@ function ArchiveCard({
       href={`${hrefPrefix}/${item.slug}`}
       className={`block border p-4 transition-colors ${
         active
-          ? 'border-dot-accent bg-dot-accent text-white'
-          : 'border-dot-border/60 bg-white/72 text-dot-sub hover:border-dot-accent/40 hover:text-dot-accent'
+          ? 'border-dot-accent bg-dot-accent/[0.04] text-dot-accent'
+          : 'border-dot-border/35 bg-white/40 text-dot-sub hover:border-dot-accent/30 hover:text-dot-accent'
       }`}
     >
       <div className="space-y-2">
-        <p className={`text-[10px] font-mono uppercase tracking-[0.18em] ${active ? 'text-white/60' : 'text-dot-muted'}`}>
+        <p className={`text-[10px] font-mono uppercase tracking-[0.18em] ${active ? 'text-dot-accent/70' : 'text-dot-muted'}`}>
           {formatDate(item.weekStart)} - {formatDate(item.weekEnd)}
         </p>
         <div className="space-y-1">
           <h3 className="text-[14px] font-semibold tracking-[-0.02em]">{item.title}</h3>
-          {item.dek ? <p className={`text-[12px] leading-6 ${active ? 'text-white/80' : 'text-dot-sub'}`}>{item.dek}</p> : null}
+          {item.dek ? <p className={`text-[12px] leading-6 ${active ? 'text-dot-accent/80' : 'text-dot-sub'}`}>{item.dek}</p> : null}
         </div>
-        <p className={`text-[10px] font-mono uppercase tracking-[0.16em] ${active ? 'text-white/50' : 'text-dot-muted'}`}>
+        <p className={`text-[10px] font-mono uppercase tracking-[0.16em] ${active ? 'text-dot-accent/60' : 'text-dot-muted'}`}>
           {active ? '현재 열람 중' : formatPublishedAt(item.publishedAt)}
         </p>
       </div>
@@ -112,7 +112,7 @@ function NewsCard({
       href={sourceUrl}
       target="_blank"
       rel="noreferrer"
-      className="block border border-dot-border/60 bg-white/72 p-5 transition-colors hover:border-dot-accent/35"
+      className="block border border-dot-border/35 bg-white/40 p-5 transition-colors hover:border-dot-accent/30"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
@@ -169,7 +169,7 @@ export default function DesktopWeeklyReportView({
   archiveHrefPrefix = '/desktop/weekly',
 }: DesktopWeeklyReportViewProps) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_340px] gap-6">
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
       <div className="min-w-0 space-y-6">
         <DesktopHero
           eyebrow={eyebrow}
@@ -200,7 +200,7 @@ export default function DesktopWeeklyReportView({
               />
               <div className="mt-6 space-y-5">
                 <p className="text-[15px] leading-8 text-dot-sub">{report.summary}</p>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid gap-6 md:grid-cols-3">
                   <DesktopTextCard label="시장 해석" title="Market View" body={report.marketView} />
                   <DesktopTextCard label="온체인 해석" title="On-chain View" body={report.onchainView} />
                   <DesktopTextCard label="리스크 워치" title="Risk Watch" body={report.riskWatch} />
@@ -210,7 +210,7 @@ export default function DesktopWeeklyReportView({
                     <p className="desktop-kicker">Watchlist</p>
                     <div className="flex flex-wrap gap-2">
                       {report.watchlist.map((item) => (
-                        <span key={item} className="border border-dot-border/60 bg-white/72 px-3 py-1.5 text-[12px] text-dot-sub">
+                        <span key={item} className="border border-dot-border/35 bg-white/40 px-3 py-1.5 text-[12px] text-dot-sub">
                           {item}
                         </span>
                       ))}
@@ -261,7 +261,7 @@ export default function DesktopWeeklyReportView({
                   </div>
                 </div>
               </div>
-              <div className="mt-6 grid grid-cols-3 gap-4">
+              <div className="mt-6 grid gap-6 md:grid-cols-3">
                 <DesktopStatCard label="모델" value={report.modelName ?? '미상'} tone="neutral" />
                 <DesktopStatCard label="생성자" value={report.generatedBy} tone="neutral" />
                 <DesktopStatCard label="생성 시각" value={formatPublishedAt(report.generatedAt)} tone="neutral" />
@@ -275,9 +275,9 @@ export default function DesktopWeeklyReportView({
                   title="주간 섹션"
                   description="요약과 핵심 불릿을 PC 카드 묶음으로 재배치했습니다."
                 />
-                <div className="mt-6 grid grid-cols-2 gap-4">
+                <div className="mt-6 grid gap-6 md:grid-cols-2">
                   {report.sections.map((section) => (
-                    <article key={section.id} className="border border-dot-border/60 bg-white/72 p-5">
+                    <article key={section.id} className="desktop-surface p-5">
                       <div className="space-y-3">
                         <p className="desktop-kicker">{section.id}</p>
                         <div className="space-y-2">
@@ -315,7 +315,7 @@ export default function DesktopWeeklyReportView({
       </div>
 
       <aside className="space-y-6">
-        <DesktopSurface className="sticky top-7 p-5">
+        <DesktopSurface className="p-5 xl:sticky xl:top-24">
           <DesktopSectionHeader
             eyebrow="Archive"
             title={archiveTitle}

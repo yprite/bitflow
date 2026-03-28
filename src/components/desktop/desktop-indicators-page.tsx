@@ -9,9 +9,6 @@ import KimpCorrelationChart from '@/components/indicators/kimp-correlation-chart
 import KimpStatsCard from '@/components/indicators/kimp-stats-card';
 import KimpChart from '@/components/kimp-chart';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
-import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
-import GuideModal from '@/components/guide-modal';
-import WeatherEffect from '@/components/motion/storytelling/WeatherEffect';
 import {
   DesktopHero,
   DesktopStatCard,
@@ -65,7 +62,7 @@ const indicatorGuides = [
 function IndicatorsGuideContent() {
   return (
     <>
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2">
         {readingSteps.map((step) => (
           <div key={step.title} className="border border-dot-border/60 p-3 dot-grid-sparse">
             <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">{step.title}</p>
@@ -107,7 +104,7 @@ function computeStats(data: ExtendedKimpHistoryPoint[]): KimpStats | null {
 }
 
 export default function DesktopIndicatorsPage() {
-  const { data, chartData, error, loading, fetchData } = useData();
+  const { data, chartData, error, loading } = useData();
   const [indicatorData, setIndicatorData] = useState<IndicatorsPageData | null>(null);
   const [indicatorLoading, setIndicatorLoading] = useState(true);
 
@@ -144,25 +141,19 @@ export default function DesktopIndicatorsPage() {
 
   if (loading) {
     return (
-      <DesktopSurface className="flex min-h-[620px] items-center justify-center">
-        <OrbitalSilence />
+      <DesktopSurface className="p-8">
+        <p className="desktop-kicker">History</p>
+        <p className="mt-2 text-[12px] leading-6 text-dot-sub">히스토리 데이터를 정리하는 중입니다.</p>
       </DesktopSurface>
     );
   }
 
   if (error || !data) {
     return (
-      <DesktopSurface className="p-12 text-center">
-        <p className="desktop-kicker">Load Error</p>
-        <h1 className="mt-3 text-[30px] font-semibold tracking-[-0.03em] text-dot-red">히스토리 데이터를 불러올 수 없습니다.</h1>
-        <p className="mt-3 text-[14px] leading-7 text-dot-sub">{error ?? '알 수 없는 오류'}</p>
-        <button
-          type="button"
-          onClick={fetchData}
-          className="mt-5 inline-flex border border-dot-border bg-white px-4 py-2 text-[12px] font-medium text-dot-accent transition hover:border-dot-accent"
-        >
-          다시 시도
-        </button>
+      <DesktopSurface className="p-8">
+        <p className="desktop-kicker">History</p>
+        <h1 className="mt-2 text-[18px] font-semibold tracking-[-0.02em] text-dot-accent">히스토리 데이터를 아직 표시할 수 없습니다.</h1>
+        <p className="mt-2 text-[12px] leading-6 text-dot-sub">{error ?? '잠시 후 다시 자동 갱신됩니다.'}</p>
       </DesktopSurface>
     );
   }
@@ -172,69 +163,24 @@ export default function DesktopIndicatorsPage() {
       <DotAssemblyReveal delay={0} duration={500} density="low">
         <DesktopHero
           eyebrow="Historical Research Deck"
-          title={(
-            <span className="flex items-center justify-between">
-              <span>히스토리</span>
-              <GuideModal
-                title="히스토리 읽는 법"
-                eyebrow="Indicator History"
-                triggerLabel="읽는 법"
-                maxWidthClassName="max-w-5xl"
-                triggerClassName="inline-flex rounded-sm border border-dot-border/60 bg-white/75 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.16em] text-dot-sub transition hover:border-dot-accent/50 hover:text-dot-accent"
-                intro={(
-                  <>
-                    이 페이지는 김치프리미엄, 펀딩비, 공포탐욕지수의 시간 흐름을 함께 보여줍니다.
-                    단순히 숫자를 나열하는 대신
-                    <span className="font-medium text-dot-accent"> 과열 구간, 평균 회귀, 환율 영향, 변동성 확대 여부</span>
-                    를 한 번에 읽을 수 있도록 설계했습니다.
-                  </>
-                )}
-              >
-                <IndicatorsGuideContent />
-              </GuideModal>
-            </span>
-          )}
+          title="히스토리"
           description={(
             <>
-              <p>
-                과거 차트는 세로 스크롤을 줄이고 비교 밀도를 높이는 쪽으로 재배치했습니다.
-                김프, 펀딩비, 심리 지수, 환율, 수익률 히트맵을 넓은 화면에서 바로 이어서 읽을 수 있습니다.
-              </p>
-              <div className="mt-4 grid grid-cols-4 gap-3">
-                <DesktopStatCard label="현재 김프" value={`${data.kimp.kimchiPremium.toFixed(2)}%`} />
-                <DesktopStatCard label="현재 공포탐욕" value={data.fearGreed.value} />
-                <DesktopStatCard label="차트 포인트" value={chartData.length} tone="neutral" />
-                <DesktopStatCard
-                  label="30일 평균"
-                  value={data.avg30d !== null ? `${data.avg30d.toFixed(2)}%` : '—'}
-                  tone="neutral"
-                />
-              </div>
-              <WeatherEffect weather="rainy" width={700} height={250} className="absolute bottom-0 left-0 z-0 pointer-events-none" />
+              과거 차트는 비교를 위해 모아 두되, 한 화면에서 모두 설명하려고 하지 않습니다.
+              김프의 위치를 먼저 보고, 이어서 펀딩비와 심리, 환율과 히트맵으로 넘어가는 읽기 순서를 유지합니다.
             </>
           )}
+          action={<IndicatorsGuideContent />}
           sidebar={(
             <div className="space-y-3">
-              <div className="border border-dot-border/55 bg-white/70 p-4 space-y-1">
-                <p className="desktop-kicker">김프</p>
-                <p className="text-[13px] font-semibold text-dot-accent">국내 체감 수급</p>
-                <p className="text-[11px] leading-relaxed text-dot-sub">국내 시장 온도가 해외 대비 얼마나 뜨거운지 보는 핵심 지표입니다.</p>
-              </div>
-              <div className="border border-dot-border/55 bg-white/70 p-4 space-y-1">
-                <p className="desktop-kicker">펀딩비</p>
-                <p className="text-[13px] font-semibold text-dot-accent">파생 포지션 쏠림</p>
-                <p className="text-[11px] leading-relaxed text-dot-sub">롱 과열과 숏 압박을 함께 읽는 데 유용합니다.</p>
-              </div>
-              <div className="border border-dot-border/55 bg-white/70 p-4 space-y-1">
-                <p className="desktop-kicker">심리</p>
-                <p className="text-[13px] font-semibold text-dot-accent">시장 군중 심리</p>
-                <p className="text-[11px] leading-relaxed text-dot-sub">공포탐욕지수와 김프가 같이 움직이는지 비교합니다.</p>
-              </div>
-              <div className="border border-dot-border/55 bg-white/70 p-4 space-y-1">
-                <p className="desktop-kicker">히트맵</p>
-                <p className="text-[13px] font-semibold text-dot-accent">계절성 참고</p>
-                <p className="text-[11px] leading-relaxed text-dot-sub">월간·분기 수익률로 현재 구간의 역사적 위치를 가늠합니다.</p>
-              </div>
+              <DesktopStatCard label="현재 김프" value={`${data.kimp.kimchiPremium.toFixed(2)}%`} />
+              <DesktopStatCard label="현재 공포탐욕" value={data.fearGreed.value} />
+              <DesktopStatCard label="차트 포인트" value={chartData.length} tone="neutral" />
+              <DesktopStatCard
+                label="30일 평균"
+                value={data.avg30d !== null ? `${data.avg30d.toFixed(2)}%` : '—'}
+                tone="neutral"
+              />
             </div>
           )}
         />
@@ -255,8 +201,9 @@ export default function DesktopIndicatorsPage() {
       )}
 
       {indicatorLoading ? (
-        <DesktopSurface className="p-8 text-center text-[14px] text-dot-sub">
-          세부 히스토리 데이터를 불러오는 중입니다.
+        <DesktopSurface className="p-6">
+          <p className="desktop-kicker">History</p>
+          <p className="mt-2 text-[12px] leading-6 text-dot-sub">세부 히스토리 데이터를 정리하는 중입니다.</p>
         </DesktopSurface>
       ) : (
         <>

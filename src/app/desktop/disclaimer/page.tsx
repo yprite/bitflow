@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { DesktopBulletList, DesktopHero, DesktopSectionHeader, DesktopSurface } from '@/components/desktop/desktop-ui';
 
 const riskNotes = [
@@ -9,6 +10,8 @@ const riskNotes = [
 
 export default function DesktopDisclaimerPage() {
   return (
+    <div className="magazine-content pt-20 pb-16">
+      <Link href="/desktop" className="mb-6 inline-flex text-[10px] uppercase tracking-[0.14em] text-dot-muted hover:text-dot-accent">개요</Link>
     <div className="space-y-6">
       <DesktopHero
         eyebrow="Disclaimer"
@@ -35,6 +38,7 @@ export default function DesktopDisclaimerPage() {
           광고가 표시되더라도 데이터 계산 기준과 콘텐츠 방향은 광고주 영향과 분리해 운영하는 것을 원칙으로 합니다.
         </div>
       </DesktopSurface>
+    </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import DesktopIndicatorsPage from '@/components/desktop/desktop-indicators-page';
+import { redirect } from 'next/navigation';
 
 export default function DesktopIndicatorsRoute() {
-  return <DesktopIndicatorsPage />;
+  redirect('/desktop');
 }

@@ -10,7 +10,6 @@ import MarketBriefing from '@/components/market-briefing';
 import MicroStrategyCard from '@/components/microstrategy-card';
 import OpenInterestCard from '@/components/open-interest-card';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
-import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
 import SignalBadge from '@/components/signal-badge';
 import StablecoinCard from '@/components/stablecoin-card';
 import UsdtPremiumCard from '@/components/usdt-premium-card';
@@ -29,7 +28,7 @@ function formatPercent(value: number, digits = 2) {
 
 export default function DesktopRealtimePage() {
   const {
-    data, error, loading, lastUpdated, fetchData,
+    data, error, loading, lastUpdated,
     fundingRange, fearGreedRange,
     usdtPremiumRange, btcDominanceRange, longShortRange,
     oiRange, liqRange, stableRange, volumeRange, strategyBtcRange, capitalRange,
@@ -37,25 +36,19 @@ export default function DesktopRealtimePage() {
 
   if (loading) {
     return (
-      <DesktopSurface className="flex min-h-[620px] items-center justify-center">
-        <OrbitalSilence />
+      <DesktopSurface className="p-8">
+        <p className="desktop-kicker">Realtime</p>
+        <p className="mt-2 text-[12px] leading-6 text-dot-sub">실시간 지표를 정리하는 중입니다.</p>
       </DesktopSurface>
     );
   }
 
   if (error || !data) {
     return (
-      <DesktopSurface className="p-12 text-center">
-        <p className="desktop-kicker">Load Error</p>
-        <h1 className="mt-3 text-[30px] font-semibold tracking-[-0.03em] text-dot-red">실시간 지표를 불러올 수 없습니다.</h1>
-        <p className="mt-3 text-[14px] leading-7 text-dot-sub">{error ?? '알 수 없는 오류'}</p>
-        <button
-          type="button"
-          onClick={fetchData}
-          className="mt-5 inline-flex border border-dot-border bg-white px-4 py-2 text-[12px] font-medium text-dot-accent transition hover:border-dot-accent"
-        >
-          다시 시도
-        </button>
+      <DesktopSurface className="p-8">
+        <p className="desktop-kicker">Realtime</p>
+        <h1 className="mt-2 text-[18px] font-semibold tracking-[-0.02em] text-dot-accent">실시간 지표를 아직 표시할 수 없습니다.</h1>
+        <p className="mt-2 text-[12px] leading-6 text-dot-sub">{error ?? '잠시 후 다시 자동 갱신됩니다.'}</p>
       </DesktopSurface>
     );
   }
@@ -68,8 +61,8 @@ export default function DesktopRealtimePage() {
           title="실시간 지표"
           description={(
             <>
-              11개 핵심 지표를 한 화면에서 모두 확인할 수 있습니다.
-              각 카드는 현재 값, 당일 범위, 해석을 함께 보여줍니다.
+              실시간 상태를 한 화면에 모으되, 먼저 핵심 신호를 보고 이어서 구조와 유동성을 읽는 순서로 정리했습니다.
+              값 자체보다 현재 문맥과 상대적 위치를 빠르게 파악하는 데 초점을 둡니다.
             </>
           )}
           sidebar={(

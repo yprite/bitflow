@@ -10,9 +10,9 @@ interface MarketBriefingProps {
 
 const SEVERITY_STYLES: Record<string, { border: string; bg: string; text: string; dot: string }> = {
   warning: { border: 'border-red-200', bg: 'bg-red-50/60', text: 'text-dot-red', dot: '#e53935' },
-  caution: { border: 'border-yellow-200', bg: 'bg-yellow-50/60', text: 'text-dot-yellow', dot: '#f9a825' },
+  caution: { border: 'border-dot-border/40', bg: 'bg-white/40', text: 'text-dot-sub', dot: '#6b7280' },
   neutral: { border: 'border-gray-200', bg: 'bg-gray-50/60', text: 'text-dot-sub', dot: '#6b7280' },
-  opportunity: { border: 'border-emerald-200', bg: 'bg-emerald-50/60', text: 'text-dot-green', dot: '#00c853' },
+  opportunity: { border: 'border-blue-200', bg: 'bg-blue-50/50', text: 'text-dot-blue', dot: '#1e88e5' },
 };
 
 function ScenarioAlert({ scenario }: { scenario: MarketScenario }) {

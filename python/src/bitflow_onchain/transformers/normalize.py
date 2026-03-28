@@ -217,6 +217,10 @@ def normalize_block_bundle(
                     created_time=prevout_ref.block_time,
                     value_sats=prevout_ref.value_sats,
                     age_seconds=age_seconds,
+                    prev_script_pubkey=prevout_ref.script_pubkey,
+                    prev_script_type=prevout_ref.script_type,
+                    prev_address=prevout_ref.address,
+                    prev_descriptor=prevout_ref.descriptor,
                 )
             )
 

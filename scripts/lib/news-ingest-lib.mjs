@@ -1,3 +1,4 @@
+import { existsSync, readdirSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
@@ -28,6 +29,11 @@ export const NEWS_FEEDS = [
 export const DEFAULT_X_ACCOUNTS = ['BtcPicture', 'cyp3er'];
 
 const DEFAULT_CHROME_PATH = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const DEFAULT_CHROME_EXECUTABLES = [
+  DEFAULT_CHROME_PATH,
+  '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary',
+  '/Applications/Chromium.app/Contents/MacOS/Chromium',
+];
 const USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36';
 
@@ -60,8 +66,58 @@ export function requiredEnv(name) {
   return value;
 }
 
-export function resolveChromePath() {
-  return process.env.BITFLOW_CHROME_PATH || DEFAULT_CHROME_PATH;
+function listChromeAppDirectories(applicationsDir = '/Applications') {
+  try {
+    return readdirSync(applicationsDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && (entry.name.includes('Chrome') || entry.name === 'Chromium.app'))
+      .map((entry) => path.join(applicationsDir, entry.name))
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+function resolveExecutableForApp(appDirectory) {
+  const appName = path.basename(appDirectory);
+
+  if (appName === 'Chromium.app') {
+    return path.join(appDirectory, 'Contents', 'MacOS', 'Chromium');
+  }
+
+  if (appName.startsWith('Google Chrome Canary')) {
+    return path.join(appDirectory, 'Contents', 'MacOS', 'Google Chrome Canary');
+  }
+
+  if (appName.startsWith('Google Chrome')) {
+    return path.join(appDirectory, 'Contents', 'MacOS', 'Google Chrome');
+  }
+
+  return null;
+}
+
+export function resolveChromePath(options = {}) {
+  const env = options.env ?? process.env;
+  const pathExists = options.pathExists ?? existsSync;
+  const appDirectories = options.appDirectories ?? listChromeAppDirectories();
+
+  if (env.BITFLOW_CHROME_PATH) {
+    return env.BITFLOW_CHROME_PATH;
+  }
+
+  for (const candidate of DEFAULT_CHROME_EXECUTABLES) {
+    if (pathExists(candidate)) {
+      return candidate;
+    }
+  }
+
+  for (const appDirectory of appDirectories) {
+    const executablePath = resolveExecutableForApp(appDirectory);
+    if (executablePath && pathExists(executablePath)) {
+      return executablePath;
+    }
+  }
+
+  return DEFAULT_CHROME_PATH;
 }
 
 export function getXSessionStatePath(rootDir) {

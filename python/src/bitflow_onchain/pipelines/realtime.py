@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 import zmq
 
@@ -8,8 +8,11 @@ from bitflow_onchain.clients.bitcoin_rpc import BitcoinRPC
 from bitflow_onchain.clients.postgres import PostgresStore
 from bitflow_onchain.config import Settings
 from bitflow_onchain.models import AlertEventRecord
+from bitflow_onchain.pipelines.metrics import run_metrics
 from bitflow_onchain.pipelines.ingestion import align_store_to_chain, format_btc, ingest_block_height
 from bitflow_onchain.transformers.normalize import sats_from_btc
+
+MAX_REALTIME_BACKLOG_BLOCKS = 144
 
 
 def _handle_rawtx_event(
@@ -46,12 +49,35 @@ def _handle_rawtx_event(
 def _sync_new_blocks(rpc: BitcoinRPC, store: PostgresStore, settings: Settings) -> None:
     last_height = align_store_to_chain(rpc, store, "realtime")
     tip_height = rpc.get_block_count()
-    start_height = (last_height + 1) if last_height is not None else settings.backfill_start_height
+    if last_height is not None:
+        start_height = last_height + 1
+    else:
+        start_height = settings.backfill_start_height
+        try:
+            blockchain_info = rpc.get_blockchain_info()
+        except RuntimeError:
+            blockchain_info = {}
+
+        prune_height = blockchain_info.get("pruneheight")
+        if blockchain_info.get("pruned") and isinstance(prune_height, int):
+            start_height = max(start_height, prune_height)
 
     if start_height > tip_height:
         return
 
+    backlog_blocks = tip_height - start_height + 1
+    if backlog_blocks > MAX_REALTIME_BACKLOG_BLOCKS:
+        print(
+            "realtime backlog exceeds cap;",
+            f"start_height={start_height}",
+            f"tip_height={tip_height}",
+            f"backlog_blocks={backlog_blocks}",
+            "waiting for catchup pipeline",
+        )
+        return
+
     tx_cache: dict[str, dict] = {}
+    touched_days: set[date] = set()
     for height in range(start_height, tip_height + 1):
         bundle = ingest_block_height(
             rpc=rpc,
@@ -62,7 +88,11 @@ def _sync_new_blocks(rpc: BitcoinRPC, store: PostgresStore, settings: Settings) 
             tx_cache=tx_cache,
             persist_alerts=True,
         )
+        touched_days.add(bundle.block.block_time.date())
         print(f"confirmed block {bundle.block.height} {bundle.block.block_hash}")
+
+    for target_day in sorted(touched_days):
+        run_metrics(store=store, settings=settings, target_day=target_day)
 
 
 def run_realtime(

@@ -2,8 +2,6 @@
 
 import { useState, useEffect, type ReactNode, type WheelEvent } from 'react';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
-import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
-import WeatherEffect from '@/components/motion/storytelling/WeatherEffect';
 import EventStrip from '@/components/event-strip';
 import HomeIntroModal from '@/components/home-intro-modal';
 import { getUpcomingEvents } from '@/lib/events';
@@ -188,7 +186,7 @@ function ClickableStatCard({
     >
       <p className="desktop-kicker">{label}</p>
       <div className={`mt-3 text-[22px] font-semibold tracking-[-0.03em] ${
-        tone === 'positive' ? 'text-dot-green'
+        tone === 'positive' ? 'text-dot-blue'
         : tone === 'negative' ? 'text-dot-red'
         : tone === 'neutral' ? 'text-dot-sub'
         : 'text-dot-accent'
@@ -223,29 +221,21 @@ export default function DesktopHomePage() {
 
   if (loading) {
     return (
-      <DesktopSurface className="flex min-h-[620px] items-center justify-center">
-        <OrbitalSilence />
+      <DesktopSurface className="p-8">
+        <p className="desktop-kicker">Command Deck</p>
+        <p className="mt-2 text-[12px] leading-6 text-dot-sub">데이터를 정리하는 중입니다.</p>
       </DesktopSurface>
     );
   }
 
   if (error || !data) {
     return (
-      <DesktopSurface className="p-12">
-        <div className="space-y-4 text-center">
-          <p className="desktop-kicker">Load Error</p>
-          <h1 className="text-[30px] font-semibold tracking-[-0.03em] text-dot-red">
-            데이터를 불러올 수 없습니다.
-          </h1>
-          <p className="text-[14px] leading-7 text-dot-sub">{error ?? '알 수 없는 오류'}</p>
-          <button
-            type="button"
-            onClick={fetchData}
-            className="inline-flex border border-dot-border bg-white px-4 py-2 text-[12px] font-medium text-dot-accent transition hover:border-dot-accent"
-          >
-            다시 시도
-          </button>
-        </div>
+      <DesktopSurface className="p-8">
+        <p className="desktop-kicker">Command Deck</p>
+        <h1 className="mt-2 text-[18px] font-semibold tracking-[-0.02em] text-dot-accent">
+          데이터를 아직 표시할 수 없습니다.
+        </h1>
+        <p className="mt-2 text-[12px] leading-6 text-dot-sub">{error ?? '잠시 후 다시 자동 갱신됩니다.'}</p>
       </DesktopSurface>
     );
   }
@@ -334,7 +324,6 @@ export default function DesktopHomePage() {
             <>
               실시간 시장 체온, 핵심 해석, 이벤트 캘린더를 한 화면에서 확인합니다.
               지표를 클릭하면 상세 분석 카드가 펼쳐집니다.
-              <WeatherEffect weather="cloudy" width={700} height={250} className="absolute bottom-0 left-0 z-0 pointer-events-none" />
             </>
           )}
           action={(
