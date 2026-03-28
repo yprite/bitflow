@@ -6,7 +6,6 @@ interface MastheadProps {
   headline: ReactNode;
   subhead?: ReactNode;
   bottom?: ReactNode;
-  center?: ReactNode;
 }
 
 export function Masthead({
@@ -15,29 +14,25 @@ export function Masthead({
   headline,
   subhead,
   bottom,
-  center,
 }: MastheadProps) {
   return (
-    <section id="masthead" className="magazine-masthead magazine-section-light border-b border-dot-border/20">
-      <div className="magazine-content relative z-10 flex min-h-[72vh] flex-col justify-between py-24">
+    <section id="masthead" className="magazine-masthead magazine-section-light border-b border-dot-border">
+      <div className="magazine-content py-16">
         <div className="magazine-masthead-bar">
           <span className="text-dot-text">{edition}</span>
-          <div className="magazine-masthead-divider" />
-          <span className="magazine-masthead-meta">{meta}</span>
+          <span className="text-[11px] text-dot-sub">{meta}</span>
         </div>
 
-        <div className="max-w-3xl space-y-4">
-          {center}
-          <h1 className="text-[42px] font-semibold leading-[1.05] tracking-[-0.04em] text-dot-text">
+        <div className="mt-8 max-w-3xl space-y-3">
+          <h1 className="text-[20px] font-bold leading-[1.3] text-dot-text">
             {headline}
           </h1>
           {subhead && (
-            <p className="max-w-2xl text-[14px] leading-7 text-dot-sub">{subhead}</p>
+            <p className="max-w-2xl text-[14px] leading-[1.6] text-dot-sub">{subhead}</p>
           )}
         </div>
 
-        {bottom && <div>{bottom}</div>}
-        {!bottom && <div />}
+        {bottom && <div className="mt-8">{bottom}</div>}
       </div>
     </section>
   );
