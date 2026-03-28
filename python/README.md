@@ -71,3 +71,12 @@ PYTHONPATH=src python -m bitflow_onchain.main realtime
 - 개발: 로컬에서 실행
 - 운영: 작은 VPS 또는 별도 워커 인스턴스에서 systemd/cron으로 상시 실행
 - 웹: Vercel에서 Supabase serving 테이블만 조회
+
+## 로컬 디스크 가드
+
+- `BITFLOW_RAW_RETENTION_BLOCKS`: 로컬 Postgres raw 블록 보존 범위. 기본값은 `14400` 블록이다.
+- `BITFLOW_ONCHAIN_GUARD_MAX_DB_GB=180`: 로컬 on-chain DB가 이 크기를 넘기면 자동 가드가 DB를 재생성한다.
+- `BITFLOW_ONCHAIN_GUARD_MIN_FREE_GB=80`: 디스크 여유가 이 값 아래로 내려가도 자동 가드가 동작한다.
+
+- `com.bitflow.onchain-retention`: 15분마다 raw 보존 범위를 정리한다.
+- `com.bitflow.onchain-db-guard`: 15분마다 DB 크기와 free disk를 확인하고 임계치 초과 시 catchup/realtime을 내린 뒤 DB를 재생성하고 다시 올린다.

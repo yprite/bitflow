@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.bitflow.onchain-db-guard</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/yonghun/.openclaw/workspace/bitflow/scripts/guard-onchain-postgres.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/yonghun/.openclaw/workspace/bitflow</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>StartInterval</key>
+  <integer>900</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/yonghun/.openclaw/workspace/bitflow/.logs/onchain-db-guard.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/yonghun/.openclaw/workspace/bitflow/.logs/onchain-db-guard.err.log</string>
+</dict>
+</plist>
