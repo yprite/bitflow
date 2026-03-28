@@ -1,25 +1,21 @@
-import { NumberCounter } from '@/components/motion/number-counter';
+type Tone = 'heat' | 'cool';
 
-type Tone = 'positive' | 'negative' | 'neutral' | 'accent';
+const TONE_COLORS: Record<Tone, string> = {
+  heat: 'text-dot-red',
+  cool: 'text-dot-blue',
+};
 
 interface IndicatorCardProps {
   label: string;
   labelEn: string;
   value: number;
   displayValue?: string;
-  tone: Tone;
+  tone?: Tone;
   toneLabel: string;
   prefix?: string;
   suffix?: string;
   decimals?: number;
 }
-
-const TONE_COLORS: Record<Tone, string> = {
-  positive: 'text-dot-blue',
-  negative: 'text-dot-red',
-  neutral: 'text-dot-sub',
-  accent: 'text-dot-text',
-};
 
 export function IndicatorCard({
   label,
@@ -32,24 +28,19 @@ export function IndicatorCard({
   suffix = '',
   decimals,
 }: IndicatorCardProps) {
+  const colorClass = tone ? TONE_COLORS[tone] : 'text-dot-text';
+
   return (
-    <div className="desktop-surface flex items-center justify-between p-4">
+    <div className="border-t border-dot-border flex items-center justify-between py-3">
       <div>
         <div className="text-[11px] text-dot-sub">{label}</div>
-        <div className="text-[10px] text-dot-muted">{labelEn}</div>
+        <div className="text-[11px] text-dot-muted">{labelEn}</div>
       </div>
       <div className="text-right">
-        <div className={`text-2xl font-bold ${TONE_COLORS[tone]}`}>
-          {displayValue ?? (
-            <NumberCounter
-              value={value}
-              prefix={prefix}
-              suffix={suffix}
-              decimals={decimals}
-            />
-          )}
+        <div className={`text-[13px] font-bold ${colorClass}`}>
+          {displayValue ?? `${prefix}${value.toFixed(decimals ?? 1)}${suffix}`}
         </div>
-        <div className={`text-[10px] ${TONE_COLORS[tone]}`}>{toneLabel}</div>
+        <div className={`text-[11px] ${colorClass}`}>{toneLabel}</div>
       </div>
     </div>
   );
