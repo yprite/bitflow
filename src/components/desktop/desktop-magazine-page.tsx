@@ -6,12 +6,11 @@ import { Masthead } from '@/components/desktop/magazine/masthead';
 import { FloatingProgress } from '@/components/desktop/magazine/floating-progress';
 import { ScrollReveal } from '@/components/motion/scroll-reveal';
 import { NumberCounter } from '@/components/motion/number-counter';
-import { ParallaxDots, DARK_PARALLAX_LAYERS } from '@/components/motion/parallax-dots';
 import { IndicatorCard } from '@/components/desktop/magazine/indicator-card';
 import { SignalBar } from '@/components/desktop/magazine/signal-bar';
 import { LightSection } from '@/components/desktop/magazine/light-section';
-import { DarkSection } from '@/components/desktop/magazine/dark-section';
 import { MagazineFooter } from '@/components/desktop/magazine/magazine-footer';
+import { DesktopSurface } from '@/components/desktop/desktop-ui';
 import { getUpcomingEvents } from '@/lib/events';
 import type { DashboardData, IndicatorsPageData, ExtendedKimpHistoryPoint, KimpStats } from '@/lib/types';
 
@@ -421,7 +420,7 @@ export default function DesktopMagazinePage() {
       </LightSection>
 
       {/* Section 4: Chart Deep Dive — lazy load trigger */}
-      <DarkSection id="charts">
+      <LightSection id="charts">
         <ScrollReveal
           threshold={0.05}
           className=""
@@ -440,52 +439,45 @@ export default function DesktopMagazinePage() {
             <div className="text-[10px] text-dot-muted uppercase tracking-[3px] mb-6">
               Deep Dive Charts
             </div>
-            <div className="relative">
-              <ParallaxDots layers={DARK_PARALLAX_LAYERS} />
-              {chartLoading && (
-                <div className="py-12">
-                  <div className="border border-white/10 p-5 text-[12px] text-dot-muted">
-                    차트 데이터를 정리하는 중입니다.
-                  </div>
-                </div>
-              )}
-              {indicatorData && (
-                <div className="relative z-10 space-y-4">
-                  {/* KIMP chart full width + stats */}
-                  <ScrollReveal>
-                    <div className="border border-white/10 bg-dot-accent/80 p-5">
-                      <KimpChart data={indicatorData.kimpHistory} />
-                    </div>
+            {chartLoading && (
+              <DesktopSurface className="p-5">
+                <p className="text-[12px] text-dot-muted">차트 데이터를 정리하는 중입니다.</p>
+              </DesktopSurface>
+            )}
+            {indicatorData && (
+              <div className="space-y-4">
+                <ScrollReveal>
+                  <DesktopSurface className="p-5">
+                    <KimpChart data={indicatorData.kimpHistory} />
+                  </DesktopSurface>
+                </ScrollReveal>
+                {kimpStats && (
+                  <ScrollReveal delay={50}>
+                    <KimpStatsCard stats={kimpStats} period="30일" />
                   </ScrollReveal>
-                  {kimpStats && (
-                    <ScrollReveal delay={50}>
-                      <KimpStatsCard stats={kimpStats} period="30일" />
-                    </ScrollReveal>
-                  )}
-                  {/* 2-column: Funding + Fear&Greed */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <ScrollReveal delay={100}>
-                      <div className="border border-white/10 bg-dot-accent/80 p-4">
-                        <FundingRateHistoryChart data={indicatorData.fundingRateHistory} />
-                      </div>
-                    </ScrollReveal>
-                    <ScrollReveal delay={200}>
-                      <div className="border border-white/10 bg-dot-accent/80 p-4">
-                        <FearGreedHistoryChart data={indicatorData.fearGreedHistory} />
-                      </div>
-                    </ScrollReveal>
-                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <ScrollReveal delay={100}>
+                    <DesktopSurface className="p-4">
+                      <FundingRateHistoryChart data={indicatorData.fundingRateHistory} />
+                    </DesktopSurface>
+                  </ScrollReveal>
+                  <ScrollReveal delay={200}>
+                    <DesktopSurface className="p-4">
+                      <FearGreedHistoryChart data={indicatorData.fearGreedHistory} />
+                    </DesktopSurface>
+                  </ScrollReveal>
                 </div>
-              )}
-              {!chartLoading && !indicatorData && chartTriggered && (
-                <div className="text-center py-12 text-dot-muted text-sm">
-                  차트 데이터를 불러올 수 없습니다
-                </div>
-              )}
-            </div>
+              </div>
+            )}
+            {!chartLoading && !indicatorData && chartTriggered && (
+              <DesktopSurface className="p-5">
+                <p className="text-[12px] text-dot-muted">차트 데이터를 불러올 수 없습니다.</p>
+              </DesktopSurface>
+            )}
           </div>
         </ScrollReveal>
-      </DarkSection>
+      </LightSection>
 
       {/* Section 5: BTC Returns Heatmap */}
       <LightSection id="heatmap">

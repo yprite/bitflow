@@ -1,10 +1,8 @@
 import { Masthead } from '@/components/desktop/magazine/masthead';
 import { ScrollReveal } from '@/components/motion/scroll-reveal';
 import { LightSection } from '@/components/desktop/magazine/light-section';
-import { DarkSection } from '@/components/desktop/magazine/dark-section';
 import { MagazineFooter } from '@/components/desktop/magazine/magazine-footer';
 import { FloatingProgress } from '@/components/desktop/magazine/floating-progress';
-import { ParallaxDots, DARK_PARALLAX_LAYERS } from '@/components/motion/parallax-dots';
 import OnchainRegimeCard from '@/components/onchain-regime-card';
 import OnchainWhaleSummaryCard from '@/components/onchain-whale-summary-card';
 import OnchainDormancyPulseCard from '@/components/onchain-dormancy-pulse-card';
@@ -151,21 +149,16 @@ export default function DesktopOnchainMagazine({ summary, networkPulse }: Props)
         </LightSection>
       )}
 
-      {/* Section 4: Entity Flow — dark */}
+      {/* Section 4: Entity Flow */}
       {visibleEntityFlows.length > 0 && (
-        <DarkSection id="onchain-entity">
-          <div className="relative">
-            <ParallaxDots layers={DARK_PARALLAX_LAYERS} />
-            <div className="relative z-10">
-              <div className="text-[10px] text-dot-muted uppercase tracking-[3px] mb-6">
-                Entity Flow
-              </div>
-              <ScrollReveal>
-                <OnchainEntityFlowCard flows={visibleEntityFlows} />
-              </ScrollReveal>
-            </div>
+        <LightSection id="onchain-entity">
+          <div className="text-[10px] text-dot-sub uppercase tracking-[3px] mb-6">
+            Entity Flow
           </div>
-        </DarkSection>
+          <ScrollReveal>
+            <OnchainEntityFlowCard flows={visibleEntityFlows} />
+          </ScrollReveal>
+        </LightSection>
       )}
 
       {/* Section 5: Footer */}
