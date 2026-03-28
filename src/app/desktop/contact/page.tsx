@@ -35,7 +35,7 @@ if (SITE_CONTACT_EMAIL) {
 export default function DesktopContactPage() {
   return (
     <div className="magazine-content pt-20 pb-16">
-      <Link href="/desktop" className="inline-block text-xs text-dot-muted hover:text-dot-text mb-6">← 메인</Link>
+      <Link href="/desktop" className="mb-6 inline-flex text-[10px] uppercase tracking-[0.14em] text-dot-muted hover:text-dot-accent">개요</Link>
     <div className="space-y-6">
       <DesktopHero
         eyebrow="Contact"
@@ -57,7 +57,7 @@ export default function DesktopContactPage() {
 
       <DesktopSurface className="p-6">
         <DesktopSectionHeader eyebrow="Channels" title="공식 문의 채널" />
-        <div className={`mt-6 grid gap-4 ${channels.length > 3 ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        <div className="mt-6 grid gap-6 md:grid-cols-2">
           {channels.map((channel) => (
             <a
               key={channel.title}

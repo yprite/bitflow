@@ -141,7 +141,7 @@ export default function DesktopOnchainMagazine({ summary, networkPulse }: Props)
           <div className="text-[10px] text-dot-sub uppercase tracking-[3px] mb-6">
             On-chain Metrics
           </div>
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-2 gap-6 xl:grid-cols-3">
             {visibleMetrics.map((metric, i) => (
               <ScrollReveal key={metric.id} delay={i * 40}>
                 <div className="min-w-0"><OnchainMetricCard metric={metric} /></div>

@@ -15,7 +15,7 @@ interface IndicatorCardProps {
 }
 
 const TONE_COLORS: Record<Tone, string> = {
-  positive: 'text-dot-green',
+  positive: 'text-dot-blue',
   negative: 'text-dot-red',
   neutral: 'text-dot-sub',
   accent: 'text-dot-text',
@@ -33,7 +33,7 @@ export function IndicatorCard({
   decimals,
 }: IndicatorCardProps) {
   return (
-    <div className="border border-dot-border/60 rounded-md p-4 flex justify-between items-center bg-white/50">
+    <div className="desktop-surface flex items-center justify-between p-4">
       <div>
         <div className="text-[11px] text-dot-sub">{label}</div>
         <div className="text-[10px] text-dot-muted">{labelEn}</div>

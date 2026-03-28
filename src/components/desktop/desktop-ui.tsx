@@ -8,7 +8,7 @@ function cx(...values: Array<string | false | null | undefined>) {
 export function desktopToneClass(tone?: 'accent' | 'positive' | 'negative' | 'neutral') {
   switch (tone) {
     case 'positive':
-      return 'text-dot-green';
+      return 'text-dot-blue';
     case 'negative':
       return 'text-dot-red';
     case 'neutral':
@@ -42,15 +42,15 @@ export function DesktopHero({
   sidebar?: ReactNode;
 }) {
   return (
-    <DesktopSurface className={sidebar ? 'desktop-hero' : 'p-[26px_28px]'}>
-      <div className="space-y-5">
+    <DesktopSurface className={sidebar ? 'desktop-hero' : 'p-6 md:p-8'}>
+      <div className="space-y-4">
         <div className="space-y-3">
           <p className="desktop-kicker">{eyebrow}</p>
-          <div className="space-y-3">
-            <h1 className="text-[32px] font-semibold tracking-[-0.03em] text-dot-accent">
+          <div className="space-y-2">
+            <h1 className="text-[28px] font-semibold leading-[1.25] tracking-[-0.03em] text-dot-accent">
               {title}
             </h1>
-            <div className="max-w-3xl text-[15px] leading-8 text-dot-sub">
+            <div className="max-w-3xl text-[14px] leading-7 text-dot-sub">
               {description}
             </div>
           </div>
@@ -58,7 +58,7 @@ export function DesktopHero({
         {action ? <div>{action}</div> : null}
       </div>
       {sidebar ? (
-        <div className="space-y-3 border-l border-dashed border-dot-border/70 pl-6">
+        <div className="space-y-3 border-l border-dot-border/45 pl-6">
           {sidebar}
         </div>
       ) : null}
@@ -78,13 +78,13 @@ export function DesktopSectionHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex items-end justify-between gap-6">
+    <div className="flex items-start justify-between gap-6">
       <div className="space-y-2">
         <p className="desktop-kicker">{eyebrow}</p>
         <div className="space-y-1">
           <h2 className="text-[20px] font-semibold tracking-[-0.02em] text-dot-accent">{title}</h2>
           {description ? (
-            <div className="max-w-3xl text-[13px] leading-7 text-dot-sub">
+            <div className="max-w-3xl text-[12px] leading-6 text-dot-sub">
               {description}
             </div>
           ) : null}
@@ -107,7 +107,7 @@ export function DesktopStatCard({
   tone?: 'accent' | 'positive' | 'negative' | 'neutral';
 }) {
   return (
-    <div className="border border-dot-border/55 bg-white/70 p-4">
+    <div className="border border-dot-border/35 bg-white/40 p-4">
       <p className="desktop-kicker">{label}</p>
       <div className={cx('mt-3 text-[22px] font-semibold tracking-[-0.03em]', desktopToneClass(tone))}>
         {value}
@@ -127,7 +127,7 @@ export function DesktopTextCard({
   body: ReactNode;
 }) {
   return (
-    <div className="border border-dot-border/55 bg-white/70 p-5">
+    <div className="border border-dot-border/35 bg-white/40 p-5">
       <div className="space-y-2">
         <p className="desktop-kicker">{label}</p>
         <h3 className="text-[18px] font-semibold tracking-[-0.02em] text-dot-accent">{title}</h3>
@@ -151,7 +151,7 @@ export function DesktopLinkCard({
   label: string;
 }) {
   return (
-    <Link href={href} className="desktop-surface block p-5 transition-transform duration-200 hover:-translate-y-0.5">
+    <Link href={href} className="desktop-surface block p-5 transition-colors duration-200 hover:bg-white/70">
       <div className="space-y-3">
         <p className="desktop-kicker">{eyebrow}</p>
         <div className="space-y-2">
@@ -196,7 +196,7 @@ export function DesktopEmptyState({
   body: ReactNode;
 }) {
   return (
-    <DesktopSurface className="p-12 text-center">
+    <DesktopSurface className="p-8 text-center">
       <div className="mx-auto max-w-2xl space-y-3">
         <p className="desktop-kicker">No Data</p>
         <h2 className="text-[24px] font-semibold tracking-[-0.03em] text-dot-accent">{title}</h2>

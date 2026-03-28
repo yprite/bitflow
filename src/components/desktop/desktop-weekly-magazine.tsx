@@ -49,7 +49,7 @@ export default function DesktopWeeklyMagazine({ report, archive }: Props) {
           {report ? (
             <Link
               href={`/desktop/weekly/${report.slug}`}
-              className="block bg-dot-bg rounded-md p-6 border-l-4 border-dot-text hover:shadow-md transition-shadow"
+              className="desktop-surface block border-l-2 border-dot-text p-6"
             >
               <div className="text-[11px] text-dot-sub">
                 {formatWeekDate(report.weekStart)} ~ {formatWeekDate(report.weekEnd)}
@@ -65,7 +65,7 @@ export default function DesktopWeeklyMagazine({ report, archive }: Props) {
               </div>
             </Link>
           ) : (
-            <div className="text-center py-12 text-dot-muted text-sm">
+            <div className="py-10 text-[12px] text-dot-muted">
               최신 리포트가 없습니다
             </div>
           )}
@@ -77,7 +77,7 @@ export default function DesktopWeeklyMagazine({ report, archive }: Props) {
         <div className="text-[10px] text-dot-sub uppercase tracking-[3px] mb-6">
           Past Issues
         </div>
-        <div className="border-l-2 border-dot-border pl-5 flex flex-col gap-4">
+        <div className="flex flex-col gap-4 border-l border-dot-border/40 pl-5">
           {filteredArchive.map((item, i) => (
             <ScrollReveal key={item.slug} delay={i * 60}>
               <TimelineItem

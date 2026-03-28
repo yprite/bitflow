@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { DesktopBulletList, DesktopHero, DesktopSectionHeader, DesktopStatCard, DesktopSurface, DesktopTextCard } from '@/components/desktop/desktop-ui';
-import WeatherEffect from '@/components/motion/storytelling/WeatherEffect';
 import { SITE_CONTACT_URL, SITE_NAME, SITE_REPO_URL } from '@/lib/site';
 
 const productPrinciples = [
@@ -27,7 +26,7 @@ const coverage = [
 export default function DesktopAboutPage() {
   return (
     <div className="magazine-content pt-20 pb-16">
-      <Link href="/desktop" className="inline-block text-xs text-dot-muted hover:text-dot-text mb-6">← 메인</Link>
+      <Link href="/desktop" className="mb-6 inline-flex text-[10px] uppercase tracking-[0.14em] text-dot-muted hover:text-dot-accent">개요</Link>
     <div className="space-y-6">
       <DesktopHero
         eyebrow="About"
@@ -36,7 +35,6 @@ export default function DesktopAboutPage() {
           <>
             비트코인 기상청은 한국 시장 기준으로 비트코인과 암호화폐의 체감 온도를 읽기 쉽게 정리한 데이터 사이트입니다.
             글로벌 차트가 놓치기 쉬운 국내 프리미엄, 원화 체감 가격, 심리 과열 신호를 함께 보여주는 것이 목표입니다.
-            <WeatherEffect weather="starry" width={700} height={250} className="absolute bottom-0 left-0 z-0 pointer-events-none" />
           </>
         )}
         sidebar={(
@@ -57,7 +55,7 @@ export default function DesktopAboutPage() {
 
       <DesktopSurface className="p-6">
         <DesktopSectionHeader eyebrow="Coverage" title="무엇을 제공하나요?" />
-        <div className="mt-6 grid grid-cols-3 gap-4">
+        <div className="mt-6 grid gap-6 md:grid-cols-3">
           {coverage.map((item) => (
             <DesktopTextCard key={item.title} label={item.title} title={item.title} body={item.body} />
           ))}

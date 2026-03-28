@@ -12,7 +12,6 @@ import { SignalBar } from '@/components/desktop/magazine/signal-bar';
 import { LightSection } from '@/components/desktop/magazine/light-section';
 import { DarkSection } from '@/components/desktop/magazine/dark-section';
 import { MagazineFooter } from '@/components/desktop/magazine/magazine-footer';
-import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
 import { getUpcomingEvents } from '@/lib/events';
 import type { DashboardData, IndicatorsPageData, ExtendedKimpHistoryPoint, KimpStats } from '@/lib/types';
 
@@ -201,10 +200,10 @@ const INDICATORS: IndicatorDef[] = [
 // ── Internal: Event Calendar ──
 
 const EVENT_TYPE_BORDER: Record<string, string> = {
-  fomc: 'border-l-dot-blue',
-  cpi: 'border-l-dot-yellow',
-  etf: 'border-l-dot-green',
-  halving: 'border-l-dot-red',
+  fomc: 'border-l-dot-red',
+  cpi: 'border-l-dot-red',
+  etf: 'border-l-dot-blue',
+  halving: 'border-l-dot-blue',
   employment: 'border-l-dot-muted',
   other: 'border-l-dot-muted',
 };
@@ -220,7 +219,7 @@ function EventCalendar() {
     <div className="flex gap-4">
       {events.map((event, i) => (
         <ScrollReveal key={`${event.date}-${event.title}`} delay={i * 80} className="flex-1">
-          <div className={`border-l-[3px] ${EVENT_TYPE_BORDER[event.type] ?? EVENT_TYPE_BORDER.other} pl-3 py-2 bg-dot-bg rounded-r-md`}>
+          <div className={`border-l-[2px] ${EVENT_TYPE_BORDER[event.type] ?? EVENT_TYPE_BORDER.other} bg-transparent pl-3 py-2`}>
             <div className="text-[11px] font-semibold text-dot-text">{event.title}</div>
             <div className="text-[10px] text-dot-sub">
               {event.date} · <NumberCounter value={event.daysUntil} prefix="D-" decimals={0} duration={600} />
@@ -235,15 +234,15 @@ function EventCalendar() {
 // ── Internal: Tools Grid ──
 
 const TOOL_ITEMS = [
-  { icon: '⚡', label: 'TX 수수료 계산기', section: 'prepare' },
-  { icon: '📐', label: 'TX 사이즈 추정', section: 'prepare' },
-  { icon: '🔄', label: '단위 변환기', section: 'prepare' },
-  { icon: '🔧', label: 'UTXO 통합 플래너', section: 'prepare' },
-  { icon: '🆘', label: '멈춘 TX 구조', section: 'recover' },
-  { icon: '🔍', label: 'TX 상태 추적', section: 'recover' },
-  { icon: '💱', label: '환율 차트', section: 'market' },
-  { icon: '📈', label: 'KIMP 상관관계', section: 'market' },
-  { icon: '📊', label: '차익거래 분석', section: 'market' },
+  { label: 'TX 수수료 계산기', section: 'prepare' },
+  { label: 'TX 사이즈 추정', section: 'prepare' },
+  { label: '단위 변환기', section: 'prepare' },
+  { label: 'UTXO 통합 플래너', section: 'prepare' },
+  { label: '멈춘 TX 구조', section: 'recover' },
+  { label: 'TX 상태 추적', section: 'recover' },
+  { label: '환율 차트', section: 'market' },
+  { label: 'KIMP 상관관계', section: 'market' },
+  { label: '차익거래 분석', section: 'market' },
 ];
 
 function ToolsGrid() {
@@ -253,11 +252,10 @@ function ToolsGrid() {
         <ScrollReveal key={tool.label} delay={i * 80}>
           <a
             href={`/desktop/tools#${tool.section}`}
-            className="border border-dot-border/60 rounded-md p-4 text-center bg-white/50
-                       hover:shadow-md hover:scale-[1.02] transition-all block"
+            className="desktop-surface block p-4 text-left"
           >
-            <div className="text-xl mb-1">{tool.icon}</div>
-            <div className="text-xs font-semibold text-dot-text">{tool.label}</div>
+            <p className="desktop-kicker">{tool.section}</p>
+            <div className="mt-2 text-[12px] font-semibold text-dot-text">{tool.label}</div>
           </a>
         </ScrollReveal>
       ))}
@@ -302,23 +300,21 @@ export default function DesktopMagazinePage() {
 
   if (loading && !data) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <OrbitalSilence />
+      <div className="magazine-content py-24">
+        <div className="desktop-surface p-8">
+          <p className="desktop-kicker">Daily</p>
+          <p className="mt-2 text-[12px] leading-6 text-dot-sub">오늘의 데이터를 정리하는 중입니다.</p>
+        </div>
       </div>
     );
   }
 
   if (error && !data) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-dot-sub">데이터를 불러올 수 없습니다</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 text-sm text-dot-text underline"
-          >
-            새로고침
-          </button>
+      <div className="magazine-content py-24">
+        <div className="desktop-surface p-8">
+          <p className="desktop-kicker">Daily</p>
+          <p className="mt-2 text-[12px] leading-6 text-dot-sub">데이터를 아직 표시할 수 없습니다.</p>
         </div>
       </div>
     );
@@ -352,7 +348,7 @@ export default function DesktopMagazinePage() {
         subhead={
           <span>
             Bitcoin —{' '}
-            <span className={btcChange >= 0 ? 'text-dot-green font-semibold' : 'text-dot-red font-semibold'}>
+            <span className={btcChange >= 0 ? 'text-dot-blue font-semibold' : 'text-dot-red font-semibold'}>
               {btcChange >= 0 ? '+' : ''}{btcChange.toFixed(1)}%
             </span>
           </span>
@@ -363,7 +359,7 @@ export default function DesktopMagazinePage() {
               <div key={ind.key} className="magazine-indicator-strip-cell">
                 <div className="magazine-indicator-strip-label">{ind.labelEn.split(' ')[0]}</div>
                 <div className={`magazine-indicator-strip-value ${
-                  ind.getTone(data) === 'positive' ? 'text-dot-green' :
+                  ind.getTone(data) === 'positive' ? 'text-dot-blue' :
                   ind.getTone(data) === 'negative' ? 'text-dot-red' : 'text-dot-text'
                 }`}>
                   {ind.getDisplay?.(data) ?? ind.getValue(data).toFixed(ind.decimals ?? 1)}{ind.suffix ?? ''}
@@ -447,15 +443,17 @@ export default function DesktopMagazinePage() {
             <div className="relative">
               <ParallaxDots layers={DARK_PARALLAX_LAYERS} />
               {chartLoading && (
-                <div className="flex justify-center py-20">
-                  <OrbitalSilence label="차트 데이터 로딩 중..." />
+                <div className="py-12">
+                  <div className="border border-white/10 p-5 text-[12px] text-dot-muted">
+                    차트 데이터를 정리하는 중입니다.
+                  </div>
                 </div>
               )}
               {indicatorData && (
                 <div className="relative z-10 space-y-4">
                   {/* KIMP chart full width + stats */}
                   <ScrollReveal>
-                    <div className="bg-dot-accent/80 border border-white/10 rounded-md p-5">
+                    <div className="border border-white/10 bg-dot-accent/80 p-5">
                       <KimpChart data={indicatorData.kimpHistory} />
                     </div>
                   </ScrollReveal>
@@ -467,12 +465,12 @@ export default function DesktopMagazinePage() {
                   {/* 2-column: Funding + Fear&Greed */}
                   <div className="grid grid-cols-2 gap-4">
                     <ScrollReveal delay={100}>
-                      <div className="bg-dot-accent/80 border border-white/10 rounded-md p-4">
+                      <div className="border border-white/10 bg-dot-accent/80 p-4">
                         <FundingRateHistoryChart data={indicatorData.fundingRateHistory} />
                       </div>
                     </ScrollReveal>
                     <ScrollReveal delay={200}>
-                      <div className="bg-dot-accent/80 border border-white/10 rounded-md p-4">
+                      <div className="border border-white/10 bg-dot-accent/80 p-4">
                         <FearGreedHistoryChart data={indicatorData.fearGreedHistory} />
                       </div>
                     </ScrollReveal>

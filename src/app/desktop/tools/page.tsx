@@ -6,10 +6,8 @@ import BitcoinTxStatusTracker from '@/components/bitcoin-tx-status-tracker';
 import BitcoinTxSizeEstimator from '@/components/bitcoin-tx-size-estimator';
 import BitcoinUnitConverter from '@/components/bitcoin-unit-converter';
 import BitcoinUtxoConsolidationPlanner from '@/components/bitcoin-utxo-consolidation-planner';
-import GuideModal from '@/components/guide-modal';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import ToolsArbitrageSection from '@/components/tools-arbitrage-section';
-import WeatherEffect from '@/components/motion/storytelling/WeatherEffect';
 import { DesktopHero, DesktopSectionHeader, DesktopSurface } from '@/components/desktop/desktop-ui';
 import { fetchUsdKrw } from '@/lib/kimp';
 import { fetchOnchainNetworkPulse } from '@/lib/onchain-monitor';
@@ -70,53 +68,32 @@ export default async function DesktopToolsPage() {
 
   return (
     <div className="magazine-content pt-20 pb-16">
-      <Link href="/desktop" className="inline-block text-xs text-dot-muted hover:text-dot-text mb-6">← 메인</Link>
+      <Link href="/desktop" className="mb-6 inline-flex text-[10px] uppercase tracking-[0.14em] text-dot-muted hover:text-dot-accent">개요</Link>
     <div className="space-y-6">
       <DotAssemblyReveal delay={0} duration={520} density="low">
         <DesktopHero
           eyebrow="Bitcoin Utility Deck"
-          title={(
-            <span className="flex items-center justify-between">
-              <span>도구</span>
-              <GuideModal
-                title="도구 안내"
-                eyebrow="Bitcoin Utility Deck"
-                triggerLabel="읽는 법"
-                maxWidthClassName="max-w-4xl"
-                triggerClassName="inline-flex rounded-sm border border-dot-border/60 bg-white/75 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.16em] text-dot-sub transition hover:border-dot-accent/50 hover:text-dot-accent"
-                intro={(
-                  <>
-                    이 화면은 비트코인 실무 흐름 그대로 묶었습니다. 먼저 전송 크기와 fee를 준비하고,
-                    막힌 거래를 구조적으로 복구하고, 상태를 추적한 뒤,
-                    <span className="font-medium text-dot-accent"> UTXO 정리와 재정거래 판단</span>
-                    으로 넘어가면 됩니다.
-                  </>
-                )}
-              >
-                <ToolsGuideContent />
-              </GuideModal>
-            </span>
-          )}
+          title="도구"
           description={(
             <>
               BTC 전송 준비, 막힌 거래 복구, 상태 확인, 단위 계산, UTXO 정리, 재정거래 판단을 데스크톱 작업 흐름으로 다시 묶었습니다.
               상단에서 준비 단계를 보고, 중간에서 복구를 확인한 뒤, 마지막에 시장 판단으로 넘어가면 됩니다.
-              <WeatherEffect weather="sunny" width={700} height={250} className="absolute bottom-0 left-0 z-0 pointer-events-none" />
             </>
           )}
+          action={<ToolsGuideContent />}
           sidebar={(
             <div className="space-y-3">
-              <a href="#prepare" className="block border border-dot-border/55 bg-white/70 p-4 space-y-1 transition hover:border-dot-accent/30">
+              <a href="#prepare" className="block border border-dot-border/35 bg-white/40 p-4 space-y-1 transition hover:border-dot-accent/20">
                 <p className="desktop-kicker">Prepare</p>
                 <p className="text-[13px] font-semibold text-dot-accent">전송 준비</p>
                 <p className="text-[11px] leading-relaxed text-dot-sub">실제 vbytes를 추정하고 현재 mempool 기준 fee를 바로 계산합니다.</p>
               </a>
-              <a href="#recover" className="block border border-dot-border/55 bg-white/70 p-4 space-y-1 transition hover:border-dot-accent/30">
+              <a href="#recover" className="block border border-dot-border/35 bg-white/40 p-4 space-y-1 transition hover:border-dot-accent/20">
                 <p className="desktop-kicker">Recover</p>
                 <p className="text-[13px] font-semibold text-dot-accent">막힌 거래 대응</p>
                 <p className="text-[11px] leading-relaxed text-dot-sub">stage를 추적하고 필요하면 RBF 또는 CPFP로 구조를 바꿉니다.</p>
               </a>
-              <a href="#market" className="block border border-dot-border/55 bg-white/70 p-4 space-y-1 transition hover:border-dot-accent/30">
+              <a href="#market" className="block border border-dot-border/35 bg-white/40 p-4 space-y-1 transition hover:border-dot-accent/20">
                 <p className="desktop-kicker">Market</p>
                 <p className="text-[13px] font-semibold text-dot-accent">시장 판단</p>
                 <p className="text-[11px] leading-relaxed text-dot-sub">BTC 재정거래가 의미 있는지 총비용 기준으로 검토합니다.</p>

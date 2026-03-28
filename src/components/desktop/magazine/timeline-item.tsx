@@ -11,13 +11,13 @@ export function TimelineItem({ href, title, subtitle, isFirst = false }: Timelin
   return (
     <div className="relative">
       <div
-        className={`absolute -left-[25px] top-[5px] w-2 h-2 rounded-full ${
+        className={`absolute -left-[22px] top-[6px] h-[5px] w-[5px] ${
           isFirst ? 'bg-dot-text' : 'bg-dot-border'
         }`}
       />
-      <Link href={href} className="flex justify-between items-baseline group">
+      <Link href={href} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 group">
         <div>
-          <div className="text-[13px] font-semibold text-dot-text group-hover:underline">
+          <div className="text-[13px] font-semibold text-dot-text transition-colors group-hover:text-dot-accent">
             {title}
           </div>
           <div className="text-[11px] text-dot-sub">{subtitle}</div>

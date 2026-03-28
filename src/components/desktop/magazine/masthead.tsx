@@ -1,5 +1,4 @@
 import { type ReactNode } from 'react';
-import { ParallaxDots } from '@/components/motion/parallax-dots';
 
 interface MastheadProps {
   edition: string;
@@ -19,31 +18,25 @@ export function Masthead({
   center,
 }: MastheadProps) {
   return (
-    <section id="masthead" className="magazine-masthead magazine-section-light">
-      <ParallaxDots />
-      <div className="magazine-content relative z-10 flex flex-col justify-between min-h-screen py-10">
-        {/* Top bar */}
+    <section id="masthead" className="magazine-masthead magazine-section-light border-b border-dot-border/20">
+      <div className="magazine-content relative z-10 flex min-h-[72vh] flex-col justify-between py-24">
         <div className="magazine-masthead-bar">
           <span className="text-dot-text">{edition}</span>
           <div className="magazine-masthead-divider" />
           <span className="magazine-masthead-meta">{meta}</span>
         </div>
 
-        {/* Center content */}
-        <div className="text-center">
+        <div className="max-w-3xl space-y-4">
           {center}
-          <h1 className="text-5xl font-extrabold text-dot-text tracking-tight leading-tight">
+          <h1 className="text-[42px] font-semibold leading-[1.05] tracking-[-0.04em] text-dot-text">
             {headline}
           </h1>
           {subhead && (
-            <p className="mt-2 text-sm text-dot-sub">{subhead}</p>
+            <p className="max-w-2xl text-[14px] leading-7 text-dot-sub">{subhead}</p>
           )}
         </div>
 
-        {/* Bottom content (indicator strip, etc.) */}
         {bottom && <div>{bottom}</div>}
-
-        {/* Scroll hint */}
         {!bottom && <div />}
       </div>
     </section>

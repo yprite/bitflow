@@ -7,7 +7,7 @@ interface SignalBarProps {
 
 export function SignalBar({ total, positive, neutral, negative }: SignalBarProps) {
   const segments = [
-    ...Array(positive).fill('bg-dot-green'),
+    ...Array(positive).fill('bg-dot-blue'),
     ...Array(neutral).fill('bg-dot-muted'),
     ...Array(negative).fill('bg-dot-red'),
   ];
@@ -18,7 +18,7 @@ export function SignalBar({ total, positive, neutral, negative }: SignalBarProps
         {segments.map((color, i) => (
           <div
             key={i}
-            className={`w-7 h-2 rounded-full ${color}`}
+            className={`h-1.5 w-7 ${color}`}
           />
         ))}
       </div>

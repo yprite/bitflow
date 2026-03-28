@@ -54,19 +54,33 @@ export function FloatingProgress({ sections }: FloatingProgressProps) {
 
   return (
     <nav
-      className={`floating-progress ${isVisible ? 'visible' : ''}`}
+      className={`fixed right-6 top-1/2 z-40 hidden -translate-y-1/2 flex-col gap-3 transition-opacity duration-300 xl:flex ${
+        isVisible ? 'opacity-100' : 'pointer-events-none opacity-0'
+      }`}
       aria-label="Page sections"
     >
       {sections.map((section, i) => (
-        <div key={section.id} className="flex flex-col items-center">
-          <button
-            className={`floating-progress-dot ${i === activeIndex ? 'active' : ''}`}
-            onClick={() => scrollTo(section.id)}
-            aria-label={section.label}
-            title={section.label}
+        <button
+          key={section.id}
+          type="button"
+          className="group flex items-center justify-end gap-3 text-right"
+          onClick={() => scrollTo(section.id)}
+          aria-label={section.label}
+          title={section.label}
+        >
+          <span
+            className={`h-px transition-all duration-200 ${
+              i === activeIndex ? 'w-8 bg-dot-accent' : 'w-4 bg-dot-border group-hover:w-6 group-hover:bg-dot-muted'
+            }`}
           />
-          {i < sections.length - 1 && <div className="floating-progress-line" />}
-        </div>
+          <span
+            className={`text-[10px] uppercase tracking-[0.14em] ${
+              i === activeIndex ? 'text-dot-accent' : 'text-dot-muted'
+            }`}
+          >
+            {section.label}
+          </span>
+        </button>
       ))}
     </nav>
   );

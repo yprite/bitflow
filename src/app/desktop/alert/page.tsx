@@ -21,7 +21,7 @@ const setupSteps = [
 export default function DesktopAlertPage() {
   return (
     <div className="magazine-content pt-20 pb-16">
-      <Link href="/desktop" className="inline-block text-xs text-dot-muted hover:text-dot-text mb-6">← 메인</Link>
+      <Link href="/desktop" className="mb-6 inline-flex text-[10px] uppercase tracking-[0.14em] text-dot-muted hover:text-dot-accent">개요</Link>
     <div className="space-y-6">
       <DotAssemblyReveal delay={0} duration={520} density="low">
         <DesktopHero
@@ -51,7 +51,7 @@ export default function DesktopAlertPage() {
             title="알림 시작 순서"
             description="PC에서 먼저 설정 흐름을 확인하고 바로 봇으로 이동할 수 있게 분리했습니다."
           />
-          <div className="mt-6 grid grid-cols-3 gap-4">
+          <div className="mt-6 grid gap-6 md:grid-cols-3">
             {setupSteps.map((step, index) => (
               <DesktopStatCard
                 key={step.title}
@@ -71,8 +71,8 @@ export default function DesktopAlertPage() {
             title="주요 명령어"
             description="자주 쓰는 명령어를 구간별로 나눴습니다."
           />
-          <div className="mt-6 grid grid-cols-2 gap-6">
-            <div className="space-y-3 border border-dot-border/60 bg-white/72 p-5">
+          <div className="mt-6 grid gap-6 md:grid-cols-2">
+            <div className="space-y-3 border border-dot-border/35 bg-white/40 p-5">
               <p className="desktop-kicker">Primary</p>
               <DesktopBulletList
                 items={[
@@ -82,7 +82,7 @@ export default function DesktopAlertPage() {
                 ]}
               />
             </div>
-            <div className="space-y-3 border border-dot-border/60 bg-white/72 p-5">
+            <div className="space-y-3 border border-dot-border/35 bg-white/40 p-5">
               <p className="desktop-kicker">Utility</p>
               <DesktopBulletList
                 items={[
