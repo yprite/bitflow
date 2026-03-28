@@ -72,6 +72,10 @@ class SpentEdgeRecord:
     created_time: datetime | None = None
     value_sats: int | None = None
     age_seconds: int | None = None
+    prev_script_pubkey: str | None = None
+    prev_script_type: str | None = None
+    prev_address: str | None = None
+    prev_descriptor: str | None = None
 
 
 @dataclass(slots=True)

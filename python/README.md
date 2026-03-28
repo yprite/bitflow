@@ -75,8 +75,10 @@ PYTHONPATH=src python -m bitflow_onchain.main realtime
 ## 로컬 디스크 가드
 
 - `BITFLOW_RAW_RETENTION_BLOCKS`: 로컬 Postgres raw 블록 보존 범위. 기본값은 `14400` 블록이다.
+- `BITFLOW_ENABLE_PREVOUT_SNAPSHOT=0`: 기본값. 최근 `getblock ... 3`의 `prevout` 정보를 신뢰하고 장기 snapshot 테이블을 키지 않는다.
 - `BITFLOW_ONCHAIN_GUARD_MAX_DB_GB=180`: 로컬 on-chain DB가 이 크기를 넘기면 자동 가드가 DB를 재생성한다.
 - `BITFLOW_ONCHAIN_GUARD_MIN_FREE_GB=80`: 디스크 여유가 이 값 아래로 내려가도 자동 가드가 동작한다.
+- `BITFLOW_ONCHAIN_GUARD_FORCE_SKIP_PREVOUT_SNAPSHOT=1`: emergency reset 시 snapshot export를 생략한다. 로컬 디스크를 우선 살리는 기본값이다.
 
 - `com.bitflow.onchain-retention`: 15분마다 raw 보존 범위를 정리한다.
 - `com.bitflow.onchain-db-guard`: 15분마다 DB 크기와 free disk를 확인하고 임계치 초과 시 catchup/realtime을 내린 뒤 DB를 재생성하고 다시 올린다.

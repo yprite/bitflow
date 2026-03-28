@@ -18,6 +18,47 @@ type PublishedPipelineMetricRow = {
   metadata?: Record<string, unknown> | null;
 };
 
+const CONTIGUOUS_INDEXED_STATUS_SQL = `
+  WITH bounds AS (
+    SELECT GREATEST($1::bigint, 0) AS floor_height
+  ),
+  indexed AS (
+    SELECT height
+    FROM btc_blocks
+    WHERE height >= (SELECT floor_height FROM bounds)
+  ),
+  first_present AS (
+    SELECT MIN(height) AS min_height, MAX(height) AS max_height
+    FROM indexed
+  ),
+  first_gap AS (
+    SELECT MIN(prev_height + 1) AS missing_height
+    FROM (
+      SELECT height, LAG(height) OVER (ORDER BY height) AS prev_height
+      FROM indexed
+    ) gaps
+    WHERE prev_height IS NOT NULL
+      AND height > prev_height + 1
+  ),
+  contiguous AS (
+    SELECT CASE
+      WHEN (SELECT min_height FROM first_present) IS NULL THEN NULL::bigint
+      WHEN (SELECT min_height FROM first_present) > (SELECT floor_height FROM bounds) THEN NULL::bigint
+      WHEN (SELECT missing_height FROM first_gap) IS NOT NULL THEN (SELECT missing_height FROM first_gap) - 1
+      ELSE (SELECT max_height FROM first_present)
+    END AS indexed_height
+  )
+  SELECT
+    contiguous.indexed_height,
+    (
+      SELECT block_time::date::text
+      FROM btc_blocks
+      WHERE height = contiguous.indexed_height
+      LIMIT 1
+    ) AS latest_indexed_day
+  FROM contiguous
+`;
+
 function toNumber(value: number | string | null | undefined): number | null {
   if (value === null || value === undefined) return null;
   const parsed = Number(value);
@@ -73,7 +114,7 @@ async function readNodeStatus(): Promise<{
   }
 }
 
-async function readIndexedStatus(): Promise<{
+async function readIndexedStatus(floorHeight: number | null): Promise<{
   state: IndexerRuntimeState;
   indexedHeight: number | null;
   latestIndexedDay: string | null;
@@ -88,16 +129,25 @@ async function readIndexedStatus(): Promise<{
 
   try {
     const pool = getBitflowPgPool();
+    const normalizedFloorHeight =
+      typeof floorHeight === 'number' && Number.isFinite(floorHeight) && floorHeight >= 0
+        ? Math.floor(floorHeight)
+        : null;
     const result = await pool.query<{
       indexed_height: string | number | null;
       latest_indexed_day: string | null;
     }>(
-      `
-        SELECT
-          MAX(height) AS indexed_height,
-          MAX(block_time::date)::text AS latest_indexed_day
-        FROM btc_blocks
-      `
+      normalizedFloorHeight !== null
+        ? CONTIGUOUS_INDEXED_STATUS_SQL
+        : `
+            SELECT
+              MAX(height) AS indexed_height,
+              MAX(block_time::date)::text AS latest_indexed_day
+            FROM btc_blocks
+          `,
+      normalizedFloorHeight !== null
+        ? [normalizedFloorHeight]
+        : []
     );
 
     const indexedHeight =
@@ -269,7 +319,14 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const [nodeStatus, indexedStatus] = await Promise.all([readNodeStatus(), readIndexedStatus()]);
+    const nodeStatus = await readNodeStatus();
+    const indexFloorHeight =
+      nodeStatus.state === 'ok'
+        ? nodeStatus.pruned
+          ? nodeStatus.pruneHeight
+          : 0
+        : null;
+    const indexedStatus = await readIndexedStatus(indexFloorHeight);
     const publishedState = derivePublishedState(summary.source, summary.status);
 
     const lagBlocks =

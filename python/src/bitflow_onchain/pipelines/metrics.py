@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 from bitflow_onchain.clients.postgres import PostgresStore
 from bitflow_onchain.config import Settings
@@ -16,3 +16,20 @@ def run_metrics(store: PostgresStore, settings: Settings, target_day: date) -> N
         f"{len(metric_rows)} metric rows and {len(entity_flow_rows)} entity flow rows",
         f"for {target_day.isoformat()}",
     )
+
+
+def run_metrics_range(
+    store: PostgresStore,
+    settings: Settings,
+    start_day: date,
+    end_day: date,
+) -> None:
+    if end_day < start_day:
+        raise ValueError(
+            f"metrics range end_day {end_day.isoformat()} is before start_day {start_day.isoformat()}"
+        )
+
+    current_day = start_day
+    while current_day <= end_day:
+        run_metrics(store=store, settings=settings, target_day=current_day)
+        current_day += timedelta(days=1)

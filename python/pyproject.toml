@@ -12,6 +12,11 @@ dependencies = [
   "pyzmq>=26.0.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+]
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
