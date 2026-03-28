@@ -76,12 +76,9 @@ export default async function DesktopWeeklyDetailPage({
       eyebrow={formatWeekDate(report.weekStart)}
       title={`${report.title} Desktop`}
       description={description}
-      action={<span className="desktop-chip">{formatPublishedAt(report.publishedAt)}</span>}
+      action={<span className="text-[11px] text-dot-muted">{formatPublishedAt(report.publishedAt)}</span>}
       report={report}
       archive={archive}
-      activeSlug={report.slug}
-      archiveTitle="다른 회차 보기"
-      archiveIntro="같은 형식의 이전 회차를 우측 고정 컬럼에서 바로 이어서 확인할 수 있습니다."
     />
   );
 }

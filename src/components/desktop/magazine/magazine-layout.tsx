@@ -64,7 +64,7 @@ export default function MagazineLayout({ children }: MagazineLayoutProps) {
             <div className="magazine-topbar-brand-group">
               <Link href="/desktop" className="magazine-topbar-brand">
                 <AnimatedLogo size={20} />
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-dot-text">
+                <span className="text-[11px] font-bold uppercase tracking-[0.02em] text-dot-text">
                   {SITE_NAME}
                 </span>
               </Link>

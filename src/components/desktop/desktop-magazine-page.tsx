@@ -3,9 +3,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useData } from '@/components/data-provider';
 import { Masthead } from '@/components/desktop/magazine/masthead';
-import { FloatingProgress } from '@/components/desktop/magazine/floating-progress';
-import { ScrollReveal } from '@/components/motion/scroll-reveal';
-import { NumberCounter } from '@/components/motion/number-counter';
 import { IndicatorCard } from '@/components/desktop/magazine/indicator-card';
 import { SignalBar } from '@/components/desktop/magazine/signal-bar';
 import { LightSection } from '@/components/desktop/magazine/light-section';
@@ -20,16 +17,6 @@ import KimpStatsCard from '@/components/indicators/kimp-stats-card';
 import FundingRateHistoryChart from '@/components/indicators/funding-rate-history-chart';
 import FearGreedHistoryChart from '@/components/indicators/fear-greed-history-chart';
 import BtcReturnHeatmap from '@/components/indicators/btc-return-heatmap';
-
-const PROGRESS_SECTIONS = [
-  { id: 'masthead', label: '마스트헤드' },
-  { id: 'headline', label: '헤드라인' },
-  { id: 'thermometer', label: '온도계' },
-  { id: 'charts', label: '차트' },
-  { id: 'heatmap', label: '히트맵' },
-  { id: 'events', label: '이벤트' },
-  { id: 'tools', label: '도구' },
-];
 
 // Helpers
 function formatVol(): string {
@@ -64,7 +51,7 @@ function computeStats(data: ExtendedKimpHistoryPoint[]): KimpStats | null {
   };
 }
 
-type Tone = 'positive' | 'negative' | 'neutral' | 'accent';
+type Tone = 'heat' | 'cool' | undefined;
 
 interface IndicatorDef {
   key: string;
@@ -72,7 +59,7 @@ interface IndicatorDef {
   labelEn: string;
   getValue: (d: DashboardData) => number;
   getDisplay?: (d: DashboardData) => string;
-  getTone: (d: DashboardData) => Tone;
+  getTone: (d: DashboardData) => 'heat' | 'cool' | undefined;
   getToneLabel: (d: DashboardData) => string;
   prefix?: string;
   suffix?: string;
@@ -86,7 +73,7 @@ const INDICATORS: IndicatorDef[] = [
     label: '공포탐욕 지수',
     labelEn: 'Fear & Greed Index',
     getValue: (d) => d.fearGreed.value,
-    getTone: (d) => d.fearGreed.value >= 60 ? 'positive' : d.fearGreed.value <= 40 ? 'negative' : 'neutral',
+    getTone: (d) => d.fearGreed.value >= 60 ? 'heat' : d.fearGreed.value <= 40 ? 'cool' : undefined,
     getToneLabel: (d) => d.fearGreed.value >= 75 ? '극단적 탐욕' : d.fearGreed.value >= 60 ? '탐욕' : d.fearGreed.value <= 25 ? '극단적 공포' : d.fearGreed.value <= 40 ? '공포' : '중립',
     decimals: 0,
   },
@@ -96,7 +83,7 @@ const INDICATORS: IndicatorDef[] = [
     labelEn: 'Korea Premium',
     getValue: (d) => d.kimp.kimchiPremium,
     getDisplay: (d) => `${d.kimp.kimchiPremium >= 0 ? '+' : ''}${d.kimp.kimchiPremium.toFixed(1)}%`,
-    getTone: (d) => Math.abs(d.kimp.kimchiPremium) >= 3 ? 'negative' : Math.abs(d.kimp.kimchiPremium) >= 1.5 ? 'accent' : 'neutral',
+    getTone: (d) => Math.abs(d.kimp.kimchiPremium) >= 3 ? 'cool' : undefined,
     getToneLabel: (d) => d.kimp.kimchiPremium >= 3 ? '높음' : d.kimp.kimchiPremium <= -1 ? '역프' : '보통',
     suffix: '%',
     decimals: 1,
@@ -106,7 +93,7 @@ const INDICATORS: IndicatorDef[] = [
     label: '펀딩비',
     labelEn: 'Funding Rate',
     getValue: (d) => d.fundingRate.fundingRate * 100,
-    getTone: (d) => d.fundingRate.fundingRate > 0.0005 ? 'positive' : d.fundingRate.fundingRate < -0.0005 ? 'negative' : 'neutral',
+    getTone: (d) => d.fundingRate.fundingRate > 0.0005 ? 'heat' : d.fundingRate.fundingRate < -0.0005 ? 'cool' : undefined,
     getToneLabel: (d) => d.fundingRate.fundingRate > 0.0005 ? '롱 우위' : d.fundingRate.fundingRate < -0.0005 ? '숏 우위' : '중립',
     suffix: '%',
     decimals: 3,
@@ -116,7 +103,7 @@ const INDICATORS: IndicatorDef[] = [
     label: 'BTC 도미넌스',
     labelEn: 'Dominance',
     getValue: (d) => d.btcDominance.dominance,
-    getTone: () => 'accent',
+    getTone: () => undefined,
     getToneLabel: (d) => d.btcDominance.dominance > 55 ? '높음' : d.btcDominance.dominance < 45 ? '낮음' : '안정',
     suffix: '%',
     decimals: 1,
@@ -126,7 +113,7 @@ const INDICATORS: IndicatorDef[] = [
     label: '청산량',
     labelEn: 'Liquidation',
     getValue: (d) => d.liquidation.totalLiqUsd / 1_000_000,
-    getTone: (d) => d.liquidation.totalLiqUsd > 100_000_000 ? 'negative' : 'neutral',
+    getTone: (d) => d.liquidation.totalLiqUsd > 100_000_000 ? 'cool' : undefined,
     getToneLabel: (d) => d.liquidation.totalLiqUsd > 200_000_000 ? '매우 높음' : d.liquidation.totalLiqUsd > 100_000_000 ? '높음' : '보통',
     prefix: '$',
     suffix: 'M',
@@ -137,7 +124,7 @@ const INDICATORS: IndicatorDef[] = [
     label: '거래량 변화',
     labelEn: 'Volume Change',
     getValue: (d) => d.volumeChange.binanceChangeRate,
-    getTone: (d) => d.volumeChange.binanceChangeRate > 10 ? 'positive' : d.volumeChange.binanceChangeRate < -10 ? 'negative' : 'neutral',
+    getTone: (d) => d.volumeChange.binanceChangeRate > 10 ? 'heat' : d.volumeChange.binanceChangeRate < -10 ? 'cool' : undefined,
     getToneLabel: (d) => d.volumeChange.binanceChangeRate > 0 ? '증가' : '감소',
     prefix: '+',
     suffix: '%',
@@ -148,7 +135,7 @@ const INDICATORS: IndicatorDef[] = [
     label: '스테이블코인',
     labelEn: 'Stablecoin Supply',
     getValue: (d) => d.stablecoinMcap.totalMcap / 1_000_000_000,
-    getTone: () => 'neutral',
+    getTone: () => undefined,
     getToneLabel: () => '시가총액',
     prefix: '$',
     suffix: 'B',
@@ -160,7 +147,7 @@ const INDICATORS: IndicatorDef[] = [
     labelEn: 'Strategy BTC',
     getValue: (d) => d.strategyBtc.totalHoldings,
     getDisplay: (d) => (d.strategyBtc.totalHoldings / 1000).toFixed(0) + 'K',
-    getTone: () => 'accent',
+    getTone: () => undefined,
     getToneLabel: () => '보유량',
     decimals: 0,
   },
@@ -169,7 +156,7 @@ const INDICATORS: IndicatorDef[] = [
     label: 'USDT 프리미엄',
     labelEn: 'USDT Premium',
     getValue: (d) => d.usdtPremium.premium,
-    getTone: (d) => Math.abs(d.usdtPremium.premium) >= 1 ? 'negative' : 'neutral',
+    getTone: (d) => Math.abs(d.usdtPremium.premium) >= 1 ? 'cool' : undefined,
     getToneLabel: (d) => d.usdtPremium.premium > 0 ? '프리미엄' : d.usdtPremium.premium < 0 ? '디스카운트' : '중립',
     suffix: '%',
     decimals: 2,
@@ -179,7 +166,7 @@ const INDICATORS: IndicatorDef[] = [
     label: '롱숏 비율',
     labelEn: 'Long-Short Ratio',
     getValue: (d) => d.longShortRatio.longShortRatio,
-    getTone: (d) => d.longShortRatio.longShortRatio > 1.2 ? 'positive' : d.longShortRatio.longShortRatio < 0.8 ? 'negative' : 'neutral',
+    getTone: (d) => d.longShortRatio.longShortRatio > 1.2 ? 'heat' : d.longShortRatio.longShortRatio < 0.8 ? 'cool' : undefined,
     getToneLabel: (d) => d.longShortRatio.longShortRatio > 1 ? '롱 우위' : '숏 우위',
     decimals: 2,
   },
@@ -188,7 +175,7 @@ const INDICATORS: IndicatorDef[] = [
     label: '미결제약정',
     labelEn: 'Open Interest',
     getValue: (d) => d.openInterest.oiUsd / 1_000_000_000,
-    getTone: () => 'accent',
+    getTone: () => undefined,
     getToneLabel: () => '총액',
     prefix: '$',
     suffix: 'B',
@@ -198,33 +185,20 @@ const INDICATORS: IndicatorDef[] = [
 
 // ── Internal: Event Calendar ──
 
-const EVENT_TYPE_BORDER: Record<string, string> = {
-  fomc: 'border-l-dot-red',
-  cpi: 'border-l-dot-red',
-  etf: 'border-l-dot-blue',
-  halving: 'border-l-dot-blue',
-  employment: 'border-l-dot-muted',
-  other: 'border-l-dot-muted',
-};
-
 function EventCalendar() {
   const events = getUpcomingEvents(5);
 
-  if (events.length === 0) {
-    return <div className="text-center text-dot-muted text-sm py-8">예정된 이벤트가 없습니다</div>;
-  }
+  if (events.length === 0) return null;
 
   return (
-    <div className="flex gap-4">
-      {events.map((event, i) => (
-        <ScrollReveal key={`${event.date}-${event.title}`} delay={i * 80} className="flex-1">
-          <div className={`border-l-[2px] ${EVENT_TYPE_BORDER[event.type] ?? EVENT_TYPE_BORDER.other} bg-transparent pl-3 py-2`}>
-            <div className="text-[11px] font-semibold text-dot-text">{event.title}</div>
-            <div className="text-[10px] text-dot-sub">
-              {event.date} · <NumberCounter value={event.daysUntil} prefix="D-" decimals={0} duration={600} />
-            </div>
+    <div className="space-y-0">
+      {events.map((event) => (
+        <div key={`${event.date}-${event.title}`} className="border-t border-dot-border py-3">
+          <div className="text-[11px] font-bold text-dot-text">{event.title}</div>
+          <div className="text-[11px] text-dot-sub tracking-[0.02em]">
+            {event.date} · D-{event.daysUntil}
           </div>
-        </ScrollReveal>
+        </div>
       ))}
     </div>
   );
@@ -247,23 +221,22 @@ const TOOL_ITEMS = [
 function ToolsGrid() {
   return (
     <div className="grid grid-cols-3 gap-3">
-      {TOOL_ITEMS.map((tool, i) => (
-        <ScrollReveal key={tool.label} delay={i * 80}>
-          <a
-            href={`/desktop/tools#${tool.section}`}
-            className="desktop-surface block p-4 text-left"
-          >
-            <p className="desktop-kicker">{tool.section}</p>
-            <div className="mt-2 text-[12px] font-semibold text-dot-text">{tool.label}</div>
-          </a>
-        </ScrollReveal>
+      {TOOL_ITEMS.map((tool) => (
+        <a
+          key={tool.label}
+          href={`/desktop/tools#${tool.section}`}
+          className="desktop-surface block p-4 text-left"
+        >
+          <p className="desktop-kicker">{tool.section}</p>
+          <div className="mt-2 text-[11px] font-bold text-dot-text">{tool.label}</div>
+        </a>
       ))}
     </div>
   );
 }
 
 export default function DesktopMagazinePage() {
-  const { data, error, loading } = useData();
+  const { data } = useData();
   const [indicatorData, setIndicatorData] = useState<IndicatorsPageData | null>(null);
   const [chartLoading, setChartLoading] = useState(false);
   const [chartTriggered, setChartTriggered] = useState(false);
@@ -297,28 +270,6 @@ export default function DesktopMagazinePage() {
     return computeStats(indicatorData.kimpHistory);
   }, [indicatorData]);
 
-  if (loading && !data) {
-    return (
-      <div className="magazine-content py-24">
-        <div className="desktop-surface p-8">
-          <p className="desktop-kicker">Daily</p>
-          <p className="mt-2 text-[12px] leading-6 text-dot-sub">오늘의 데이터를 정리하는 중입니다.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && !data) {
-    return (
-      <div className="magazine-content py-24">
-        <div className="desktop-surface p-8">
-          <p className="desktop-kicker">Daily</p>
-          <p className="mt-2 text-[12px] leading-6 text-dot-sub">데이터를 아직 표시할 수 없습니다.</p>
-        </div>
-      </div>
-    );
-  }
-
   if (!data) return null;
 
   const btcPrice = data.kimp.globalPrice;
@@ -329,27 +280,14 @@ export default function DesktopMagazinePage() {
 
   return (
     <>
-      <FloatingProgress sections={PROGRESS_SECTIONS} />
-
       {/* Section 1: Masthead Hero */}
       <Masthead
         edition="BITFLOW DAILY"
         meta={`Vol. ${formatVol()} — ${todayFormatted()}`}
-        headline={
-          <NumberCounter
-            value={btcPrice}
-            prefix="$"
-            decimals={0}
-            format={(v) => `$${Math.round(v).toLocaleString()}`}
-            className="text-6xl font-extrabold text-dot-text tracking-tighter"
-          />
-        }
+        headline={`$${Math.round(btcPrice).toLocaleString()}`}
         subhead={
           <span>
-            Bitcoin —{' '}
-            <span className={btcChange >= 0 ? 'text-dot-blue font-semibold' : 'text-dot-red font-semibold'}>
-              {btcChange >= 0 ? '+' : ''}{btcChange.toFixed(1)}%
-            </span>
+            Bitcoin — {btcChange >= 0 ? '+' : ''}{btcChange.toFixed(1)}%
           </span>
         }
         bottom={
@@ -358,8 +296,8 @@ export default function DesktopMagazinePage() {
               <div key={ind.key} className="magazine-indicator-strip-cell">
                 <div className="magazine-indicator-strip-label">{ind.labelEn.split(' ')[0]}</div>
                 <div className={`magazine-indicator-strip-value ${
-                  ind.getTone(data) === 'positive' ? 'text-dot-blue' :
-                  ind.getTone(data) === 'negative' ? 'text-dot-red' : 'text-dot-text'
+                  ind.getTone(data) === 'heat' ? 'text-dot-red' :
+                  ind.getTone(data) === 'cool' ? 'text-dot-blue' : 'text-dot-text'
                 }`}>
                   {ind.getDisplay?.(data) ?? ind.getValue(data).toFixed(ind.decimals ?? 1)}{ind.suffix ?? ''}
                 </div>
@@ -371,14 +309,14 @@ export default function DesktopMagazinePage() {
 
       {/* Section 2: Today's Headline */}
       <LightSection id="headline" className="bg-white">
-        <ScrollReveal className="text-center max-w-2xl mx-auto">
-          <div className="text-[10px] text-dot-sub uppercase tracking-[3px] mb-4">
+        <div className="text-center max-w-2xl mx-auto">
+          <div className="desktop-kicker mb-4">
             Today&apos;s Signal
           </div>
-          <h2 className="text-4xl font-extrabold text-dot-text tracking-tight leading-tight mb-3">
+          <h2 className="text-[20px] font-bold text-dot-text leading-[1.3] mb-3">
             {data.signal.description}
           </h2>
-          <p className="text-sm text-dot-sub leading-relaxed mb-6">
+          <p className="text-[14px] text-dot-sub leading-relaxed mb-6">
             {data.signal.factors
               .filter((f) => Math.abs(f.weightedScore) > 0.3)
               .slice(0, 3)
@@ -392,112 +330,82 @@ export default function DesktopMagazinePage() {
             neutral={signalCounts.neutral}
             negative={signalCounts.negative}
           />
-        </ScrollReveal>
+        </div>
       </LightSection>
 
       {/* Section 3: Market Thermometer */}
       <LightSection id="thermometer">
-        <div className="text-[10px] text-dot-sub uppercase tracking-[3px] mb-6">
+        <div className="desktop-kicker mb-6">
           Market Thermometer
         </div>
         <div className="grid grid-cols-2 gap-3">
-          {INDICATORS.map((ind, i) => (
-            <ScrollReveal key={ind.key} delay={i * 60}>
-              <IndicatorCard
-                label={ind.label}
-                labelEn={ind.labelEn}
-                value={ind.getValue(data)}
-                displayValue={ind.getDisplay?.(data)}
-                tone={ind.getTone(data)}
-                toneLabel={ind.getToneLabel(data)}
-                prefix={ind.prefix}
-                suffix={ind.suffix}
-                decimals={ind.decimals}
-              />
-            </ScrollReveal>
+          {INDICATORS.map((ind) => (
+            <IndicatorCard
+              key={ind.key}
+              label={ind.label}
+              labelEn={ind.labelEn}
+              value={ind.getValue(data)}
+              displayValue={ind.getDisplay?.(data)}
+              tone={ind.getTone(data)}
+              toneLabel={ind.getToneLabel(data)}
+              prefix={ind.prefix}
+              suffix={ind.suffix}
+              decimals={ind.decimals}
+            />
           ))}
         </div>
       </LightSection>
 
       {/* Section 4: Chart Deep Dive — lazy load trigger */}
       <LightSection id="charts">
-        <ScrollReveal
-          threshold={0.05}
-          className=""
+        <div
+          ref={(el) => {
+            if (el && !chartTriggered) {
+              const obs = new IntersectionObserver(
+                ([e]) => { if (e.isIntersecting) { setChartTriggered(true); obs.disconnect(); } },
+                { threshold: 0.05 },
+              );
+              obs.observe(el);
+            }
+          }}
         >
-          <div
-            ref={(el) => {
-              if (el && !chartTriggered) {
-                const obs = new IntersectionObserver(
-                  ([e]) => { if (e.isIntersecting) { setChartTriggered(true); obs.disconnect(); } },
-                  { threshold: 0.05 },
-                );
-                obs.observe(el);
-              }
-            }}
-          >
-            <div className="text-[10px] text-dot-muted uppercase tracking-[3px] mb-6">
-              Deep Dive Charts
-            </div>
-            {chartLoading && (
-              <DesktopSurface className="p-5">
-                <p className="text-[12px] text-dot-muted">차트 데이터를 정리하는 중입니다.</p>
-              </DesktopSurface>
-            )}
-            {indicatorData && (
-              <div className="space-y-4">
-                <ScrollReveal>
-                  <DesktopSurface className="p-5">
-                    <KimpChart data={indicatorData.kimpHistory} />
-                  </DesktopSurface>
-                </ScrollReveal>
-                {kimpStats && (
-                  <ScrollReveal delay={50}>
-                    <KimpStatsCard stats={kimpStats} period="30일" />
-                  </ScrollReveal>
-                )}
-                <div className="grid grid-cols-2 gap-4">
-                  <ScrollReveal delay={100}>
-                    <DesktopSurface className="p-4">
-                      <FundingRateHistoryChart data={indicatorData.fundingRateHistory} />
-                    </DesktopSurface>
-                  </ScrollReveal>
-                  <ScrollReveal delay={200}>
-                    <DesktopSurface className="p-4">
-                      <FearGreedHistoryChart data={indicatorData.fearGreedHistory} />
-                    </DesktopSurface>
-                  </ScrollReveal>
-                </div>
-              </div>
-            )}
-            {!chartLoading && !indicatorData && chartTriggered && (
-              <DesktopSurface className="p-5">
-                <p className="text-[12px] text-dot-muted">차트 데이터를 불러올 수 없습니다.</p>
-              </DesktopSurface>
-            )}
+          <div className="desktop-kicker mb-6">
+            Deep Dive Charts
           </div>
-        </ScrollReveal>
+          {indicatorData && (
+            <div className="space-y-4">
+              <DesktopSurface className="p-5">
+                <KimpChart data={indicatorData.kimpHistory} />
+              </DesktopSurface>
+              {kimpStats && (
+                <KimpStatsCard stats={kimpStats} period="30일" />
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                <DesktopSurface className="p-4">
+                  <FundingRateHistoryChart data={indicatorData.fundingRateHistory} />
+                </DesktopSurface>
+                <DesktopSurface className="p-4">
+                  <FearGreedHistoryChart data={indicatorData.fearGreedHistory} />
+                </DesktopSurface>
+              </div>
+            </div>
+          )}
+        </div>
       </LightSection>
 
       {/* Section 5: BTC Returns Heatmap */}
       <LightSection id="heatmap">
-        <ScrollReveal>
-          <div className="text-[10px] text-dot-sub uppercase tracking-[3px] mb-6">
-            Returns Heatmap
-          </div>
-          {indicatorData?.btcReturnsHistory ? (
-            <BtcReturnHeatmap data={indicatorData.btcReturnsHistory} />
-          ) : (
-            <div className="text-center py-12 text-dot-muted text-sm">
-              {chartTriggered ? '히트맵 데이터 로딩 중...' : '스크롤하여 데이터 로드'}
-            </div>
-          )}
-        </ScrollReveal>
+        <div className="desktop-kicker mb-6">
+          Returns Heatmap
+        </div>
+        {indicatorData?.btcReturnsHistory ? (
+          <BtcReturnHeatmap data={indicatorData.btcReturnsHistory} />
+        ) : null}
       </LightSection>
 
       {/* Section 6: Event Calendar */}
       <LightSection id="events" className="bg-white">
-        <div className="text-[10px] text-dot-sub uppercase tracking-[3px] mb-6">
+        <div className="desktop-kicker mb-6">
           Upcoming Events
         </div>
         <EventCalendar />
@@ -505,7 +413,7 @@ export default function DesktopMagazinePage() {
 
       {/* Section 7: Tools */}
       <LightSection id="tools">
-        <div className="text-[10px] text-dot-sub uppercase tracking-[3px] mb-6">
+        <div className="desktop-kicker mb-6">
           Tools
         </div>
         <ToolsGrid />
