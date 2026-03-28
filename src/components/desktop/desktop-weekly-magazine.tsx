@@ -1,17 +1,9 @@
 import Link from 'next/link';
 import { Masthead } from '@/components/desktop/magazine/masthead';
-import { ScrollReveal } from '@/components/motion/scroll-reveal';
 import { LightSection } from '@/components/desktop/magazine/light-section';
 import { MagazineFooter } from '@/components/desktop/magazine/magazine-footer';
-import { FloatingProgress } from '@/components/desktop/magazine/floating-progress';
 import { TimelineItem } from '@/components/desktop/magazine/timeline-item';
 import type { WeeklyReportRecord, WeeklyReportArchiveItem } from '@/lib/types';
-
-const WEEKLY_SECTIONS = [
-  { id: 'weekly-masthead', label: '마스트헤드' },
-  { id: 'weekly-latest', label: '최신호' },
-  { id: 'weekly-archive', label: '아카이브' },
-];
 
 interface Props {
   report: WeeklyReportRecord | null;
@@ -28,8 +20,6 @@ export default function DesktopWeeklyMagazine({ report, archive }: Props) {
 
   return (
     <>
-      <FloatingProgress sections={WEEKLY_SECTIONS} />
-
       {/* Section 1: Masthead */}
       <section id="weekly-masthead">
         <Masthead
@@ -42,51 +32,44 @@ export default function DesktopWeeklyMagazine({ report, archive }: Props) {
 
       {/* Section 2: Latest Issue Highlight */}
       <LightSection id="weekly-latest" className="bg-white">
-        <ScrollReveal>
-          <div className="text-[10px] text-dot-sub uppercase tracking-[3px] mb-4">
-            Latest Issue
-          </div>
-          {report ? (
-            <Link
-              href={`/desktop/weekly/${report.slug}`}
-              className="desktop-surface block border-l-2 border-dot-text p-6"
-            >
-              <div className="text-[11px] text-dot-sub">
-                {formatWeekDate(report.weekStart)} ~ {formatWeekDate(report.weekEnd)}
-              </div>
-              <h3 className="text-xl font-bold text-dot-text mt-2 mb-2">
-                {report.title}
-              </h3>
-              <p className="text-[13px] text-dot-sub leading-relaxed line-clamp-3">
-                {report.summary}
-              </p>
-              <div className="mt-3 text-xs font-semibold text-dot-text">
-                전문 읽기 →
-              </div>
-            </Link>
-          ) : (
-            <div className="py-10 text-[12px] text-dot-muted">
-              최신 리포트가 없습니다
+        <div className="desktop-kicker mb-4">
+          Latest Issue
+        </div>
+        {report ? (
+          <Link
+            href={`/desktop/weekly/${report.slug}`}
+            className="block border-t border-dot-border py-4"
+          >
+            <div className="text-[11px] text-dot-sub">
+              {formatWeekDate(report.weekStart)} ~ {formatWeekDate(report.weekEnd)}
             </div>
-          )}
-        </ScrollReveal>
+            <h3 className="text-[20px] font-bold text-dot-text mt-2 mb-2">
+              {report.title}
+            </h3>
+            <p className="text-[13px] text-dot-sub leading-relaxed line-clamp-3">
+              {report.summary}
+            </p>
+            <div className="mt-3 text-xs font-semibold text-dot-text">
+              전문 읽기 →
+            </div>
+          </Link>
+        ) : null}
       </LightSection>
 
       {/* Section 3: Archive Timeline */}
       <LightSection id="weekly-archive">
-        <div className="text-[10px] text-dot-sub uppercase tracking-[3px] mb-6">
+        <div className="desktop-kicker mb-6">
           Past Issues
         </div>
-        <div className="flex flex-col gap-4 border-l border-dot-border/40 pl-5">
+        <div className="flex flex-col gap-4">
           {filteredArchive.map((item, i) => (
-            <ScrollReveal key={item.slug} delay={i * 60}>
-              <TimelineItem
-                href={`/desktop/weekly/${item.slug}`}
-                title={`Vol. ${archive.length - i} — ${item.title}`}
-                subtitle={`${formatWeekDate(item.weekStart)} ~ ${formatWeekDate(item.weekEnd)}`}
-                isFirst={i === 0}
-              />
-            </ScrollReveal>
+            <TimelineItem
+              key={item.slug}
+              href={`/desktop/weekly/${item.slug}`}
+              title={`Vol. ${archive.length - i} — ${item.title}`}
+              subtitle={`${formatWeekDate(item.weekStart)} ~ ${formatWeekDate(item.weekEnd)}`}
+              isFirst={i === 0}
+            />
           ))}
         </div>
       </LightSection>
