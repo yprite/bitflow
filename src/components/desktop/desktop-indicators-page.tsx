@@ -63,8 +63,8 @@ function IndicatorsGuideContent() {
     <>
       <div className="grid gap-2 sm:grid-cols-2">
         {readingSteps.map((step) => (
-          <div key={step.title} className="border border-dot-border/60 p-3 dot-grid-sparse">
-            <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">{step.title}</p>
+          <div key={step.title} className="border-t border-dot-border p-3">
+            <p className="desktop-kicker">{step.title}</p>
             <p className="mt-2 text-[11px] leading-relaxed text-dot-sub">{step.body}</p>
           </div>
         ))}
@@ -72,8 +72,8 @@ function IndicatorsGuideContent() {
 
       <div className="grid gap-2 sm:grid-cols-2">
         {indicatorGuides.map((guide) => (
-          <div key={guide.title} className="border border-dot-border/60 p-3 dot-grid-sparse">
-            <p className="text-[10px] font-mono uppercase tracking-[0.18em] text-dot-muted">{guide.title}</p>
+          <div key={guide.title} className="border-t border-dot-border p-3">
+            <p className="desktop-kicker">{guide.title}</p>
             <p className="mt-2 text-[11px] leading-relaxed text-dot-sub">{guide.body}</p>
           </div>
         ))}

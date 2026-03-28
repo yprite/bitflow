@@ -121,14 +121,14 @@ function MiniCalendar() {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   return (
-    <div className="border border-dot-border/40 bg-white/70 p-3">
+    <div className="border-t border-dot-border p-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-dot-muted">{monthLabel}</span>
-        <span className="text-[9px] font-mono text-dot-muted">이벤트 표시</span>
+        <span className="desktop-kicker">{monthLabel}</span>
+        <span className="text-[11px] text-dot-muted">이벤트 표시</span>
       </div>
-      <div className="grid grid-cols-7 gap-px text-center text-[10px]">
+      <div className="grid grid-cols-7 gap-px text-center text-[11px]">
         {weekdays.map((w) => (
-          <div key={w} className="py-1 font-mono text-dot-muted">{w}</div>
+          <div key={w} className="py-1 text-dot-muted">{w}</div>
         ))}
         {cells.map((day, i) => {
           if (day === null) return <div key={`empty-${i}`} />;
@@ -137,7 +137,7 @@ function MiniCalendar() {
           return (
             <div
               key={day}
-              className={`relative py-1 font-mono ${
+              className={`relative py-1 ${
                 isToday
                   ? 'font-bold text-dot-accent'
                   : 'text-dot-sub'
@@ -180,7 +180,7 @@ function ClickableStatCard({
       className={`w-full text-left border p-4 transition-all ${
         active
           ? 'border-dot-accent bg-dot-accent/[0.04] ring-1 ring-dot-accent/20'
-          : 'border-dot-border/55 bg-white/70 hover:border-dot-accent/30'
+          : 'border-dot-border hover:border-dot-accent'
       }`}
     >
       <p className="desktop-kicker">{label}</p>
@@ -247,11 +247,11 @@ export default function DesktopHomePage() {
     if (!selectedIndicator || !data) return null;
     const fmt = formatPercent;
     const row = (label: string, value: string, sub?: string) => (
-      <div key={label} className="flex items-center justify-between py-1 border-b border-dot-border/20 last:border-0">
+      <div key={label} className="flex items-center justify-between py-1 border-b border-dot-border last:border-0">
         <span className="text-[11px] text-dot-muted">{label}</span>
         <div className="text-right">
-          <span className="text-[12px] font-semibold text-dot-accent font-mono">{value}</span>
-          {sub && <span className="ml-2 text-[10px] text-dot-muted">{sub}</span>}
+          <span className="text-[12px] font-semibold text-dot-accent">{value}</span>
+          {sub && <span className="ml-2 text-[11px] text-dot-muted">{sub}</span>}
         </div>
       </div>
     );
@@ -327,13 +327,13 @@ export default function DesktopHomePage() {
         action={(
           <div>
             {/* 슬라이딩 캐러셀 */}
-            <div className="relative overflow-hidden rounded-sm border border-dot-border/40 bg-white/60">
+            <div className="relative overflow-hidden border border-dot-border">
               {/* 인디케이터 */}
               <div className="flex items-center gap-5 px-4 pt-3 pb-1">
                 <button
                   type="button"
                   onClick={() => setPaused((p) => !p)}
-                  className="text-[10px] font-mono text-dot-muted hover:text-dot-accent transition-colors"
+                  className="text-[11px] text-dot-muted hover:text-dot-accent transition-colors"
                   title={paused ? '자동 슬라이드 재생' : '자동 슬라이드 일시정지'}
                 >
                   {paused ? '▶' : '❚❚'}
@@ -343,7 +343,7 @@ export default function DesktopHomePage() {
                     key={label}
                     type="button"
                     onClick={() => setSlide(i)}
-                    className={`text-[10px] font-mono uppercase tracking-[0.16em] transition-colors ${
+                    className={`desktop-kicker transition-colors ${
                       slide === i ? 'text-dot-accent' : 'text-dot-muted hover:text-dot-sub'
                     }`}
                   >
@@ -352,7 +352,7 @@ export default function DesktopHomePage() {
                   </button>
                 ))}
                 <div className="flex-1" />
-                <span className="text-[9px] font-mono text-dot-muted">{slide + 1}/2</span>
+                <span className="text-[11px] text-dot-muted">{slide + 1}/2</span>
               </div>
 
               {/* 슬라이드 트랙 */}
