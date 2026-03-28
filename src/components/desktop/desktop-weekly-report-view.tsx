@@ -78,7 +78,7 @@ function NewsCard({
       href={sourceUrl}
       target="_blank"
       rel="noreferrer"
-      className="block border border-dot-border p-5 transition-colors hover:border-dot-accent"
+      className="block border border-dot-border p-4 transition-colors hover:border-dot-accent"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
@@ -143,7 +143,7 @@ export default function DesktopWeeklyReportView({
               title="이번 주 핵심"
               description={report.dek ?? report.summary}
             />
-            <div className="mt-6 space-y-5">
+            <div className="mt-6 space-y-6">
               <p className="text-[14px] leading-8 text-dot-sub">{report.summary}</p>
               <div className="grid gap-6 md:grid-cols-3">
                 <DesktopTextCard label="시장 해석" title="Market View" body={report.marketView} />
@@ -155,7 +155,7 @@ export default function DesktopWeeklyReportView({
                   <p className="desktop-kicker">Watchlist</p>
                   <div className="flex flex-wrap gap-2">
                     {report.watchlist.map((item) => (
-                      <span key={item} className="border border-dot-border px-3 py-1.5 text-[12px] text-dot-sub">
+                      <span key={item} className="border border-dot-border px-3 py-1.5 text-[11px] text-dot-sub">
                         {item}
                       </span>
                     ))}
@@ -222,7 +222,7 @@ export default function DesktopWeeklyReportView({
               />
               <div className="mt-6 grid gap-6 md:grid-cols-2">
                 {report.sections.map((section) => (
-                  <article key={section.id} className="desktop-surface p-5">
+                  <article key={section.id} className="desktop-surface p-4">
                     <div className="space-y-3">
                       <p className="desktop-kicker">{section.id}</p>
                       <div className="space-y-2">

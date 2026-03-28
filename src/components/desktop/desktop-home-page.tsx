@@ -184,7 +184,7 @@ function ClickableStatCard({
       }`}
     >
       <p className="desktop-kicker">{label}</p>
-      <div className={`mt-3 text-[22px] font-semibold tracking-[-0.03em] ${
+      <div className={`mt-3 text-[13px] font-bold ${
         tone === 'positive' ? 'text-dot-blue'
         : tone === 'negative' ? 'text-dot-red'
         : tone === 'neutral' ? 'text-dot-sub'
@@ -192,7 +192,7 @@ function ClickableStatCard({
       }`}>
         {value}
       </div>
-      {detail ? <div className="mt-2 text-[12px] leading-6 text-dot-sub">{detail}</div> : null}
+      {detail ? <div className="mt-2 text-[11px] leading-6 text-dot-sub">{detail}</div> : null}
     </button>
   );
 }
@@ -218,26 +218,7 @@ export default function DesktopHomePage() {
     return () => clearInterval(timer);
   }, [paused]);
 
-  if (loading) {
-    return (
-      <DesktopSurface className="p-8">
-        <p className="desktop-kicker">Command Deck</p>
-        <p className="mt-2 text-[12px] leading-6 text-dot-sub">데이터를 정리하는 중입니다.</p>
-      </DesktopSurface>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <DesktopSurface className="p-8">
-        <p className="desktop-kicker">Command Deck</p>
-        <h1 className="mt-2 text-[18px] font-semibold tracking-[-0.02em] text-dot-accent">
-          데이터를 아직 표시할 수 없습니다.
-        </h1>
-        <p className="mt-2 text-[12px] leading-6 text-dot-sub">{error ?? '잠시 후 다시 자동 갱신됩니다.'}</p>
-      </DesktopSurface>
-    );
-  }
+  if (!data) return null;
 
   const toggleIndicator = (key: IndicatorKey) => {
     setSelectedIndicator((prev) => (prev === key ? null : key));
@@ -250,7 +231,7 @@ export default function DesktopHomePage() {
       <div key={label} className="flex items-center justify-between py-1 border-b border-dot-border last:border-0">
         <span className="text-[11px] text-dot-muted">{label}</span>
         <div className="text-right">
-          <span className="text-[12px] font-semibold text-dot-accent">{value}</span>
+          <span className="text-[11px] font-bold text-dot-accent">{value}</span>
           {sub && <span className="ml-2 text-[11px] text-dot-muted">{sub}</span>}
         </div>
       </div>

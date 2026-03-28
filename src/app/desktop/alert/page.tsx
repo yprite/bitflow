@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import AlertBotCta from '@/components/alert-bot-cta';
-import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import { DesktopBulletList, DesktopHero, DesktopSectionHeader, DesktopStatCard, DesktopSurface } from '@/components/desktop/desktop-ui';
 
 const setupSteps = [
@@ -21,30 +20,15 @@ const setupSteps = [
 export default function DesktopAlertPage() {
   return (
     <div className="magazine-content pt-20 pb-16">
-      <Link href="/desktop" className="mb-6 inline-flex text-[10px] uppercase tracking-[0.14em] text-dot-muted hover:text-dot-accent">개요</Link>
+      <Link href="/desktop" className="mb-6 inline-flex text-[11px] uppercase tracking-[0.02em] text-dot-muted hover:text-dot-accent">개요</Link>
     <div className="space-y-6">
-      <DotAssemblyReveal delay={0} duration={520} density="low">
         <DesktopHero
           eyebrow="Telegram Alert"
           title="알림"
-          description={(
-            <>
-              김치프리미엄이 설정한 임계값을 넘으면 텔레그램으로 즉시 알림을 받을 수 있습니다.
-              PC 화면에서는 설정 흐름과 명령어를 한눈에 보이도록 재정리했습니다.
-            </>
-          )}
+          description="김치프리미엄이 설정한 임계값을 넘으면 텔레그램으로 즉시 알림을 받을 수 있습니다. PC 화면에서는 설정 흐름과 명령어를 한눈에 보이도록 재정리했습니다."
           action={<AlertBotCta />}
-          sidebar={(
-            <div className="space-y-4">
-              <DesktopStatCard label="봇" value="@btcfloww_bot" tone="neutral" />
-              <DesktopStatCard label="체크 주기" value="1분" tone="neutral" />
-              <DesktopStatCard label="임계값 예시" value="/alert 3.0" tone="neutral" />
-            </div>
-          )}
         />
-      </DotAssemblyReveal>
 
-      <DotAssemblyReveal delay={100} duration={680}>
         <DesktopSurface className="p-6">
           <DesktopSectionHeader
             eyebrow="Setup"
@@ -62,9 +46,7 @@ export default function DesktopAlertPage() {
             ))}
           </div>
         </DesktopSurface>
-      </DotAssemblyReveal>
 
-      <DotAssemblyReveal delay={200} duration={700}>
         <DesktopSurface className="p-6">
           <DesktopSectionHeader
             eyebrow="Commands"
@@ -72,7 +54,7 @@ export default function DesktopAlertPage() {
             description="자주 쓰는 명령어를 구간별로 나눴습니다."
           />
           <div className="mt-6 grid gap-6 md:grid-cols-2">
-            <div className="space-y-3 border border-dot-border/35 bg-white/40 p-5">
+            <div className="space-y-3 border-t border-dot-border py-4">
               <p className="desktop-kicker">Primary</p>
               <DesktopBulletList
                 items={[
@@ -82,7 +64,7 @@ export default function DesktopAlertPage() {
                 ]}
               />
             </div>
-            <div className="space-y-3 border border-dot-border/35 bg-white/40 p-5">
+            <div className="space-y-3 border-t border-dot-border py-4">
               <p className="desktop-kicker">Utility</p>
               <DesktopBulletList
                 items={[
@@ -94,7 +76,6 @@ export default function DesktopAlertPage() {
             </div>
           </div>
         </DesktopSurface>
-      </DotAssemblyReveal>
     </div>
     </div>
   );

@@ -374,7 +374,7 @@ export default function DesktopMagazinePage() {
           </div>
           {indicatorData && (
             <div className="space-y-4">
-              <DesktopSurface className="p-5">
+              <DesktopSurface className="p-4">
                 <KimpChart data={indicatorData.kimpHistory} />
               </DesktopSurface>
               {kimpStats && (

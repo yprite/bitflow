@@ -26,7 +26,7 @@ const coverage = [
 export default function DesktopAboutPage() {
   return (
     <div className="magazine-content pt-20 pb-16">
-      <Link href="/desktop" className="mb-6 inline-flex text-[10px] uppercase tracking-[0.02em] text-dot-muted hover:text-dot-accent">개요</Link>
+      <Link href="/desktop" className="mb-6 inline-flex text-[11px] uppercase tracking-[0.02em] text-dot-muted hover:text-dot-accent">개요</Link>
     <div className="space-y-6">
       <DesktopHero
         eyebrow="About"

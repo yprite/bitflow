@@ -27,30 +27,13 @@ function formatPercent(value: number, digits = 2) {
 
 export default function DesktopRealtimePage() {
   const {
-    data, error, loading, lastUpdated,
+    data, lastUpdated,
     fundingRange, fearGreedRange,
     usdtPremiumRange, btcDominanceRange, longShortRange,
     oiRange, liqRange, stableRange, volumeRange, strategyBtcRange, capitalRange,
   } = useData();
 
-  if (loading) {
-    return (
-      <DesktopSurface className="p-8">
-        <p className="desktop-kicker">Realtime</p>
-        <p className="mt-2 text-[12px] leading-6 text-dot-sub">실시간 지표를 정리하는 중입니다.</p>
-      </DesktopSurface>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <DesktopSurface className="p-8">
-        <p className="desktop-kicker">Realtime</p>
-        <h1 className="mt-2 text-[18px] font-semibold tracking-[-0.02em] text-dot-accent">실시간 지표를 아직 표시할 수 없습니다.</h1>
-        <p className="mt-2 text-[12px] leading-6 text-dot-sub">{error ?? '잠시 후 다시 자동 갱신됩니다.'}</p>
-      </DesktopSurface>
-    );
-  }
+  if (!data) return null;
 
   return (
     <div className="space-y-6">
@@ -80,7 +63,7 @@ export default function DesktopRealtimePage() {
           title="핵심 지표"
           description="김치프리미엄, 펀딩비, 공포탐욕지수, USDT 프리미엄을 함께 비교합니다."
         />
-        <div className="mt-6 grid grid-cols-2 gap-5">
+        <div className="mt-6 grid grid-cols-2 gap-6">
           <div className="min-w-0">
             <KimpCard kimp={data.kimp} avg30d={data.avg30d} />
           </div>
@@ -102,7 +85,7 @@ export default function DesktopRealtimePage() {
           title="시장 구조"
           description="도미넌스, 포지션 쏠림, 미결제약정, 청산 비율을 함께 읽습니다."
         />
-        <div className="mt-6 grid grid-cols-2 gap-5">
+        <div className="mt-6 grid grid-cols-2 gap-6">
           <div className="min-w-0">
             <BtcDominanceCard data={data.btcDominance} dayRange={btcDominanceRange} />
           </div>
@@ -124,7 +107,7 @@ export default function DesktopRealtimePage() {
           title="유동성과 거래량"
           description="스테이블코인 시총, BTC 거래량, 마이크로스트레티지 보유량을 확인합니다."
         />
-        <div className="mt-6 grid grid-cols-3 gap-5">
+        <div className="mt-6 grid grid-cols-3 gap-6">
           <div className="min-w-0">
             <StablecoinCard data={data.stablecoinMcap} dayRange={stableRange} />
           </div>

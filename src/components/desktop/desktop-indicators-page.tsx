@@ -103,7 +103,7 @@ function computeStats(data: ExtendedKimpHistoryPoint[]): KimpStats | null {
 }
 
 export default function DesktopIndicatorsPage() {
-  const { data, chartData, error, loading } = useData();
+  const { data, chartData } = useData();
   const [indicatorData, setIndicatorData] = useState<IndicatorsPageData | null>(null);
   const [indicatorLoading, setIndicatorLoading] = useState(true);
 
@@ -138,24 +138,7 @@ export default function DesktopIndicatorsPage() {
     return computeStats(indicatorData.kimpHistory);
   }, [indicatorData]);
 
-  if (loading) {
-    return (
-      <DesktopSurface className="p-8">
-        <p className="desktop-kicker">History</p>
-        <p className="mt-2 text-[12px] leading-6 text-dot-sub">히스토리 데이터를 정리하는 중입니다.</p>
-      </DesktopSurface>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <DesktopSurface className="p-8">
-        <p className="desktop-kicker">History</p>
-        <h1 className="mt-2 text-[18px] font-semibold tracking-[-0.02em] text-dot-accent">히스토리 데이터를 아직 표시할 수 없습니다.</h1>
-        <p className="mt-2 text-[12px] leading-6 text-dot-sub">{error ?? '잠시 후 다시 자동 갱신됩니다.'}</p>
-      </DesktopSurface>
-    );
-  }
+  if (!data) return null;
 
   return (
     <div className="space-y-6">
@@ -181,12 +164,7 @@ export default function DesktopIndicatorsPage() {
         </div>
       )}
 
-      {indicatorLoading ? (
-        <DesktopSurface className="p-6">
-          <p className="desktop-kicker">History</p>
-          <p className="mt-2 text-[12px] leading-6 text-dot-sub">세부 히스토리 데이터를 정리하는 중입니다.</p>
-        </DesktopSurface>
-      ) : (
+      {!indicatorLoading && (
         <>
           <div className="grid grid-cols-2 gap-6">
             <div className="min-w-0">

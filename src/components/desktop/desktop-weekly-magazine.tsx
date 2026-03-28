@@ -49,7 +49,7 @@ export default function DesktopWeeklyMagazine({ report, archive }: Props) {
             <p className="text-[13px] text-dot-sub leading-relaxed line-clamp-3">
               {report.summary}
             </p>
-            <div className="mt-3 text-xs font-semibold text-dot-text">
+            <div className="mt-3 text-[11px] font-bold text-dot-text">
               전문 읽기 →
             </div>
           </Link>
