@@ -433,3 +433,259 @@
 3. 넓은 화면이 "더 많은 카드"가 아니라 "더 많은 여백"으로 작동한다.
 4. 로딩/에러/상태가 담담해지며, 제품의 철학과 실제 경험이 일치한다.
 5. 매거진적 서사와 분석 도구적 정확성이 같은 톤 안에서 공존한다.
+
+---
+
+## 8. 코드 리뷰 결과 (2026-03-28)
+
+> 디자인 철학 문서 기준으로 현재 데스크톱 코드를 전수 점검한 결과.
+> 아래 위반 사항은 "해석의 여지"가 아니라 철학 문서의 명시 규칙에 어긋나는 항목이다.
+
+---
+
+### 8-1. 타이포그래피 위반
+
+철학 허용 스케일: headline 20px, body 14px, data 13px, caption 11px. **이 4단계 외의 크기를 사용하지 않는다.**
+
+| 파일 | 라인 | 현재 크기 | 허용 기준 | 비고 |
+|------|------|-----------|-----------|------|
+| `desktop-magazine-page.tsx` | 345 | `text-6xl` (60px) | headline 20px | BTC 가격 — 3배 초과 |
+| `desktop-magazine-page.tsx` | 378 | `text-4xl` (36px) | headline 20px | 시그널 설명 — 거의 2배 |
+| `masthead.tsx` | 32 | `text-[42px]` | headline 20px | 매거진 헤드라인 — 2배 초과 |
+| `desktop-ui.tsx` | 51 | `text-[28px]` | headline 20px | DesktopHero 타이틀 |
+| `desktop-ui.tsx` | 112 | `text-[22px]` | data 13px 또는 headline 20px | DesktopStatCard 값 |
+| `desktop-ui.tsx` | 133 | `text-[18px]` | body 14px | DesktopTextCard 타이틀 |
+| `desktop-ui.tsx` | 159 | `text-[18px]` | body 14px | DesktopLinkCard 타이틀 |
+| `desktop-ui.tsx` | 202 | `text-[24px]` | headline 20px | DesktopEmptyState 타이틀 |
+| `indicator-card.tsx` | 42 | `text-2xl` (24px) | data 13px | 지표 값 표시 |
+| `desktop-weekly-report-view.tsx` | 123 | `text-[18px]` | body 14px | NewsCard 타이틀 |
+| `desktop-weekly-magazine.tsx` | 57 | `text-xl` (20px) | headline 20px (허용) | 최신호 제목 — 경계선 |
+| `desktop-weekly-report-view.tsx` | 202 | `text-[15px]` | body 14px | 서머리 본문 — 비허용 크기 |
+
+**font-weight 위반**: 철학은 Bold와 Regular만 허용한다.
+
+| 위반 값 | 사용 위치 |
+|---------|-----------|
+| `font-extrabold` | `desktop-magazine-page.tsx:345`, `desktop-magazine-page.tsx:378` |
+| `font-medium` | `desktop-ui.tsx:162` |
+
+**letter-spacing 위반**: 철학은 caption에만 `0.02em` 허용. 나머지는 기본값 유지.
+
+| 현재 값 | 사용 위치 | 문제 |
+|---------|-----------|------|
+| `tracking-[3px]` | `desktop-magazine-page.tsx` 전반 (섹션 kicker) | 절대값 사용, 비허용 |
+| `tracking-[0.2em]` | `magazine-layout.tsx:68` (브랜드명) | 비허용 |
+| `tracking-[0.18em]` | `desktop-ui.tsx` (.desktop-kicker CSS) | 비허용 |
+| `tracking-[0.14em]` | `desktop-chrome.tsx:43`, `floating-progress.tsx:78` | 비허용 |
+| `tracking-[-0.04em]` | `masthead.tsx:32` | 비허용 |
+| `tracking-[-0.03em]` | `desktop-ui.tsx:51`, `desktop-ui.tsx:112`, `desktop-ui.tsx:202` | 비허용 |
+| `tracking-tighter` | `desktop-magazine-page.tsx:345` | Tailwind 프리셋, 비허용 |
+
+**조치**: 모든 타이포는 4단계 스케일로 환원. letter-spacing은 caption 11px에만 `tracking-[0.02em]` 허용. font-weight는 `font-bold`와 기본(Regular)만 사용.
+
+---
+
+### 8-2. 컬러 위반
+
+철학: 시그널 색상은 2개 — `signal-heat` (#e53935)과 `signal-cool` (#1e88e5). **green, yellow은 존재하지 않는다.** 한 화면에 시그널 색상은 동시에 최대 2곳.
+
+| 위반 항목 | 파일 | 내용 |
+|-----------|------|------|
+| 4-tone 시스템 | `desktop-ui.tsx:8-19` | `positive → dot-blue`, `negative → dot-red`, `neutral → dot-sub`, `accent → dot-accent` — 사실상 4가지 시그널 색 |
+| dot-green, dot-yellow 존재 | `tailwind.config.ts` | Tailwind 팔레트에 `dot-green`, `dot-yellow` 정의됨 — 철학상 존재 불가 |
+| SignalBar 3색 동시 사용 | `signal-bar.tsx:10-13` | `bg-dot-blue`, `bg-dot-muted`, `bg-dot-red` 동시 노출 — 2곳 제한 위반 |
+| 이벤트 색상 3종 | `desktop-magazine-page.tsx:202-208` | `border-l-dot-red`, `border-l-dot-blue`, `border-l-dot-muted` — 이벤트 타입별 색 분리 |
+| IndicatorCard 11개 동시 | `desktop-magazine-page.tsx:403-419` | 11개 카드가 각자 tone 색상 보유 — 한 화면에 다수 시그널 색 동시 노출 |
+| 배경색 기반 상태 | `desktop-weekly-report-view.tsx:78-80` | ArchiveCard active 상태에 `bg-dot-accent/[0.04]` — 배경색 사용 금지 위반 |
+| bg-white/40 | `desktop-ui.tsx` 전반 | 카드 배경이 `bg-white/40` — surface는 `#ffffff`여야 함, 반투명 불가 |
+| border 불투명도 변형 | `desktop-ui.tsx` 전반 | `border-dot-border/35`, `/45`, `/60` — 1px solid `border` (#d1d5db) 단일 사용이 원칙 |
+
+**조치**: tone 시스템을 `heat`/`cool`/`(부재)` 3원으로 단순화. `dot-green`, `dot-yellow` 삭제. SignalBar는 점의 밀도/개수로 전환. `bg-white/40` → `bg-white`. border 불투명도 변형 제거.
+
+---
+
+### 8-3. Masthead 과잉 연출
+
+| 위반 항목 | 파일:라인 | 내용 |
+|-----------|-----------|------|
+| 72vh 최소 높이 | `masthead.tsx:22` | `min-h-[72vh]` — 첫 화면의 72%를 정보가 아닌 여백+장치로 점유 |
+| 전체 페이지 3곳 사용 | `desktop-magazine-page.tsx`, `desktop-onchain-magazine.tsx`, `desktop-weekly-magazine.tsx` | 모든 매거진 페이지마다 72vh 마스트헤드 반복 |
+| 에디션 + 메타 + 분리선 | `masthead.tsx:23-27` | `magazine-masthead-bar`, `magazine-masthead-divider` — 장식적 헤더 바 구조 |
+| py-24 | `masthead.tsx:22` | 96px 상하 패딩 — 간격 스케일(최대 64px) 초과 |
+
+**판단**: Masthead는 "에디토리얼 쇼케이스"로 기능하고 있으며, 정보 전달보다 연출이 우선이다. 철학의 "사용자가 먼저 '효과'를 본다" 실패 조건에 해당.
+
+**조치**: `min-h-[72vh]` 제거. 마스트헤드를 "문맥 안내 헤더"로 축소 — 에디션, 날짜, 현재 가격/헤드라인만 본문 도입 수준으로 배치. 72vh 대신 콘텐츠 높이에 맞춤.
+
+---
+
+### 8-4. 모션 과잉
+
+| 위반 항목 | 파일 | 내용 |
+|-----------|------|------|
+| ScrollReveal 전역 사용 | `desktop-magazine-page.tsx` 전체 | 거의 모든 요소에 ScrollReveal 적용, 60~80ms 간격 스태거 |
+| ScrollReveal 온체인 | `desktop-onchain-magazine.tsx` | 12개 이상의 ScrollReveal, delay 40~500ms 범위 |
+| ScrollReveal 위클리 | `desktop-weekly-magazine.tsx` | 아카이브 아이템마다 60ms 간격 캐스케이드 |
+| NumberCounter | `desktop-magazine-page.tsx:338-344` | BTC 가격, D-day 카운트 등 숫자 애니메이션 |
+| DotAssemblyReveal | `desktop/tools/page.tsx:73,107,150,171` | 4개 섹션에 각각 다른 delay/duration으로 등장 연출 |
+| FloatingProgress | 모든 매거진 페이지 | 우측 고정 네비게이션 점 — 스크롤 추적 모션 상시 작동 |
+| IntersectionObserver lazy | `desktop-magazine-page.tsx:428-436` | 차트 섹션 lazy load용 observer — 기능적이나 함께 사용되는 ScrollReveal과 중복 |
+
+**철학 기준**: "사용자가 움직임을 기억하지 못할 정도여야 한다." 현재는 스크롤할 때마다 요소가 등장하며, 이것 자체가 "경험"으로 기억된다.
+
+**조치**: ScrollReveal은 페이지 진입 시 above-the-fold 요소에만 1회 허용하고, 스크롤 영역의 반복 등장 모션은 전면 제거. NumberCounter는 정적 텍스트로 대체. DotAssemblyReveal 제거. FloatingProgress는 읽기 흐름 방해 여부 기준으로 존치/제거 판단.
+
+---
+
+### 8-5. 간격 스케일 위반
+
+철학 허용: `4 · 8 · 12 · 16 · 24 · 32 · 48 · 64`
+
+| 위반 값 | 사용 위치 | 문제 |
+|---------|-----------|------|
+| `py-24` (96px) | `masthead.tsx:22` | 최대 64px 초과 |
+| `py-14` (56px) | `light-section.tsx:13`, `dark-section.tsx:13` | 비허용 (48 또는 64여야 함) |
+| `py-12` (48px) | `magazine-footer.tsx:15` | 허용 |
+| `gap-[3px]` | `signal-bar.tsx:17` | 비허용 (4px여야 함) |
+| `p-5` (20px) | `desktop-ui.tsx:130`, `desktop-weekly-report-view.tsx:280`, `magazine-footer.tsx:19` | 비허용 (16 또는 24여야 함) |
+| `p-3` (12px) | `desktop/tools/page.tsx:41-53` | 허용 |
+| `gap-3` (12px) | `desktop-magazine-page.tsx:249`, `desktop-magazine-page.tsx:403` | 허용 |
+| `space-y-5` (20px) | `desktop/tools/page.tsx:33` | 비허용 (16 또는 24여야 함) |
+| `space-y-3` (12px) | 다수 | 허용 |
+| `mb-3` (12px) | `desktop-magazine-page.tsx:379` | 허용 |
+| `mb-4` (16px) | `desktop-magazine-page.tsx:375` | 허용 |
+| `mb-6` (24px) | 섹션 kicker 전반 | 허용 |
+| `mt-2` (8px) | 다수 | 허용 |
+
+**조치**: `py-24` → `py-16` (64px 한도 내). `py-14` → `py-12` (48px) 또는 `py-16` (64px). `p-5` → `p-4` (16px). `gap-[3px]` → `gap-1` (4px). `space-y-5` → `space-y-6` (24px).
+
+---
+
+### 8-6. 상태 표현 위반
+
+철학: "데이터가 있으면 표시된다. 데이터가 없으면 비워진다. 로딩, 에러, 성공을 구분하지 않는다."
+
+| 위반 항목 | 파일:라인 | 현재 상태 |
+|-----------|-----------|-----------|
+| 명시적 로딩 메시지 | `desktop-magazine-page.tsx:303-308` | "오늘의 데이터를 정리하는 중입니다." |
+| 명시적 에러 메시지 | `desktop-magazine-page.tsx:311-319` | "데이터를 아직 표시할 수 없습니다." |
+| 차트 로딩 메시지 | `desktop-magazine-page.tsx:443-445` | "차트 데이터를 정리하는 중입니다." |
+| 차트 에러 메시지 | `desktop-magazine-page.tsx:473-476` | "차트 데이터를 불러올 수 없습니다." |
+| 히트맵 로딩/안내 | `desktop-magazine-page.tsx:491-493` | "히트맵 데이터 로딩 중..." / "스크롤하여 데이터 로드" |
+| 빈 이벤트 메시지 | `desktop-magazine-page.tsx:214` | "예정된 이벤트가 없습니다" |
+| 빈 리포트 메시지 | `desktop-weekly-magazine.tsx:68` | "최신 리포트가 없습니다" |
+| DesktopEmptyState | `desktop-ui.tsx:191-207` | `No Data` kicker + 제목 + 본문의 3단 빈 상태 연출 |
+
+**조치**: 로딩/에러 분기를 제거하고, 최종 레이아웃 골격을 먼저 렌더한 뒤 데이터만 나중에 채운다. 빈 상태는 해당 영역이 비어 있는 것 자체로 표현. "스크롤하여 데이터 로드" 같은 행동 유도 문구 삭제.
+
+---
+
+### 8-7. 컴포넌트 존재감
+
+철학: "컴포넌트는 존재하지 않는다. 점, 여백, 텍스트만 존재한다. 사용자가 '이건 카드다'라고 느끼는 순간 실패다."
+
+| 위반 항목 | 파일 | 내용 |
+|-----------|------|------|
+| desktop-surface ::before | `globals.css:16-24` | 좌측 2px accent 바 + 상하 border — 카드 존재감을 만드는 장식 |
+| DesktopHero 2-column grid | `globals.css` (.desktop-hero) | `grid-template-columns: 1fr 280px` — "사이드바가 있는 히어로 컴포넌트"로 인지됨 |
+| DesktopStatCard border+bg | `desktop-ui.tsx:110` | `border border-dot-border/35 bg-white/40` — 명확한 카드 단위 |
+| DesktopTextCard border+bg | `desktop-ui.tsx:130` | 동일 — 카드 단위로 인지 |
+| NewsCard border+hover | `desktop-weekly-report-view.tsx:115-116` | `border border-dot-border/35 bg-white/40 hover:border-dot-accent/30` |
+| ArchiveCard border+active bg | `desktop-weekly-report-view.tsx:77-81` | 활성 상태에서 배경+보더 동시 변경 |
+| Tools sidebar 카드 3개 | `desktop/tools/page.tsx:86-102` | 3개의 앵커 카드가 명확한 카드 레이아웃 |
+| ToolsGuideContent 3-column | `desktop/tools/page.tsx:40-59` | `dot-grid-sparse` 배경 + border — 장식적 가이드 카드 |
+| 풋터 링크 카드 | `magazine-footer.tsx:19` | `desktop-surface block p-5` — 네비게이션을 카드로 감쌈 |
+
+**조치**: `desktop-surface::before`의 좌측 accent 바 제거. 카드 border/bg 최소화하여 여백으로 구획. DesktopHero의 sidebar 패턴 제거. 풋터 링크는 텍스트 링크로 환원.
+
+---
+
+### 8-8. 두 개의 크롬 공존 (미해결)
+
+| 항목 | `desktop-chrome.tsx` | `magazine-layout.tsx` |
+|------|---------------------|----------------------|
+| 네비 항목 수 | 6개 (개요, 온체인, 히스토리, 도구, 주간 리포트, 소개) | 4개 (개요, 온체인, 주간 리포트, 도구) |
+| 레이아웃 방식 | header + main 수직 | fixed topbar + full content |
+| 활성 상태 | 텍스트 색상만 변경 | 하단 underline (::after) |
+| 컨텍스트 표시 | 없음 | eyebrow + title |
+| 사용처 | 일부 하위 경로 (tools 등) | `/desktop` layout으로 모든 route 래핑 |
+
+**현재 상태**: `magazine-layout.tsx`가 `/desktop/layout.tsx`에서 모든 route를 래핑하므로 사실상 MagazineLayout이 주 크롬이다. 그러나 `desktop-chrome.tsx`가 코드에 잔존하며 네비 항목도 불일치.
+
+**조치**: `desktop-chrome.tsx`의 제거 확정. 네비 항목을 4개(개요, 온체인, 주간 리포트, 도구)로 단일화. `/desktop/indicators` redirect가 올바르게 작동하는지 확인.
+
+---
+
+### 8-9. 페이지별 질감 불일치
+
+철학: "각 route는 동일한 제품의 동일한 질감으로 읽혀야 한다."
+
+| 페이지 | 현재 질감 | 불일치 근거 |
+|--------|-----------|-------------|
+| `/desktop` (매거진) | 72vh 마스트헤드 → LightSection 반복 → 풋터 | 스크롤 매거진 + 풀블리드 섹션 |
+| `/desktop/onchain` (매거진) | 72vh 마스트헤드 → 2-column 그리드 → 풋터 | 동일 매거진 문법이나 내부가 카드 그리드 |
+| `/desktop/weekly` (매거진) | 72vh 마스트헤드 → 타임라인 → 풋터 | 매거진 + 타임라인 |
+| `/desktop/weekly/[slug]` (크롬형) | DesktopHero → DesktopSurface 스택 + 사이드바 | 완전히 다른 문법 — "앱 대시보드" 느낌 |
+| `/desktop/tools` (크롬형) | DesktopHero+사이드바 → DesktopSurface 스택 | 앱 대시보드 + DotAssemblyReveal 모션 |
+| `/desktop/contact`, `/desktop/privacy`, `/desktop/disclaimer` | 미확인, magazine-content 래핑 추정 | 보조 페이지들의 질감 통일 여부 미검증 |
+
+**가장 심각한 불일치**: `/desktop/weekly/[slug]`과 `/desktop/tools`는 DesktopHero+사이드바+DesktopSurface 스택으로 구성되어 매거진 페이지와 완전히 다른 "앱 UI" 질감을 보인다.
+
+**조치**: 모든 페이지를 "정제된 리포트" 단일 문법으로 통합. `/desktop/weekly/[slug]`의 Hero+사이드바 구조 해체. `/desktop/tools`의 Hero 사이드바와 DotAssemblyReveal 제거.
+
+---
+
+### 8-10. 장식적 요소 잔존
+
+| 항목 | 파일 | 내용 |
+|------|------|------|
+| `dot-grid-sparse` 배경 | `desktop/tools/page.tsx:41,47,53` | 도구 가이드 카드에 할프톤 점 배경 |
+| `magazine-masthead-divider` | `masthead.tsx:25` | 에디션과 메타 사이 장식 분리선 |
+| `magazine-indicator-strip` | `desktop-magazine-page.tsx:356-369` | 마스트헤드 하단 지표 띠 — 별도 레이아웃 장치 |
+| border-l-[2px] 이벤트 | `desktop-magazine-page.tsx:221` | 이벤트별 좌측 색 바 — 이벤트 타입 강조 장식 |
+| border-l-2 최신호 | `desktop-weekly-magazine.tsx:52` | 최신 리포트 좌측 강조선 |
+| border-l 타임라인 | `desktop-weekly-magazine.tsx:80` | 아카이브 좌측 연결선 |
+| TimelineItem dot | `timeline-item.tsx:14` | 5px 정사각형 점 — 타임라인 장식 |
+| ArchiveCard 스타일 분기 | `desktop-weekly-report-view.tsx:77-96` | active/inactive 상태별 전체 스타일 분기 |
+
+**조치**: `dot-grid-sparse` 배경 제거. 장식 분리선/강조선은 여백으로 대체. 타임라인 점은 철학의 "점" 개념에 부합하면 유지하되 크기/밀도 규칙 내로 조정. indicator-strip은 본문 내 인라인 수치로 환원.
+
+---
+
+### 8-11. 수정 우선순위 업데이트
+
+기존 Phase 1-7 순서에 코드 리뷰 결과를 반영한 세부 우선순위:
+
+| 순위 | 작업 | 근거 |
+|------|------|------|
+| **P0** | 타이포 스케일 통일 (8-1) | 4단계 외 크기가 20곳 이상 — 가장 넓은 위반, 가장 빠른 교정 가능 |
+| **P0** | Masthead 72vh 제거 (8-3) | 첫 화면 인상을 결정하며, 연출이 정보를 완전히 가림 |
+| **P1** | ScrollReveal 전면 정리 (8-4) | 모든 매거진 페이지에 걸쳐 있어 수정 범위가 넓지만 기계적 제거 가능 |
+| **P1** | 상태 표현 단순화 (8-6) | 로딩/에러/빈 상태 분기 제거 — 각 페이지에서 독립적으로 수행 가능 |
+| **P1** | 컬러 tone 시스템 단순화 (8-2) | 4-tone → 2-signal 전환은 desktop-ui.tsx 중심으로 파급 |
+| **P2** | desktop-chrome.tsx 제거 확정 (8-8) | 미사용 크롬 파일 정리 |
+| **P2** | 간격 스케일 정리 (8-5) | 비허용 값 치환 — 기계적 수정 |
+| **P2** | 컴포넌트 존재감 약화 (8-7) | surface ::before, border/bg 조합 절제 |
+| **P3** | 페이지별 질감 통합 (8-9) | `/desktop/weekly/[slug]`, `/desktop/tools`를 리포트 문법으로 전환 |
+| **P3** | 장식 요소 제거 (8-10) | dot-grid, divider, indicator-strip 등 정리 |
+
+---
+
+### 8-12. 검증 체크리스트 추가
+
+기존 검증 기준(섹션 6)에 추가:
+
+- [ ] 모든 텍스트 크기가 20px / 14px / 13px / 11px 중 하나다
+- [ ] font-weight가 Bold 또는 Regular만 사용된다
+- [ ] letter-spacing이 caption 11px의 `0.02em` 외에 사용되지 않는다
+- [ ] 시그널 색상이 `signal-heat`과 `signal-cool` 2개만 존재한다
+- [ ] `dot-green`, `dot-yellow` 토큰이 Tailwind 설정에서 제거되었다
+- [ ] `bg-white/40`, `border-dot-border/35` 등 불투명도 변형이 제거되었다
+- [ ] Masthead의 `min-h-[72vh]`가 콘텐츠 높이 기반으로 변경되었다
+- [ ] ScrollReveal이 above-the-fold 1회 외에 사용되지 않는다
+- [ ] NumberCounter, DotAssemblyReveal이 제거되었다
+- [ ] `desktop-surface::before`의 좌측 accent 바가 제거되었다
+- [ ] `/desktop/weekly/[slug]`과 `/desktop/tools`가 매거진 페이지와 동일한 질감이다
+- [ ] `desktop-chrome.tsx`가 사용되지 않거나 제거되었다
+- [ ] 간격 값이 `4 · 8 · 12 · 16 · 24 · 32 · 48 · 64` 스케일만 사용한다
+- [ ] 빈 상태에서 "로딩 중", "에러", "데이터 없음" 같은 문구가 노출되지 않는다
