@@ -55,7 +55,3 @@ export default function DesktopChrome({ children }: { children: React.ReactNode 
     </div>
   );
 }
-      </div>
-    </div>
-  );
-}

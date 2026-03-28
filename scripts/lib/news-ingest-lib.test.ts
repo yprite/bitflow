@@ -20,7 +20,7 @@ describe('resolveChromePath', () => {
     expect(
       resolveChromePath({
         env: {},
-        pathExists: (candidate) => candidate === renamedChromePath,
+        pathExists: (candidate: string) => candidate === renamedChromePath,
         appDirectories: ['/Applications/Google Chrome 2.app'],
       })
     ).toBe(renamedChromePath);
