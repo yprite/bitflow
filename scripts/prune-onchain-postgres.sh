@@ -89,16 +89,9 @@ deleted_blocks="$("$PSQL_BIN" "$BITFLOW_PG_DSN" -v ON_ERROR_STOP=1 -Atqc "
   SELECT COALESCE(COUNT(*), 0) FROM deleted_blocks;
 ")"
 
-"$PSQL_BIN" "$BITFLOW_PG_DSN" -v ON_ERROR_STOP=1 -qc "
-  VACUUM (ANALYZE) btc_blocks;
-  VACUUM (ANALYZE) btc_txs;
-  VACUUM (ANALYZE) btc_outputs;
-  VACUUM (ANALYZE) btc_inputs;
-  VACUUM (ANALYZE) btc_spent_edges;
-  VACUUM (ANALYZE) btc_daily_metrics;
-  VACUUM (ANALYZE) btc_entity_flow_daily;
-  VACUUM (ANALYZE) btc_alert_events;
-"
+for table_name in btc_blocks btc_txs btc_outputs btc_inputs btc_spent_edges btc_daily_metrics btc_entity_flow_daily btc_alert_events; do
+  "$PSQL_BIN" "$BITFLOW_PG_DSN" -v ON_ERROR_STOP=1 -qc "VACUUM (ANALYZE) ${table_name};"
+done
 
 after_min_height="$("$PSQL_BIN" "$BITFLOW_PG_DSN" -Atqc "SELECT COALESCE(MIN(height), -1) FROM btc_blocks")"
 after_db_size="$("$PSQL_BIN" "$BITFLOW_PG_DSN" -Atqc "SELECT pg_database_size(current_database())")"
