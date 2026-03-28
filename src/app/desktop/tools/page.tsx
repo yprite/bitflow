@@ -8,6 +8,7 @@ import BitcoinUtxoConsolidationPlanner from '@/components/bitcoin-utxo-consolida
 import GuideModal from '@/components/guide-modal';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import ToolsArbitrageSection from '@/components/tools-arbitrage-section';
+import ChromeExtensionCard from '@/components/chrome-extension-card';
 import WeatherEffect from '@/components/motion/storytelling/WeatherEffect';
 import { DesktopHero, DesktopSectionHeader, DesktopSurface } from '@/components/desktop/desktop-ui';
 import { fetchUsdKrw } from '@/lib/kimp';
@@ -38,7 +39,7 @@ function ToolSection({
 
 function ToolsGuideContent() {
   return (
-    <div className="grid gap-2 sm:grid-cols-3">
+    <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
       <div className="border border-dot-border/60 p-3 dot-grid-sparse">
         <p className="text-[10px] text-dot-muted uppercase tracking-wider">Prepare</p>
         <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
@@ -55,6 +56,12 @@ function ToolsGuideContent() {
         <p className="text-[10px] text-dot-muted uppercase tracking-wider">Operations + Market</p>
         <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
           단위 감각을 맞추고 UTXO 정리 타이밍을 본 뒤, 마지막에 BTC 재정거래 계산으로 이어집니다.
+        </p>
+      </div>
+      <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+        <p className="text-[10px] text-dot-muted uppercase tracking-wider">Extension</p>
+        <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
+          브라우저에서 sats→원화 변환을 바로 해주는 크롬 익스텐션을 설치할 수 있습니다.
         </p>
       </div>
     </div>
@@ -117,6 +124,11 @@ export default async function DesktopToolsPage() {
                 <p className="desktop-kicker">Market</p>
                 <p className="text-[13px] font-semibold text-dot-accent">시장 판단</p>
                 <p className="text-[11px] leading-relaxed text-dot-sub">BTC 재정거래가 의미 있는지 총비용 기준으로 검토합니다.</p>
+              </a>
+              <a href="#extension" className="block border border-dot-border/55 bg-white/70 p-4 space-y-1 transition hover:border-dot-accent/30">
+                <p className="desktop-kicker">Extension</p>
+                <p className="text-[13px] font-semibold text-dot-accent">크롬 익스텐션</p>
+                <p className="text-[11px] leading-relaxed text-dot-sub">브라우저에서 BTC 금액 감각을 바로 잡아주는 익스텐션입니다.</p>
               </a>
             </div>
           )}
@@ -197,6 +209,20 @@ export default async function DesktopToolsPage() {
         >
           <div className="min-w-0">
             <ToolsArbitrageSection />
+          </div>
+        </ToolSection>
+        </div>
+      </DotAssemblyReveal>
+
+      <DotAssemblyReveal delay={400} duration={720}>
+        <div id="extension">
+        <ToolSection
+          eyebrow="Extension"
+          title="크롬 익스텐션"
+          description="BTC 실무 흐름을 브라우저에서 바로 쓸 수 있는 크롬 익스텐션입니다. 설치하면 웹 페이지를 읽으면서 금액 감각을 즉시 잡을 수 있습니다."
+        >
+          <div className="min-w-0">
+            <ChromeExtensionCard />
           </div>
         </ToolSection>
         </div>

@@ -8,6 +8,7 @@ import BitcoinUtxoConsolidationPlanner from '@/components/bitcoin-utxo-consolida
 import GuideModal from '@/components/guide-modal';
 import PageHeader from '@/components/page-header';
 import ToolsArbitrageSection from '@/components/tools-arbitrage-section';
+import ChromeExtensionCard from '@/components/chrome-extension-card';
 import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import { fetchUsdKrw } from '@/lib/kimp';
 import { fetchOnchainNetworkPulse } from '@/lib/onchain-monitor';
@@ -41,7 +42,7 @@ function ToolSection({
 
 function ToolsGuideContent() {
   return (
-    <div className="grid gap-2 sm:grid-cols-3">
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
       <div className="border border-dot-border/60 p-3 dot-grid-sparse">
         <p className="text-[10px] text-dot-muted uppercase tracking-wider">Prepare</p>
         <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
@@ -58,6 +59,12 @@ function ToolsGuideContent() {
         <p className="text-[10px] text-dot-muted uppercase tracking-wider">Operations + Market</p>
         <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
           단위 감각을 맞추고 UTXO 정리 타이밍을 본 뒤, 마지막에 BTC 재정거래 계산으로 이어집니다.
+        </p>
+      </div>
+      <div className="border border-dot-border/60 p-3 dot-grid-sparse">
+        <p className="text-[10px] text-dot-muted uppercase tracking-wider">Extension</p>
+        <p className="mt-1 text-[11px] leading-relaxed text-dot-sub">
+          브라우저에서 sats→원화 변환을 바로 해주는 크롬 익스텐션을 설치할 수 있습니다.
         </p>
       </div>
     </div>
@@ -163,7 +170,17 @@ export default async function ToolsPage() {
         </ToolSection>
       </DotAssemblyReveal>
 
-      <DotAssemblyReveal delay={420} duration={620} density="low">
+      <DotAssemblyReveal delay={420} duration={720}>
+        <ToolSection
+          eyebrow="Extension"
+          title="크롬 익스텐션"
+          description="BTC 실무 흐름을 브라우저에서 바로 쓸 수 있는 크롬 익스텐션 모음입니다. 설치하면 웹 페이지를 읽으면서 금액 감각을 즉시 잡을 수 있습니다."
+        >
+          <ChromeExtensionCard />
+        </ToolSection>
+      </DotAssemblyReveal>
+
+      <DotAssemblyReveal delay={500} duration={620} density="low">
         <section className="dot-card p-5 sm:p-6 space-y-3">
           <h2 className="text-xs font-semibold text-dot-accent uppercase tracking-wider">
             비트코인 도구 사용 순서
