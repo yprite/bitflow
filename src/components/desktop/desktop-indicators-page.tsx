@@ -8,7 +8,6 @@ import BtcReturnHeatmap from '@/components/indicators/btc-return-heatmap';
 import KimpCorrelationChart from '@/components/indicators/kimp-correlation-chart';
 import KimpStatsCard from '@/components/indicators/kimp-stats-card';
 import KimpChart from '@/components/kimp-chart';
-import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import {
   DesktopHero,
   DesktopStatCard,
@@ -160,44 +159,26 @@ export default function DesktopIndicatorsPage() {
 
   return (
     <div className="space-y-6">
-      <DotAssemblyReveal delay={0} duration={500} density="low">
-        <DesktopHero
-          eyebrow="Historical Research Deck"
-          title="히스토리"
-          description={(
-            <>
-              과거 차트는 비교를 위해 모아 두되, 한 화면에서 모두 설명하려고 하지 않습니다.
-              김프의 위치를 먼저 보고, 이어서 펀딩비와 심리, 환율과 히트맵으로 넘어가는 읽기 순서를 유지합니다.
-            </>
-          )}
-          action={<IndicatorsGuideContent />}
-          sidebar={(
-            <div className="space-y-3">
-              <DesktopStatCard label="현재 김프" value={`${data.kimp.kimchiPremium.toFixed(2)}%`} />
-              <DesktopStatCard label="현재 공포탐욕" value={data.fearGreed.value} />
-              <DesktopStatCard label="차트 포인트" value={chartData.length} tone="neutral" />
-              <DesktopStatCard
-                label="30일 평균"
-                value={data.avg30d !== null ? `${data.avg30d.toFixed(2)}%` : '—'}
-                tone="neutral"
-              />
-            </div>
-          )}
-        />
-      </DotAssemblyReveal>
+      <DesktopHero
+        eyebrow="Historical Research Deck"
+        title="히스토리"
+        description={(
+          <>
+            과거 차트는 비교를 위해 모아 두되, 한 화면에서 모두 설명하려고 하지 않습니다.
+            김프의 위치를 먼저 보고, 이어서 펀딩비와 심리, 환율과 히트맵으로 넘어가는 읽기 순서를 유지합니다.
+          </>
+        )}
+        action={<IndicatorsGuideContent />}
+      />
 
-      <DotAssemblyReveal delay={100} duration={700}>
-        <div className="min-w-0">
-          <KimpChart data={chartData} />
-        </div>
-      </DotAssemblyReveal>
+      <div className="min-w-0">
+        <KimpChart data={chartData} />
+      </div>
 
       {stats && (
-        <DotAssemblyReveal delay={200} duration={700}>
-          <div className="min-w-0">
-            <KimpStatsCard stats={stats} period="30일" />
-          </div>
-        </DotAssemblyReveal>
+        <div className="min-w-0">
+          <KimpStatsCard stats={stats} period="30일" />
+        </div>
       )}
 
       {indicatorLoading ? (
@@ -207,36 +188,30 @@ export default function DesktopIndicatorsPage() {
         </DesktopSurface>
       ) : (
         <>
-          <DotAssemblyReveal delay={300} duration={700}>
-            <div className="grid grid-cols-2 gap-6">
-              <div className="min-w-0">
-                <FundingRateHistoryChart data={indicatorData?.fundingRateHistory ?? []} />
-              </div>
-              <div className="min-w-0">
-                <FearGreedHistoryChart data={indicatorData?.fearGreedHistory ?? []} />
-              </div>
-            </div>
-          </DotAssemblyReveal>
-
-          <DotAssemblyReveal delay={400} duration={700}>
+          <div className="grid grid-cols-2 gap-6">
             <div className="min-w-0">
-              <BtcReturnHeatmap data={indicatorData?.btcReturnsHistory ?? null} />
+              <FundingRateHistoryChart data={indicatorData?.fundingRateHistory ?? []} />
             </div>
-          </DotAssemblyReveal>
+            <div className="min-w-0">
+              <FearGreedHistoryChart data={indicatorData?.fearGreedHistory ?? []} />
+            </div>
+          </div>
 
-          <DotAssemblyReveal delay={500} duration={700}>
-            <div className="grid grid-cols-2 gap-6">
-              <div className="min-w-0">
-                <ExchangeRateChart data={indicatorData?.kimpHistory ?? []} />
-              </div>
-              <div className="min-w-0">
-                <KimpCorrelationChart
-                  kimpData={indicatorData?.kimpHistory ?? []}
-                  fundingData={indicatorData?.fundingRateHistory ?? []}
-                />
-              </div>
+          <div className="min-w-0">
+            <BtcReturnHeatmap data={indicatorData?.btcReturnsHistory ?? null} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div className="min-w-0">
+              <ExchangeRateChart data={indicatorData?.kimpHistory ?? []} />
             </div>
-          </DotAssemblyReveal>
+            <div className="min-w-0">
+              <KimpCorrelationChart
+                kimpData={indicatorData?.kimpHistory ?? []}
+                fundingData={indicatorData?.fundingRateHistory ?? []}
+              />
+            </div>
+          </div>
         </>
       )}
     </div>

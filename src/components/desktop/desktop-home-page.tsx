@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, type ReactNode, type WheelEvent } from 'react';
-import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
 import EventStrip from '@/components/event-strip';
 import HomeIntroModal from '@/components/home-intro-modal';
 import { getUpcomingEvents } from '@/lib/events';
@@ -307,91 +306,73 @@ export default function DesktopHomePage() {
 
   return (
     <div className="space-y-6">
-      <DotAssemblyReveal delay={0} duration={500} density="low">
-        <DesktopHero
-          eyebrow="Command Deck"
-          title={(
-            <span className="flex items-center justify-between">
-              <span>비트코인 기상청</span>
-              <HomeIntroModal
-                overviewCards={introCards}
-                baseUrl={SITE_BASE_URL}
-                contactEmail={SITE_CONTACT_EMAIL}
-              />
-            </span>
-          )}
-          description={(
-            <>
-              실시간 시장 체온, 핵심 해석, 이벤트 캘린더를 한 화면에서 확인합니다.
-              지표를 클릭하면 상세 분석 카드가 펼쳐집니다.
-            </>
-          )}
-          action={(
-            <div>
-              {/* 슬라이딩 캐러셀 */}
-              <div className="relative overflow-hidden rounded-sm border border-dot-border/40 bg-white/60">
-                {/* 인디케이터 */}
-                <div className="flex items-center gap-5 px-4 pt-3 pb-1">
-                  <button
-                    type="button"
-                    onClick={() => setPaused((p) => !p)}
-                    className="text-[10px] font-mono text-dot-muted hover:text-dot-accent transition-colors"
-                    title={paused ? '자동 슬라이드 재생' : '자동 슬라이드 일시정지'}
-                  >
-                    {paused ? '▶' : '❚❚'}
-                  </button>
-                  {['시장 체온', '이벤트'].map((label, i) => (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() => setSlide(i)}
-                      className={`text-[10px] font-mono uppercase tracking-[0.16em] transition-colors ${
-                        slide === i ? 'text-dot-accent' : 'text-dot-muted hover:text-dot-sub'
-                      }`}
-                    >
-                      {label}
-                      {slide === i && <div className="mt-1 h-[1.5px] bg-dot-accent" />}
-                    </button>
-                  ))}
-                  <div className="flex-1" />
-                  <span className="text-[9px] font-mono text-dot-muted">{slide + 1}/2</span>
-                </div>
-
-                {/* 슬라이드 트랙 */}
-                <div
-                  className="flex transition-transform duration-500 ease-in-out"
-                  style={{ transform: `translateX(-${slide * 100}%)` }}
+      <DesktopHero
+        eyebrow="Command Deck"
+        title={(
+          <span className="flex items-center justify-between">
+            <span>비트코인 기상청</span>
+            <HomeIntroModal
+              overviewCards={introCards}
+              baseUrl={SITE_BASE_URL}
+              contactEmail={SITE_CONTACT_EMAIL}
+            />
+          </span>
+        )}
+        description={(
+          <>
+            실시간 시장 체온, 핵심 해석, 이벤트 캘린더를 한 화면에서 확인합니다.
+            지표를 클릭하면 상세 분석 카드가 펼쳐집니다.
+          </>
+        )}
+        action={(
+          <div>
+            {/* 슬라이딩 캐러셀 */}
+            <div className="relative overflow-hidden rounded-sm border border-dot-border/40 bg-white/60">
+              {/* 인디케이터 */}
+              <div className="flex items-center gap-5 px-4 pt-3 pb-1">
+                <button
+                  type="button"
+                  onClick={() => setPaused((p) => !p)}
+                  className="text-[10px] font-mono text-dot-muted hover:text-dot-accent transition-colors"
+                  title={paused ? '자동 슬라이드 재생' : '자동 슬라이드 일시정지'}
                 >
-                  {/* Slide 1: 시장 체온 — 클릭 가능 지표 */}
-                  <div
-                    className="w-full flex-shrink-0 px-4 pb-4 pt-2 space-y-3"
-                    onMouseEnter={() => setIsMarketTempHovered(true)}
-                    onMouseLeave={() => setIsMarketTempHovered(false)}
-                    onWheelCapture={handleMarketTempWheel}
+                  {paused ? '▶' : '❚❚'}
+                </button>
+                {['시장 체온', '이벤트'].map((label, i) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => setSlide(i)}
+                    className={`text-[10px] font-mono uppercase tracking-[0.16em] transition-colors ${
+                      slide === i ? 'text-dot-accent' : 'text-dot-muted hover:text-dot-sub'
+                    }`}
                   >
-                    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-4 items-stretch">
-                      <div className="min-w-0 [&>*]:h-full [&_button:has(+div)]:hidden [&_button+div]:hidden">
-                        <SignalBadge signal={data.signal} upbitPrice={data.kimp.upbitPrice} />
-                      </div>
-                      <div className="grid grid-cols-3 gap-3">
-                        {INDICATORS_ROW1.map((ind) => {
-                          const stat = getStatValue(ind.key);
-                          return (
-                            <ClickableStatCard
-                              key={ind.key}
-                              label={ind.label}
-                              value={stat.value}
-                              detail={stat.detail}
-                              tone={stat.tone}
-                              active={selectedIndicator === ind.key}
-                              onClick={() => toggleIndicator(ind.key)}
-                            />
-                          );
-                        })}
-                      </div>
+                    {label}
+                    {slide === i && <div className="mt-1 h-[1.5px] bg-dot-accent" />}
+                  </button>
+                ))}
+                <div className="flex-1" />
+                <span className="text-[9px] font-mono text-dot-muted">{slide + 1}/2</span>
+              </div>
+
+              {/* 슬라이드 트랙 */}
+              <div
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${slide * 100}%)` }}
+              >
+                {/* Slide 1: 시장 체온 — 클릭 가능 지표 */}
+                <div
+                  className="w-full flex-shrink-0 px-4 pb-4 pt-2 space-y-3"
+                  onMouseEnter={() => setIsMarketTempHovered(true)}
+                  onMouseLeave={() => setIsMarketTempHovered(false)}
+                  onWheelCapture={handleMarketTempWheel}
+                >
+                  <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-4 items-stretch">
+                    <div className="min-w-0 [&>*]:h-full [&_button:has(+div)]:hidden [&_button+div]:hidden">
+                      <SignalBadge signal={data.signal} upbitPrice={data.kimp.upbitPrice} />
                     </div>
-                    <div className="grid grid-cols-5 gap-3">
-                      {INDICATORS_ROW2.map((ind) => {
+                    <div className="grid grid-cols-3 gap-3">
+                      {INDICATORS_ROW1.map((ind) => {
                         const stat = getStatValue(ind.key);
                         return (
                           <ClickableStatCard
@@ -406,35 +387,44 @@ export default function DesktopHomePage() {
                         );
                       })}
                     </div>
-
-                    {selectedIndicator && (
-                      <div className="max-h-[180px] overflow-y-auto">
-                        {renderDetail()}
-                      </div>
-                    )}
-
+                  </div>
+                  <div className="grid grid-cols-5 gap-3">
+                    {INDICATORS_ROW2.map((ind) => {
+                      const stat = getStatValue(ind.key);
+                      return (
+                        <ClickableStatCard
+                          key={ind.key}
+                          label={ind.label}
+                          value={stat.value}
+                          detail={stat.detail}
+                          tone={stat.tone}
+                          active={selectedIndicator === ind.key}
+                          onClick={() => toggleIndicator(ind.key)}
+                        />
+                      );
+                    })}
                   </div>
 
-                  {/* Slide 2: 이벤트 (달력 + 리스트) */}
-                  <div className="w-full flex-shrink-0 px-4 pb-4 pt-2">
-                    <div className="space-y-4">
-                      <MiniCalendar />
-                      <EventStrip />
+                  {selectedIndicator && (
+                    <div className="max-h-[180px] overflow-y-auto">
+                      {renderDetail()}
                     </div>
+                  )}
+
+                </div>
+
+                {/* Slide 2: 이벤트 (달력 + 리스트) */}
+                <div className="w-full flex-shrink-0 px-4 pb-4 pt-2">
+                  <div className="space-y-4">
+                    <MiniCalendar />
+                    <EventStrip />
                   </div>
                 </div>
               </div>
             </div>
-          )}
-          sidebar={(
-            <div className="relative z-10 space-y-3">
-              {overviewCards.map((card) => (
-                <DesktopLinkCard key={card.href} {...card} />
-              ))}
-            </div>
-          )}
-        />
-      </DotAssemblyReveal>
+          </div>
+        )}
+      />
     </div>
   );
 }
