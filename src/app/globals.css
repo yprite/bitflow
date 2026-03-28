@@ -8,30 +8,16 @@ body {
 
 .desktop-surface {
   position: relative;
-  border-top: 1px solid rgba(17,17,17,0.18);
-  border-bottom: 1px solid rgba(17,17,17,0.08);
-  background: rgba(255,255,255,0.44);
-}
-
-.desktop-surface::before {
-  content: '';
-  position: absolute;
-  inset: 0 auto auto 0;
-  width: 64px;
-  height: 1px;
-  background: rgba(17,17,17,0.72);
+  border-top: 1px solid rgba(17,17,17,0.08);
 }
 
 .desktop-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) 280px;
-  gap: 24px;
-  padding: 24px;
+  padding: 24px 0;
 }
 
 .desktop-kicker {
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: 11px;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: #6b7280;
 }
@@ -44,17 +30,6 @@ body {
 
 .desktop-divider {
   border-top: 1px dashed rgba(17,17,17,0.12);
-}
-
-.desktop-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid rgba(17,17,17,0.1);
-  background: rgba(255,255,255,0.76);
-  padding: 8px 12px;
-  font-size: 11px;
-  color: #4b5563;
 }
 
 /* ── Magazine Layout ────────────────────── */
@@ -138,7 +113,7 @@ body {
   padding: 8px 0;
   font-size: 11px;
   line-height: 1;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: #6b7280;
 }
@@ -172,10 +147,8 @@ body {
 }
 
 .magazine-masthead {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   position: relative;
   overflow: hidden;
 }
@@ -184,16 +157,10 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 2px;
-}
-
-.magazine-masthead-divider {
-  flex: 1;
-  height: 1px;
-  background: #d1d5db;
+  letter-spacing: 0.02em;
 }
 
 .magazine-masthead-meta {
@@ -205,102 +172,32 @@ body {
   display: flex;
   gap: 1px;
   background: #d1d5db;
-  border-radius: 4px;
   overflow: hidden;
 }
 
 .magazine-indicator-strip-cell {
   flex: 1;
   background: #ffffff;
-  padding: 10px;
+  padding: 8px;
   text-align: center;
 }
 
 .magazine-indicator-strip-label {
-  font-size: 8px;
+  font-size: 11px;
   color: #6b7280;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.02em;
 }
 
 .magazine-indicator-strip-value {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 700;
-}
-
-.scroll-reveal-hidden {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.scroll-reveal-visible {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 .number-counter {
   font-variant-numeric: tabular-nums;
 }
 
-.floating-progress {
-  position: fixed;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.floating-progress.visible {
-  opacity: 1;
-}
-
-.floating-progress-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #d1d5db;
-  transition: background 0.2s ease, transform 0.2s ease;
-  cursor: pointer;
-  border: none;
-  padding: 0;
-}
-
-.floating-progress-dot:hover {
-  transform: scale(1.5);
-}
-
-.floating-progress-dot.active {
-  background: #1a1a1a;
-  transform: scale(1.5);
-}
-
-.floating-progress-line {
-  width: 1px;
-  height: 8px;
-  background: #e5e5e0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .scroll-reveal-hidden {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-  .floating-progress {
-    transition: none;
-  }
-  .floating-progress-dot {
-    transition: none;
-  }
-}
 
 /* ── Halftone Dot Pattern Utilities ── */
 
