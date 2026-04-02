@@ -16,6 +16,7 @@ REALTIME_PLIST="$PLIST_DIR/com.bitflow.onchain-realtime.plist"
 RAW_RETENTION_BLOCKS="${BITFLOW_RAW_RETENTION_BLOCKS:-14400}"
 MAX_DB_GB="${BITFLOW_ONCHAIN_GUARD_MAX_DB_GB:-180}"
 MIN_FREE_GB="${BITFLOW_ONCHAIN_GUARD_MIN_FREE_GB:-80}"
+FORCE_SKIP_SNAPSHOT="${BITFLOW_ONCHAIN_GUARD_FORCE_SKIP_SNAPSHOT:-1}"
 
 mkdir -p "$LOCK_ROOT"
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then
@@ -48,6 +49,11 @@ fi
 
 if ! [[ "$MAX_DB_GB" =~ ^[0-9]+$ && "$MIN_FREE_GB" =~ ^[0-9]+$ && "$RAW_RETENTION_BLOCKS" =~ ^[0-9]+$ ]]; then
   echo "onchain db guard thresholds must be integers"
+  exit 1
+fi
+
+if [[ "$FORCE_SKIP_SNAPSHOT" != "0" && "$FORCE_SKIP_SNAPSHOT" != "1" ]]; then
+  echo "BITFLOW_ONCHAIN_GUARD_FORCE_SKIP_SNAPSHOT must be 0 or 1"
   exit 1
 fi
 
@@ -89,7 +95,9 @@ done
 echo "onchain db guard triggered db_size_bytes=${db_size_bytes} free_bytes=${free_bytes}"
 
 BITFLOW_RAW_RETENTION_BLOCKS="$RAW_RETENTION_BLOCKS" \
+BITFLOW_RESET_SKIP_PREVOUT_SNAPSHOT="$FORCE_SKIP_SNAPSHOT" \
   "$RESET_SCRIPT"
 
 BITFLOW_RAW_RETENTION_BLOCKS="$RAW_RETENTION_BLOCKS" \
+BITFLOW_ENABLE_PREVOUT_SNAPSHOT=0 \
   "$RETENTION_SCRIPT" || true

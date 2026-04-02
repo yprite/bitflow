@@ -1,23 +1,10 @@
 import { NextResponse } from 'next/server';
+import { getGoogleAdSensePublisherId } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
-function getPublisherId(): string {
-  const raw = (
-    process.env.GOOGLE_ADSENSE_PUBLISHER_ID ??
-    process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_PUBLISHER_ID ??
-    ''
-  ).trim();
-
-  if (!raw) {
-    return '';
-  }
-
-  return raw.startsWith('pub-') ? raw : `pub-${raw}`;
-}
-
 export function GET() {
-  const publisherId = getPublisherId();
+  const publisherId = getGoogleAdSensePublisherId();
 
   if (!publisherId) {
     return new NextResponse('Not Found', {

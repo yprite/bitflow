@@ -1,9 +1,6 @@
 'use client';
 
 import { useState, useEffect, type ReactNode, type WheelEvent } from 'react';
-import DotAssemblyReveal from '@/components/motion/transitions/DotAssemblyReveal';
-import OrbitalSilence from '@/components/motion/storytelling/OrbitalSilence';
-import WeatherEffect from '@/components/motion/storytelling/WeatherEffect';
 import EventStrip from '@/components/event-strip';
 import HomeIntroModal from '@/components/home-intro-modal';
 import { getUpcomingEvents } from '@/lib/events';
@@ -124,14 +121,14 @@ function MiniCalendar() {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   return (
-    <div className="border border-dot-border/40 bg-white/70 p-3">
+    <div className="border-t border-dot-border p-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-dot-muted">{monthLabel}</span>
-        <span className="text-[9px] font-mono text-dot-muted">이벤트 표시</span>
+        <span className="desktop-kicker">{monthLabel}</span>
+        <span className="text-[11px] text-dot-muted">이벤트 표시</span>
       </div>
-      <div className="grid grid-cols-7 gap-px text-center text-[10px]">
+      <div className="grid grid-cols-7 gap-px text-center text-[11px]">
         {weekdays.map((w) => (
-          <div key={w} className="py-1 font-mono text-dot-muted">{w}</div>
+          <div key={w} className="py-1 text-dot-muted">{w}</div>
         ))}
         {cells.map((day, i) => {
           if (day === null) return <div key={`empty-${i}`} />;
@@ -140,7 +137,7 @@ function MiniCalendar() {
           return (
             <div
               key={day}
-              className={`relative py-1 font-mono ${
+              className={`relative py-1 ${
                 isToday
                   ? 'font-bold text-dot-accent'
                   : 'text-dot-sub'
@@ -183,19 +180,19 @@ function ClickableStatCard({
       className={`w-full text-left border p-4 transition-all ${
         active
           ? 'border-dot-accent bg-dot-accent/[0.04] ring-1 ring-dot-accent/20'
-          : 'border-dot-border/55 bg-white/70 hover:border-dot-accent/30'
+          : 'border-dot-border hover:border-dot-accent'
       }`}
     >
       <p className="desktop-kicker">{label}</p>
-      <div className={`mt-3 text-[22px] font-semibold tracking-[-0.03em] ${
-        tone === 'positive' ? 'text-dot-green'
+      <div className={`mt-3 text-[13px] font-bold ${
+        tone === 'positive' ? 'text-dot-blue'
         : tone === 'negative' ? 'text-dot-red'
         : tone === 'neutral' ? 'text-dot-sub'
         : 'text-dot-accent'
       }`}>
         {value}
       </div>
-      {detail ? <div className="mt-2 text-[12px] leading-6 text-dot-sub">{detail}</div> : null}
+      {detail ? <div className="mt-2 text-[11px] leading-6 text-dot-sub">{detail}</div> : null}
     </button>
   );
 }
@@ -221,34 +218,7 @@ export default function DesktopHomePage() {
     return () => clearInterval(timer);
   }, [paused]);
 
-  if (loading) {
-    return (
-      <DesktopSurface className="flex min-h-[620px] items-center justify-center">
-        <OrbitalSilence />
-      </DesktopSurface>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <DesktopSurface className="p-12">
-        <div className="space-y-4 text-center">
-          <p className="desktop-kicker">Load Error</p>
-          <h1 className="text-[30px] font-semibold tracking-[-0.03em] text-dot-red">
-            데이터를 불러올 수 없습니다.
-          </h1>
-          <p className="text-[14px] leading-7 text-dot-sub">{error ?? '알 수 없는 오류'}</p>
-          <button
-            type="button"
-            onClick={fetchData}
-            className="inline-flex border border-dot-border bg-white px-4 py-2 text-[12px] font-medium text-dot-accent transition hover:border-dot-accent"
-          >
-            다시 시도
-          </button>
-        </div>
-      </DesktopSurface>
-    );
-  }
+  if (!data) return null;
 
   const toggleIndicator = (key: IndicatorKey) => {
     setSelectedIndicator((prev) => (prev === key ? null : key));
@@ -258,11 +228,11 @@ export default function DesktopHomePage() {
     if (!selectedIndicator || !data) return null;
     const fmt = formatPercent;
     const row = (label: string, value: string, sub?: string) => (
-      <div key={label} className="flex items-center justify-between py-1 border-b border-dot-border/20 last:border-0">
+      <div key={label} className="flex items-center justify-between py-1 border-b border-dot-border last:border-0">
         <span className="text-[11px] text-dot-muted">{label}</span>
         <div className="text-right">
-          <span className="text-[12px] font-semibold text-dot-accent font-mono">{value}</span>
-          {sub && <span className="ml-2 text-[10px] text-dot-muted">{sub}</span>}
+          <span className="text-[11px] font-bold text-dot-accent">{value}</span>
+          {sub && <span className="ml-2 text-[11px] text-dot-muted">{sub}</span>}
         </div>
       </div>
     );
@@ -316,93 +286,74 @@ export default function DesktopHomePage() {
   }
 
   return (
-    <div className="space-y-6">
-      <DotAssemblyReveal delay={0} duration={500} density="low">
-        <DesktopHero
-          eyebrow="Command Deck"
-          title={(
-            <span className="flex items-center justify-between">
-              <span>비트코인 기상청</span>
-              <HomeIntroModal
-                overviewCards={introCards}
-                baseUrl={SITE_BASE_URL}
-                contactEmail={SITE_CONTACT_EMAIL}
-              />
-            </span>
-          )}
-          description={(
-            <>
-              실시간 시장 체온, 핵심 해석, 이벤트 캘린더를 한 화면에서 확인합니다.
-              지표를 클릭하면 상세 분석 카드가 펼쳐집니다.
-              <WeatherEffect weather="cloudy" width={700} height={250} className="absolute bottom-0 left-0 z-0 pointer-events-none" />
-            </>
-          )}
-          action={(
-            <div>
-              {/* 슬라이딩 캐러셀 */}
-              <div className="relative overflow-hidden rounded-sm border border-dot-border/40 bg-white/60">
-                {/* 인디케이터 */}
-                <div className="flex items-center gap-5 px-4 pt-3 pb-1">
-                  <button
-                    type="button"
-                    onClick={() => setPaused((p) => !p)}
-                    className="text-[10px] font-mono text-dot-muted hover:text-dot-accent transition-colors"
-                    title={paused ? '자동 슬라이드 재생' : '자동 슬라이드 일시정지'}
-                  >
-                    {paused ? '▶' : '❚❚'}
-                  </button>
-                  {['시장 체온', '이벤트'].map((label, i) => (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() => setSlide(i)}
-                      className={`text-[10px] font-mono uppercase tracking-[0.16em] transition-colors ${
-                        slide === i ? 'text-dot-accent' : 'text-dot-muted hover:text-dot-sub'
-                      }`}
-                    >
-                      {label}
-                      {slide === i && <div className="mt-1 h-[1.5px] bg-dot-accent" />}
-                    </button>
-                  ))}
-                  <div className="flex-1" />
-                  <span className="text-[9px] font-mono text-dot-muted">{slide + 1}/2</span>
-                </div>
-
-                {/* 슬라이드 트랙 */}
-                <div
-                  className="flex transition-transform duration-500 ease-in-out"
-                  style={{ transform: `translateX(-${slide * 100}%)` }}
+    <div className="magazine-content pt-24 pb-16 space-y-6">
+      <DesktopHero
+        eyebrow="Command Deck"
+        title={(
+          <span className="flex items-center justify-between">
+            <span>비트코인 기상청</span>
+            <HomeIntroModal
+              overviewCards={introCards}
+              baseUrl={SITE_BASE_URL}
+              contactEmail={SITE_CONTACT_EMAIL}
+            />
+          </span>
+        )}
+        description={(
+          <>
+            실시간 시장 체온, 핵심 해석, 이벤트 캘린더를 한 화면에서 확인합니다.
+            지표를 클릭하면 상세 분석 카드가 펼쳐집니다.
+          </>
+        )}
+        action={(
+          <div>
+            {/* 슬라이딩 캐러셀 */}
+            <div className="relative overflow-hidden border border-dot-border">
+              {/* 인디케이터 */}
+              <div className="flex items-center gap-6 px-4 pt-3 pb-1">
+                <button
+                  type="button"
+                  onClick={() => setPaused((p) => !p)}
+                  className="text-[11px] text-dot-muted hover:text-dot-accent transition-colors"
+                  title={paused ? '자동 슬라이드 재생' : '자동 슬라이드 일시정지'}
                 >
-                  {/* Slide 1: 시장 체온 — 클릭 가능 지표 */}
-                  <div
-                    className="w-full flex-shrink-0 px-4 pb-4 pt-2 space-y-3"
-                    onMouseEnter={() => setIsMarketTempHovered(true)}
-                    onMouseLeave={() => setIsMarketTempHovered(false)}
-                    onWheelCapture={handleMarketTempWheel}
+                  {paused ? '▶' : '❚❚'}
+                </button>
+                {['시장 체온', '이벤트'].map((label, i) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => setSlide(i)}
+                    className={`desktop-kicker transition-colors ${
+                      slide === i ? 'text-dot-accent' : 'text-dot-muted hover:text-dot-sub'
+                    }`}
                   >
-                    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-4 items-stretch">
-                      <div className="min-w-0 [&>*]:h-full [&_button:has(+div)]:hidden [&_button+div]:hidden">
-                        <SignalBadge signal={data.signal} upbitPrice={data.kimp.upbitPrice} />
-                      </div>
-                      <div className="grid grid-cols-3 gap-3">
-                        {INDICATORS_ROW1.map((ind) => {
-                          const stat = getStatValue(ind.key);
-                          return (
-                            <ClickableStatCard
-                              key={ind.key}
-                              label={ind.label}
-                              value={stat.value}
-                              detail={stat.detail}
-                              tone={stat.tone}
-                              active={selectedIndicator === ind.key}
-                              onClick={() => toggleIndicator(ind.key)}
-                            />
-                          );
-                        })}
-                      </div>
+                    {label}
+                    {slide === i && <div className="mt-1 h-[1.5px] bg-dot-accent" />}
+                  </button>
+                ))}
+                <div className="flex-1" />
+                <span className="text-[11px] text-dot-muted">{slide + 1}/2</span>
+              </div>
+
+              {/* 슬라이드 트랙 */}
+              <div
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${slide * 100}%)` }}
+              >
+                {/* Slide 1: 시장 체온 — 클릭 가능 지표 */}
+                <div
+                  className="w-full flex-shrink-0 px-4 pb-4 pt-2 space-y-3"
+                  onMouseEnter={() => setIsMarketTempHovered(true)}
+                  onMouseLeave={() => setIsMarketTempHovered(false)}
+                  onWheelCapture={handleMarketTempWheel}
+                >
+                  <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] gap-4 items-stretch">
+                    <div className="min-w-0 [&>*]:h-full [&_button:has(+div)]:hidden [&_button+div]:hidden">
+                      <SignalBadge signal={data.signal} upbitPrice={data.kimp.upbitPrice} />
                     </div>
-                    <div className="grid grid-cols-5 gap-3">
-                      {INDICATORS_ROW2.map((ind) => {
+                    <div className="grid grid-cols-3 gap-3">
+                      {INDICATORS_ROW1.map((ind) => {
                         const stat = getStatValue(ind.key);
                         return (
                           <ClickableStatCard
@@ -417,35 +368,44 @@ export default function DesktopHomePage() {
                         );
                       })}
                     </div>
-
-                    {selectedIndicator && (
-                      <div className="max-h-[180px] overflow-y-auto">
-                        {renderDetail()}
-                      </div>
-                    )}
-
+                  </div>
+                  <div className="grid grid-cols-5 gap-3">
+                    {INDICATORS_ROW2.map((ind) => {
+                      const stat = getStatValue(ind.key);
+                      return (
+                        <ClickableStatCard
+                          key={ind.key}
+                          label={ind.label}
+                          value={stat.value}
+                          detail={stat.detail}
+                          tone={stat.tone}
+                          active={selectedIndicator === ind.key}
+                          onClick={() => toggleIndicator(ind.key)}
+                        />
+                      );
+                    })}
                   </div>
 
-                  {/* Slide 2: 이벤트 (달력 + 리스트) */}
-                  <div className="w-full flex-shrink-0 px-4 pb-4 pt-2">
-                    <div className="space-y-4">
-                      <MiniCalendar />
-                      <EventStrip />
+                  {selectedIndicator && (
+                    <div className="max-h-[180px] overflow-y-auto">
+                      {renderDetail()}
                     </div>
+                  )}
+
+                </div>
+
+                {/* Slide 2: 이벤트 (달력 + 리스트) */}
+                <div className="w-full flex-shrink-0 px-4 pb-4 pt-2">
+                  <div className="space-y-4">
+                    <MiniCalendar />
+                    <EventStrip />
                   </div>
                 </div>
               </div>
             </div>
-          )}
-          sidebar={(
-            <div className="relative z-10 space-y-3">
-              {overviewCards.map((card) => (
-                <DesktopLinkCard key={card.href} {...card} />
-              ))}
-            </div>
-          )}
-        />
-      </DotAssemblyReveal>
+          </div>
+        )}
+      />
     </div>
   );
 }

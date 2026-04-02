@@ -7,11 +7,13 @@ import {
   SITE_NAME,
   SITE_NAVER_SITE_VERIFICATION,
   SITE_REPO_URL,
+  getGoogleAdSenseClientId,
   getBaseUrl,
 } from '@/lib/site';
 import './globals.css';
 
 const baseUrl = getBaseUrl();
+const googleAdSenseClientId = getGoogleAdSenseClientId();
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -145,6 +147,16 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content={SITE_NAME} />
+        {googleAdSenseClientId ? (
+          <>
+            <meta name="google-adsense-account" content={googleAdSenseClientId} />
+            <script
+              async
+              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${googleAdSenseClientId}`}
+              crossOrigin="anonymous"
+            />
+          </>
+        ) : null}
         {SITE_NAVER_SITE_VERIFICATION ? (
           <meta name="naver-site-verification" content={SITE_NAVER_SITE_VERIFICATION} />
         ) : null}

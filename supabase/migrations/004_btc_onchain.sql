@@ -97,15 +97,17 @@ CREATE TABLE IF NOT EXISTS btc_spent_edges (
   created_time TIMESTAMPTZ,
   value_sats BIGINT,
   age_seconds BIGINT,
+  prev_script_pubkey TEXT,
+  prev_script_type TEXT,
+  prev_address TEXT,
+  prev_descriptor TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   PRIMARY KEY (spending_txid, vin_n),
   CONSTRAINT uq_btc_spent_edges_prevout UNIQUE (prev_txid, prev_vout_n),
   CONSTRAINT fk_btc_spent_edges_input FOREIGN KEY (spending_txid, vin_n)
-    REFERENCES btc_inputs (spending_txid, vin_n) ON DELETE CASCADE,
-  CONSTRAINT fk_btc_spent_edges_output FOREIGN KEY (prev_txid, prev_vout_n)
-    REFERENCES btc_outputs (txid, vout_n) ON DELETE CASCADE
+    REFERENCES btc_inputs (spending_txid, vin_n) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_btc_spent_edges_time

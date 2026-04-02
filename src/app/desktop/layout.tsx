@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import DataProvider from '@/components/data-provider';
-import DesktopChrome from '@/components/desktop/desktop-chrome';
+import MagazineLayout from '@/components/desktop/magazine/magazine-layout';
 import EventTracker from '@/components/event-tracker';
 import { SITE_NAME } from '@/lib/site';
 
@@ -21,9 +21,9 @@ export default function DesktopLayout({
   children: React.ReactNode;
 }) {
   return (
-    <DesktopChrome>
+    <MagazineLayout>
       <EventTracker />
       <DataProvider>{children}</DataProvider>
-    </DesktopChrome>
+    </MagazineLayout>
   );
 }

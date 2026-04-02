@@ -124,15 +124,24 @@ async function supabaseDelete(relativePath) {
   }
 }
 
-async function supabaseInsert(relativePath, rows) {
+async function supabaseInsert(relativePath, rows, options = {}) {
   if (rows.length === 0) return;
 
-  const url = `${requiredEnv('SUPABASE_URL')}${relativePath}`;
+  const url = new URL(`${requiredEnv('SUPABASE_URL')}${relativePath}`);
+  if (options.onConflict) {
+    url.searchParams.set('on_conflict', options.onConflict);
+  }
+
+  const preferHeaders = ['return=minimal'];
+  if (options.mergeDuplicates) {
+    preferHeaders.push('resolution=merge-duplicates');
+  }
+
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       ...createSupabaseHeaders(),
-      Prefer: 'return=minimal',
+      Prefer: preferHeaders.join(','),
     },
     body: JSON.stringify(rows),
   });
@@ -142,9 +151,9 @@ async function supabaseInsert(relativePath, rows) {
   }
 }
 
-async function insertInBatches(relativePath, rows, batchSize = 500) {
+async function insertInBatches(relativePath, rows, batchSize = 500, options = {}) {
   for (let index = 0; index < rows.length; index += batchSize) {
-    await supabaseInsert(relativePath, rows.slice(index, index + batchSize));
+    await supabaseInsert(relativePath, rows.slice(index, index + batchSize), options);
   }
 }
 
@@ -154,20 +163,65 @@ function toIsoDate(value) {
   return String(value).slice(0, 10);
 }
 
-function latestPublishedDay(metricRows, alertRows) {
+function latestPublishedDay(metricRows) {
   const values = [];
 
   for (const row of metricRows) {
     values.push(toIsoDate(row.collected_at));
   }
 
-  for (const row of alertRows) {
-    values.push(toIsoDate(row.timestamp));
-  }
-
   const filtered = values.filter(Boolean).sort();
   return filtered.at(-1) ?? null;
 }
+
+function latestAlertTimestamp(alertRows) {
+  const values = alertRows
+    .map((row) => (typeof row.timestamp === 'string' ? row.timestamp : null))
+    .filter(Boolean)
+    .sort();
+  return values.at(-1) ?? null;
+}
+
+const CONTIGUOUS_INDEXED_STATUS_SQL = `
+  WITH bounds AS (
+    SELECT GREATEST($1::bigint, 0) AS floor_height
+  ),
+  indexed AS (
+    SELECT height
+    FROM btc_blocks
+    WHERE height >= (SELECT floor_height FROM bounds)
+  ),
+  first_present AS (
+    SELECT MIN(height) AS min_height, MAX(height) AS max_height
+    FROM indexed
+  ),
+  first_gap AS (
+    SELECT MIN(prev_height + 1) AS missing_height
+    FROM (
+      SELECT height, LAG(height) OVER (ORDER BY height) AS prev_height
+      FROM indexed
+    ) gaps
+    WHERE prev_height IS NOT NULL
+      AND height > prev_height + 1
+  ),
+  contiguous AS (
+    SELECT CASE
+      WHEN (SELECT min_height FROM first_present) IS NULL THEN NULL::bigint
+      WHEN (SELECT min_height FROM first_present) > (SELECT floor_height FROM bounds) THEN NULL::bigint
+      WHEN (SELECT missing_height FROM first_gap) IS NOT NULL THEN (SELECT missing_height FROM first_gap) - 1
+      ELSE (SELECT max_height FROM first_present)
+    END AS indexed_height
+  )
+  SELECT
+    contiguous.indexed_height,
+    (
+      SELECT block_time::date::text
+      FROM btc_blocks
+      WHERE height = contiguous.indexed_height
+      LIMIT 1
+    ) AS latest_indexed_day
+  FROM contiguous
+`;
 
 async function readNodeStatus() {
   try {
@@ -195,14 +249,18 @@ async function readNodeStatus() {
   }
 }
 
-async function readIndexedStatus(client) {
+async function readIndexedStatus(client, floorHeight = null) {
   try {
-    const result = await client.query(`
-      SELECT
-        MAX(height) AS indexed_height,
-        MAX(block_time::date)::text AS latest_indexed_day
-      FROM btc_blocks
-    `);
+    const normalizedFloorHeight =
+      Number.isFinite(floorHeight) && floorHeight >= 0 ? Math.floor(floorHeight) : null;
+    const result = normalizedFloorHeight !== null
+      ? await client.query(CONTIGUOUS_INDEXED_STATUS_SQL, [normalizedFloorHeight])
+      : await client.query(`
+          SELECT
+            MAX(height) AS indexed_height,
+            MAX(block_time::date)::text AS latest_indexed_day
+          FROM btc_blocks
+        `);
     const indexedHeight =
       result.rows[0]?.indexed_height === null || result.rows[0]?.indexed_height === undefined
         ? null
@@ -242,10 +300,14 @@ async function main() {
   await client.connect();
 
   try {
-    const [nodeStatus, indexedStatus] = await Promise.all([
-      readNodeStatus(),
-      readIndexedStatus(client),
-    ]);
+    const nodeStatus = await readNodeStatus();
+    const indexFloorHeight =
+      nodeStatus.state === 'ok'
+        ? nodeStatus.pruned
+          ? nodeStatus.pruneHeight
+          : 0
+        : null;
+    const indexedStatus = await readIndexedStatus(client, indexFloorHeight);
 
     const metricResult = await client.query(`
       SELECT day::text AS day, metric_name, metric_value, unit, dimension_key
@@ -286,9 +348,15 @@ async function main() {
       LIMIT 200
     `);
 
-    const alertRows = alertResult.rows
-      .map((row) => ({
-        tx_hash: String(row.related_txid),
+    const dedupedAlertRows = new Map();
+    for (const row of alertResult.rows) {
+      const txHash = String(row.related_txid);
+      if (!txHash || dedupedAlertRows.has(txHash)) {
+        continue;
+      }
+
+      const alertRow = {
+        tx_hash: txHash,
         timestamp:
           row.detected_at instanceof Date
             ? row.detected_at.toISOString()
@@ -299,8 +367,12 @@ async function main() {
         to_type: String(row.severity),
         to_name: String(row.title),
         tweeted: false,
-      }))
-      .filter((row) => row.amount_btc > 0);
+      };
+      if (alertRow.amount_btc > 0) {
+        dedupedAlertRows.set(txHash, alertRow);
+      }
+    }
+    const alertRows = Array.from(dedupedAlertRows.values());
 
     const entityFlowResult = await client.query(`
       WITH latest_day AS (
@@ -350,7 +422,10 @@ async function main() {
     await insertInBatches('/rest/v1/onchain_metrics', entityFlowRows);
 
     await supabaseDelete('/rest/v1/whale_transactions?from_type=eq.bitflow_onchain');
-    await insertInBatches('/rest/v1/whale_transactions', alertRows, 200);
+    await insertInBatches('/rest/v1/whale_transactions', alertRows, 200, {
+      onConflict: 'tx_hash',
+      mergeDuplicates: true,
+    });
 
     const lagBlocks =
       nodeStatus.state === 'ok' &&
@@ -371,10 +446,8 @@ async function main() {
             )
           )
         : null;
-    const publishedLatestDay = latestPublishedDay(
-      [...metricRows, ...entityFlowRows],
-      alertRows
-    );
+    const publishedLatestDay = latestPublishedDay([...metricRows, ...entityFlowRows]);
+    const latestAlertAt = latestAlertTimestamp(alertRows);
     const publishedState =
       metricRows.length > 0 || alertRows.length > 0 || entityFlowRows.length > 0 ? 'ok' : 'empty';
 
@@ -398,6 +471,7 @@ async function main() {
           latest_indexed_day: indexedStatus.latestIndexedDay,
           published_source: 'supabase',
           published_latest_day: publishedLatestDay,
+          latest_alert_at: latestAlertAt,
           alert_total: alertRows.length,
           entity_flow_total: entityFlowRows.length,
           initial_block_download: nodeStatus.initialBlockDownload,

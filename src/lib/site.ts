@@ -9,6 +9,34 @@ export const SITE_NAVER_SITE_VERIFICATION = (
   process.env.NEXT_PUBLIC_NAVER_SITE_VERIFICATION ?? ''
 ).trim();
 
+function normalizeAdSensePublisherId(raw: string): string {
+  const trimmed = raw.trim();
+
+  if (!trimmed) {
+    return '';
+  }
+
+  return trimmed.startsWith('pub-') ? trimmed : `pub-${trimmed}`;
+}
+
+export function getGoogleAdSensePublisherId(): string {
+  return normalizeAdSensePublisherId(
+    process.env.GOOGLE_ADSENSE_PUBLISHER_ID ??
+      process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_PUBLISHER_ID ??
+      ''
+  );
+}
+
+export function getGoogleAdSenseClientId(): string {
+  const publisherId = getGoogleAdSensePublisherId();
+
+  if (!publisherId) {
+    return '';
+  }
+
+  return `ca-${publisherId}`;
+}
+
 export function getBaseUrl(): string {
   const configured = (process.env.NEXT_PUBLIC_BASE_URL ?? '').trim();
   const resolved = configured || SITE_BASE_URL;

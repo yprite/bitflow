@@ -75,6 +75,10 @@ def build_prevout_resolver(
         if stored is not None:
             resolved_cache[key] = stored
             return stored
+        snapshot = store.fetch_prevout_snapshot_reference(prev_txid, prev_vout_n)
+        if snapshot is not None:
+            resolved_cache[key] = snapshot
+            return snapshot
         resolved_cache[key] = _reference_from_verbose_tx(rpc, prev_txid, prev_vout_n, tx_cache)
         return resolved_cache[key]
 
@@ -157,6 +161,7 @@ def ingest_block_height(
     pipeline_name: str,
     tx_cache: dict[str, dict[str, Any]] | None = None,
     persist_alerts: bool = False,
+    persist_bundle: bool = True,
 ) -> BlockBundle:
     if tx_cache is None:
         tx_cache = {}
@@ -164,16 +169,17 @@ def ingest_block_height(
     block = rpc.get_block(block_hash, 3)
     resolver = build_prevout_resolver(rpc, store, tx_cache)
     bundle = normalize_block_bundle(block, resolver)
-    store.upsert_block_bundle(bundle)
-    store.update_sync_state(
-        pipeline_name=pipeline_name,
-        last_height=height,
-        last_block_hash=bundle.block.block_hash,
-        cursor={
-            "phase": "normalized",
-            "updated_at": datetime.now(tz=UTC).isoformat(),
-        },
-    )
+    if persist_bundle:
+        store.upsert_block_bundle(bundle)
+        store.update_sync_state(
+            pipeline_name=pipeline_name,
+            last_height=height,
+            last_block_hash=bundle.block.block_hash,
+            cursor={
+                "phase": "normalized",
+                "updated_at": datetime.now(tz=UTC).isoformat(),
+            },
+        )
     if persist_alerts:
         store.insert_alert_events(build_block_alerts(bundle, settings))
     return bundle

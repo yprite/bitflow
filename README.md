@@ -121,6 +121,7 @@ npm run dev
 | `SUPABASE_SERVICE_KEY` | Supabase service role key | 히스토리/분석 사용 시 |
 | `ADMIN_SECRET` | 관리자 대시보드 인증키 | 관리자 페이지 사용 시 |
 | `CRON_SECRET` | 스케줄 호출 인증 시크릿 | 외부 스케줄러 사용 시 |
+| `GOOGLE_ADSENSE_PUBLISHER_ID` | Google AdSense 퍼블리셔 ID | 애드센스 심사/광고 사용 시 |
 
 ### NPM 스크립트
 

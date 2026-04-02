@@ -7,7 +7,7 @@ from bitflow_onchain.clients.bitcoin_rpc import BitcoinRPC
 from bitflow_onchain.clients.postgres import PostgresStore
 from bitflow_onchain.config import Settings
 from bitflow_onchain.pipelines.backfill import run_backfill
-from bitflow_onchain.pipelines.metrics import run_metrics
+from bitflow_onchain.pipelines.metrics import run_metrics, run_metrics_range
 from bitflow_onchain.pipelines.realtime import run_realtime
 
 
@@ -19,9 +19,14 @@ def build_parser() -> argparse.ArgumentParser:
     backfill.add_argument("--start-height", type=int)
     backfill.add_argument("--end-height", type=int)
     backfill.add_argument("--batch-size", type=int)
+    backfill.add_argument("--pipeline-name", default="backfill")
 
     metrics = subparsers.add_parser("metrics")
     metrics.add_argument("--date", required=True, help="UTC date in YYYY-MM-DD")
+
+    metrics_range = subparsers.add_parser("metrics-range")
+    metrics_range.add_argument("--start-date", required=True, help="UTC date in YYYY-MM-DD")
+    metrics_range.add_argument("--end-date", required=True, help="UTC date in YYYY-MM-DD")
 
     subparsers.add_parser("realtime")
     return parser
@@ -47,11 +52,21 @@ def main() -> None:
             start_height=args.start_height if args.start_height is not None else settings.backfill_start_height,
             end_height=end_height,
             batch_size=args.batch_size if args.batch_size is not None else settings.backfill_batch_size,
+            pipeline_name=args.pipeline_name,
         )
         return
 
     if args.command == "metrics":
         run_metrics(store=store, settings=settings, target_day=date.fromisoformat(args.date))
+        return
+
+    if args.command == "metrics-range":
+        run_metrics_range(
+            store=store,
+            settings=settings,
+            start_day=date.fromisoformat(args.start_date),
+            end_day=date.fromisoformat(args.end_date),
+        )
         return
 
     if args.command == "realtime":

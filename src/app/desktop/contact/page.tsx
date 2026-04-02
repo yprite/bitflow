@@ -1,5 +1,6 @@
-import { DesktopBulletList, DesktopHero, DesktopSectionHeader, DesktopStatCard, DesktopSurface, DesktopTextCard } from '@/components/desktop/desktop-ui';
-import { SITE_BASE_URL, SITE_CONTACT_EMAIL, SITE_CONTACT_URL, SITE_REPO_URL } from '@/lib/site';
+import Link from 'next/link';
+import { DesktopBulletList, DesktopHero, DesktopSectionHeader, DesktopSurface, DesktopTextCard } from '@/components/desktop/desktop-ui';
+import { SITE_CONTACT_EMAIL, SITE_CONTACT_URL, SITE_REPO_URL } from '@/lib/site';
 
 const channels = [
   {
@@ -33,6 +34,8 @@ if (SITE_CONTACT_EMAIL) {
 
 export default function DesktopContactPage() {
   return (
+    <div className="magazine-content pt-20 pb-16">
+      <Link href="/desktop" className="mb-6 inline-flex text-[11px] uppercase tracking-[0.02em] text-dot-muted hover:text-dot-accent">개요</Link>
     <div className="space-y-6">
       <DesktopHero
         eyebrow="Contact"
@@ -43,18 +46,11 @@ export default function DesktopContactPage() {
             데이터 오류, 기능 요청, 사이트 운영 관련 문의는 아래 채널을 이용해주세요.
           </>
         )}
-        sidebar={(
-          <div className="space-y-4">
-            <DesktopStatCard label="공식 도메인" value={SITE_BASE_URL.replace(/^https?:\/\//, '')} tone="neutral" />
-            <DesktopStatCard label="공개 저장소" value="github.com/yprite/bitflow" tone="neutral" />
-            <DesktopStatCard label="문의 채널" value="GitHub Issues" tone="neutral" />
-          </div>
-        )}
       />
 
       <DesktopSurface className="p-6">
         <DesktopSectionHeader eyebrow="Channels" title="공식 문의 채널" />
-        <div className={`mt-6 grid gap-4 ${channels.length > 3 ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        <div className="mt-6 grid gap-6 md:grid-cols-2">
           {channels.map((channel) => (
             <a
               key={channel.title}
@@ -82,6 +78,7 @@ export default function DesktopContactPage() {
           />
         </div>
       </DesktopSurface>
+    </div>
     </div>
   );
 }
