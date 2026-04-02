@@ -141,7 +141,7 @@ export default function DesktopIndicatorsPage() {
   if (!data) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="magazine-content pt-24 pb-16 space-y-6">
       <DesktopHero
         eyebrow="Historical Research Deck"
         title="히스토리"

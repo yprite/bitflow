@@ -127,7 +127,7 @@ export default function DesktopWeeklyReportView({
   emptyBody = '리포트가 아직 게시되지 않았습니다.',
 }: DesktopWeeklyReportViewProps) {
   return (
-    <div className="space-y-6">
+    <div className="magazine-content pt-24 pb-16 space-y-6">
       <DesktopHero
         eyebrow={eyebrow}
         title={title}

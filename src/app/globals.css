@@ -9,6 +9,7 @@ body {
 .desktop-surface {
   position: relative;
   border-top: 1px solid rgba(17,17,17,0.08);
+  background: #ffffff;
 }
 
 .desktop-hero {

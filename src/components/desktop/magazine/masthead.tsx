@@ -17,7 +17,7 @@ export function Masthead({
 }: MastheadProps) {
   return (
     <section id="masthead" className="magazine-masthead magazine-section-light border-b border-dot-border">
-      <div className="magazine-content py-16">
+      <div className="magazine-content pt-24 pb-16">
         <div className="magazine-masthead-bar">
           <span className="text-dot-text">{edition}</span>
           <span className="text-[11px] text-dot-sub">{meta}</span>

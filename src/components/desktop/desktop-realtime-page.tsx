@@ -36,7 +36,7 @@ export default function DesktopRealtimePage() {
   if (!data) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="magazine-content pt-24 pb-16 space-y-6">
       <DesktopHero
         eyebrow="Realtime Command Deck"
         title="실시간 지표"

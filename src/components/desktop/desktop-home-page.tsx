@@ -286,7 +286,7 @@ export default function DesktopHomePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="magazine-content pt-24 pb-16 space-y-6">
       <DesktopHero
         eyebrow="Command Deck"
         title={(
