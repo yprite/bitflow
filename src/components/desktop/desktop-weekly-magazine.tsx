@@ -17,6 +17,8 @@ function formatWeekDate(dateStr: string): string {
 
 export default function DesktopWeeklyMagazine({ report, archive }: Props) {
   const filteredArchive = archive.filter((a) => a.slug !== report?.slug);
+  const totalIssues = archive.length;
+  const archiveVolumeOffset = report ? 1 : 0;
 
   return (
     <>
@@ -24,7 +26,7 @@ export default function DesktopWeeklyMagazine({ report, archive }: Props) {
       <section id="weekly-masthead">
         <Masthead
           edition="BITFLOW WEEKLY"
-          meta={`Archive · 총 ${archive.length + (report ? 1 : 0)}호`}
+          meta={`Archive · 총 ${totalIssues}호`}
           headline="주간 리포트 아카이브"
           subhead="매주 시장을 돌아보는 브리핑"
         />
@@ -66,7 +68,7 @@ export default function DesktopWeeklyMagazine({ report, archive }: Props) {
             <TimelineItem
               key={item.slug}
               href={`/desktop/weekly/${item.slug}`}
-              title={`Vol. ${archive.length - i} — ${item.title}`}
+              title={`Vol. ${totalIssues - archiveVolumeOffset - i} — ${item.title}`}
               subtitle={`${formatWeekDate(item.weekStart)} ~ ${formatWeekDate(item.weekEnd)}`}
               isFirst={i === 0}
             />

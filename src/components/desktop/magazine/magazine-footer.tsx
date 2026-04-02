@@ -25,6 +25,7 @@ export function MagazineFooter({ links }: MagazineFooterProps) {
           ))}
         </div>
         <div className="flex gap-6 text-[11px] text-dot-muted">
+          <Link href="/desktop/alert" className="hover:text-dot-text">알림</Link>
           <Link href="/desktop/about" className="hover:text-dot-text">소개</Link>
           <Link href="/desktop/contact" className="hover:text-dot-text">문의</Link>
           <Link href="/desktop/disclaimer" className="hover:text-dot-text">면책</Link>

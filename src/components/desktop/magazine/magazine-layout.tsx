@@ -13,6 +13,7 @@ interface MagazineLayoutProps {
 const NAV_ITEMS = [
   { href: '/desktop', label: '개요' },
   { href: '/desktop/onchain', label: '온체인' },
+  { href: '/desktop/indicators', label: '히스토리' },
   { href: '/desktop/weekly', label: '주간 리포트' },
   { href: '/desktop/tools', label: '도구' },
 ] as const;
@@ -30,11 +31,20 @@ function getContext(pathname: string) {
   if (pathname.startsWith('/desktop/onchain')) {
     return { eyebrow: 'On-chain', title: '깊이 분석' };
   }
+  if (pathname.startsWith('/desktop/indicators')) {
+    return { eyebrow: 'History', title: '히스토리' };
+  }
+  if (pathname.startsWith('/desktop/realtime')) {
+    return { eyebrow: 'Realtime', title: '실시간 지표' };
+  }
   if (pathname.startsWith('/desktop/weekly')) {
     return { eyebrow: 'Weekly', title: '주간 아카이브' };
   }
   if (pathname.startsWith('/desktop/tools')) {
     return { eyebrow: 'Utility', title: '실행 도구' };
+  }
+  if (pathname.startsWith('/desktop/alert')) {
+    return { eyebrow: 'Alert', title: '텔레그램 알림' };
   }
   if (pathname.startsWith('/desktop/contact')) {
     return { eyebrow: 'Contact', title: '문의 및 제보' };
