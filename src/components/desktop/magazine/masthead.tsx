@@ -17,14 +17,14 @@ export function Masthead({
 }: MastheadProps) {
   return (
     <section id="masthead" className="magazine-masthead magazine-section-light border-b border-dot-border">
-      <div className="magazine-content pt-24 pb-16">
+      <div className="magazine-content pt-32 pb-16">
         <div className="magazine-masthead-bar">
           <span className="text-dot-text">{edition}</span>
           <span className="text-[11px] text-dot-sub">{meta}</span>
         </div>
 
-        <div className="mt-8 max-w-3xl space-y-3">
-          <h1 className="text-[20px] font-bold leading-[1.3] text-dot-text">
+        <div className="mt-12 max-w-3xl space-y-3">
+          <h1 className="magazine-masthead-headline">
             {headline}
           </h1>
           {subhead && (

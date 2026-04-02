@@ -313,7 +313,7 @@ export default function DesktopMagazinePage() {
           <div className="desktop-kicker mb-4">
             Today&apos;s Signal
           </div>
-          <h2 className="text-[20px] font-bold text-dot-text leading-[1.3] mb-3">
+          <h2 className="text-[24px] font-bold text-dot-text leading-[1.3] mb-3">
             {data.signal.description}
           </h2>
           <p className="text-[14px] text-dot-sub leading-relaxed mb-6">

@@ -164,6 +164,14 @@ body {
   letter-spacing: 0.02em;
 }
 
+.magazine-masthead-headline {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #1a1a1a;
+}
+
 .magazine-masthead-meta {
   font-size: 11px;
   color: #6b7280;
@@ -179,7 +187,7 @@ body {
 .magazine-indicator-strip-cell {
   flex: 1;
   background: #ffffff;
-  padding: 8px;
+  padding: 12px 8px;
   text-align: center;
 }
 
@@ -188,10 +196,11 @@ body {
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  margin-bottom: 4px;
 }
 
 .magazine-indicator-strip-value {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 }
 
